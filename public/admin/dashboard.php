@@ -148,13 +148,7 @@ $loggedInUsers = getLoggedInUsersCount();
             <div class="content">
                 <p class="welcome-message">Welcome to the Admin Dashboard. You have access to manage all administrative tasks.</p>
                 
-                <!-- User Statistics -->
-                <div class="user-stats">
-                    <h2>User Statistics</h2>
-                    <div class="user-stats-item">Total Users: <?php echo $totalUsers; ?></div>
-                    <div class="user-stats-item">Logged In Users: <?php echo $loggedInUsers; ?></div>
-                </div>
-                
+              
                 <!-- Placeholder for main content -->
                 <!-- This is where you can display other admin-specific content or functionality -->
             </div>
