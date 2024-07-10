@@ -3,6 +3,6 @@
 // For example, include 'config/config.php' if needed
 
 // Redirect to the login page
-header("Location: public/login.php");
+header("Location: login.php");
 exit(); // Ensure that subsequent code does not execute after redirection
 ?>
