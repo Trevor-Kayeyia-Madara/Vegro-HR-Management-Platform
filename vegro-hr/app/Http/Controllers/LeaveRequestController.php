@@ -2,52 +2,66 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LeaveRequest;
+use App\Services\LeaveService;
 use Illuminate\Http\Request;
 
 class LeaveRequestController extends Controller
 {
+    protected $leaveService;
+    public function __construct(LeaveService $leaveService)
+    {
+        $this->leaveService = $leaveService;
+    }
+    
     public function index()
     {
-        return LeaveRequest::with(['employee','approver'])->get();
+        return $this->leaveService->getAllLeaveRequests();
+    }
+
+    public function destroy($leave)
+    {
+        return $this->leaveService->deleteLeave($leave);
+    }
+
+    public function approve($leave, Request $request)
+    {
+        $userId = $request->user()->id;
+        return $this->leaveService->approveLeave($leave, $userId);
+    }
+
+    public function reject($leave, Request $request)
+    {
+        $userId = $request->user()->id;
+        return $this->leaveService->rejectLeave($leave, $userId);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'employee_id' => 'required|exists:employees,id',
-            'type' => 'required|in:annual,sick,emergency',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'status' => 'nullable|in:pending,approved,rejected',
-            'approved_by' => 'nullable|exists:users,id'
+            'reason' => 'nullable|string',
         ]);
-
-        return LeaveRequest::create($validated);
+    
+        return $this->leaveService->requestLeave($validated);
+        
     }
 
-    public function show(LeaveRequest $leaveRequest)
+    public function getByEmployee($employeeId)
     {
-        return $leaveRequest->load(['employee','approver']);
+        return $this->leaveService->getLeaveRequestsByEmployee($employeeId);
     }
 
-    public function update(Request $request, LeaveRequest $leaveRequest)
+    public function update(Request $request, $leave)
     {
         $validated = $request->validate([
-            'type' => 'nullable|in:annual,sick,emergency',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'status' => 'nullable|in:pending,approved,rejected',
-            'approved_by' => 'nullable|exists:users,id'
+            'start_date' => 'sometimes|required|date',
+            'end_date' => 'sometimes|required|date|after_or_equal:start_date',
+            'reason' => 'sometimes|nullable|string',
         ]);
 
-        $leaveRequest->update($validated);
-        return $leaveRequest;
+        return $this->leaveService->updateLeave($leave, $validated);
     }
 
-    public function destroy(LeaveRequest $leaveRequest)
-    {
-        $leaveRequest->delete();
-        return response()->noContent();
-    }
 }
