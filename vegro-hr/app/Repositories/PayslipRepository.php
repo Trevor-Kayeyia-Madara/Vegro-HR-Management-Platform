@@ -39,4 +39,16 @@ class PayslipRepository
     {
         return Payslip::where('employee_id', $employeeId)->get();
     }   
+
+    public function exportPayslipsToCSV()
+    {
+        $payslips = Payslip::with('employee')->get();
+        $csvData = "Employee Name,Month,Year,Net Salary\n";
+
+        foreach ($payslips as $payslip) {
+            $csvData .= "{$payslip->employee->name},{$payslip->month},{$payslip->year},{$payslip->net_salary}\n";
+        }
+
+        return $csvData;
+    }
 }

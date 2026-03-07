@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Repositories;
+use App\Models\Role;
+
+class RoleRepository
+{
+    public function all()
+    {
+        return Role::all();
+    }
+
+    public function find($id)
+    {
+        return Role::find($id);
+    }
+
+    public function create(array $data)
+    {
+        return Role::create($data);
+    }
+
+    public function update($id, array $data)
+    {
+        $role = $this->find($id);
+        if ($role) {
+            $role->update($data);
+            return $role;
+        }
+        return null;
+    }
+
+    public function delete($id)
+    {
+        $role = $this->find($id);
+        if ($role) {
+            return $role->delete();
+        }
+        return false;
+    }
+}

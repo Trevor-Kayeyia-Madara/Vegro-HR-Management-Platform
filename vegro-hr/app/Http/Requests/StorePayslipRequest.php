@@ -1,10 +1,9 @@
 <?php
 
 namespace App\Http\Requests;
-
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreLeaveRequest extends FormRequest
+class StorePayslipRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -19,14 +18,13 @@ class StoreLeaveRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    
     public function rules(): array
-    {       return [
-          'employee_id' => 'required|exists:employees,id',
-          'start_date' => 'required|date',
-          'end_date' => 'required|date|after_or_equal:start_date',
-          'reason' => 'nullable|string|max:255',
-          'status' => 'required|in:pending,approved,rejected'
-       ];
-   } 
-}              
+    {
+        return [
+            'employee_id' => 'required|exists:employees,id',
+            'pay_period' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'status' => 'required|in:pending,paid'
+        ];
+    }
+}

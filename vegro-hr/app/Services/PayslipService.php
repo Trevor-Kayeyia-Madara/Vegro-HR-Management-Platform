@@ -40,5 +40,10 @@ class PayslipService
     public function getPayslipsByEmployee($employeeId)
     {
         return $this->payslipRepository->getPayslipsByEmployee($employeeId);
-    }   
+    }  
+    
+    public function exportPayslipsToCSV()
+    {
+        return $this->payslipRepository->exportPayslipsToCSV();
+    }
 }
