@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\LeaveService;
 use Illuminate\Http\Request;
-
+use App\Helpers\ApiResponse;
 class LeaveRequestController extends Controller
 {
     protected $leaveService;
@@ -16,24 +16,24 @@ class LeaveRequestController extends Controller
 
     public function index()
     {
-        return $this->leaveService->getAllLeaveRequests();
+        return ApiResponse::success($this->leaveService->getAllLeaveRequests());
     }
 
     public function store(Request $request)
     {
-        return $this->leaveService->requestLeave($request->all());
+        return ApiResponse::success($this->leaveService->requestLeave($request->all()), "Leave request submitted successfully", 201);
     }
 
     public function approve($id)
     {
         $leave = $this->leaveService->getLeaveById($id);
-        return $this->leaveService->approveLeave($leave, auth()->id());
+        return ApiResponse::success($this->leaveService->approveLeave($leave, auth()->id()));
     }
 
     public function reject($id)
     {
         $leave = $this->leaveService->getLeaveById($id);
-        return $this->leaveService->rejectLeave($leave, auth()->id());
+        return ApiResponse::success($this->leaveService->rejectLeave($leave, auth()->id()));
     }
 
     public function destroy($id)
@@ -69,17 +69,17 @@ class LeaveRequestController extends Controller
     
     public function getAllLeaveRequests()
     {
-        return $this->leaveService->getAllLeaveRequests();
+        return ApiResponse::success($this->leaveService->getAllLeaveRequests());
     }
 
     public function getLeaveRequestsByStatus($status)
     {
-        return $this->leaveService->getLeaveRequestsByStatus($status);
+        return ApiResponse::success($this->leaveService->getLeaveRequestsByStatus($status));
     }
 
     public function exportLeavesToCSV()
     {
-        return $this->leaveService->exportLeavesToCSV();
+        return ApiResponse::success($this->leaveService->exportLeavesToCSV());
     }
 }
     

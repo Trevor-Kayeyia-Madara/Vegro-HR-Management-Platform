@@ -1,55 +1,53 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use App\Models\Payslip;
-use App\Models\Payroll;
+use App\Services\PayslipService;
 use Illuminate\Http\Request;
 
 class PayslipController extends Controller
 {
-    // List all payslips
+    protected $payslipService;
+
+    public function __construct(PayslipService $payslipService)
+    {
+        $this->payslipService = $payslipService;
+    }
+
     public function index()
     {
-        return Payslip::with('payroll.employee')->get();
+        return response()->json($this->payslipService->getAllPayslips());
     }
 
-    // Create payslip
+    public function show($id)
+    {
+        return response()->json($this->payslipService->getPayslipById($id));
+    }
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'payroll_id' => 'required|exists:payrolls,id',
-            'pdf_path' => 'required|string'
+        $data = $request->validate([
+            'employee_id' => 'required|integer',
+            'amount' => 'required|numeric',
+            'pay_date' => 'required|date',
         ]);
 
-        $validated['generated_at'] = now();
-
-        return Payslip::create($validated);
+        return response()->json($this->payslipService->createPayslip($data), 201);
     }
 
-    // Show payslip
-    public function show(Payslip $payslip)
+    public function update(Request $request, $id)
     {
-        return $payslip->load('payroll.employee');
-    }
-
-    // Update payslip (maybe replace PDF)
-    public function update(Request $request, Payslip $payslip)
-    {
-        $validated = $request->validate([
-            'pdf_path' => 'required|string'
+        $data = $request->validate([
+            'employee_id' => 'integer',
+            'amount' => 'numeric',
+            'pay_date' => 'date',
         ]);
 
-        $validated['generated_at'] = now();
-
-        $payslip->update($validated);
-        return $payslip;
+        return response()->json($this->payslipService->updatePayslip($id, $data));
     }
 
-    // Delete payslip
-    public function destroy(Payslip $payslip)
+    public function destroy($id)
     {
-        $payslip->delete();
-        return response()->noContent();
+        $this->payslipService->deletePayslip($id);
+        return response()->json(null, 204);
     }
 }
