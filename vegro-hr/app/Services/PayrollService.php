@@ -2,47 +2,54 @@
 
 namespace App\Services;
 
-use App\Models\Payroll;
+use App\Repositories\PayrollRepository;
 
 class PayrollService
 {
-    public function calculateNetSalary($basic, $allowances, $deductions, $tax)
-    {
-        return $basic + $allowances - $deductions - $tax;
-    }
+    protected $payrollRepository;
 
-    public function createPayroll(array $data)
+    public function __construct(PayrollRepository $payrollRepository)
     {
-        $data['net_salary'] = $this->calculateNetSalary(
-            $data['basic_salary'],
-            $data['allowances'] ?? 0,
-            $data['deductions'] ?? 0,
-            $data['tax'] ?? 0
-        );
-
-        return Payroll::create($data);
+        $this->payrollRepository = $payrollRepository;
     }
 
     public function getAllPayrolls()
     {
-        return Payroll::with('employee')->get();
-    }   
-    public function updatePayroll(Payroll $payroll, array $data)
+        return $this->payrollRepository->getAllPayrolls();
+    }
+
+    public function getPayrollById($id)
     {
-        $basic = $data['basic_salary'] ?? $payroll->basic_salary;
-        $allowances = $data['allowances'] ?? $payroll->allowances;
-        $deductions = $data['deductions'] ?? $payroll->deductions;
-        $tax = $data['tax'] ?? $payroll->tax;
+        return $this->payrollRepository->getPayrollById($id);
+    }
 
-        $data['net_salary'] = $this->calculateNetSalary(
-            $basic,
-            $allowances,
-            $deductions,
-            $tax
-        );
+    public function createPayroll($data)
+    {
+        return $this->payrollRepository->createPayroll($data);
+    }
 
-        $payroll->update($data);
+    public function updatePayroll($id, $data)
+    {
+        return $this->payrollRepository->updatePayroll($id, $data);
+    }
 
-        return $payroll;
+    public function deletePayroll($id)
+    {
+        return $this->payrollRepository->deletePayroll($id);
+    }
+
+    public function calculatePayroll($employeeId, $hoursWorked, $hourlyRate)
+    {
+        return $this->payrollRepository->calculatePayroll($employeeId, $hoursWorked, $hourlyRate);
+    }
+
+    public function getPayrollsByEmployee($employeeId)
+    {
+        return $this->payrollRepository->getPayrollsByEmployee($employeeId);
+    }   
+
+    public function getTotalPayrollCost()
+    {
+        return $this->payrollRepository->getTotalPayrollCost();
     }
 }

@@ -1,9 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Services\AttendanceService;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreAttendanceRequest;
+use App\Http\Requests\UpdateAttendanceRequest;
+use App\Models\Attendance; 
+use App\Helpers\ApiResponse;
 
 class AttendanceController extends Controller
 {
@@ -14,53 +16,46 @@ class AttendanceController extends Controller
         $this->attendanceService = $attendanceService;
     }
 
-    public function record(Request $request)
-    {
-        $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'date' => 'required|date',
-            'status' => 'required|in:present,absent,late,remote',
-        ]);
-
-        return $this->attendanceService->recordAttendance($validated);
-    }
-
-    public function update(Request $request, $attendance)
-    {
-        $validated = $request->validate([
-            'date' => 'sometimes|required|date',
-            'status' => 'sometimes|required|in:present,absent,late,remote',
-        ]);
-
-        return $this->attendanceService->updateAttendance($attendance, $validated);
-    }
-
-    public function delete($attendance)
-    {
-        return $this->attendanceService->deleteAttendance($attendance);
-    }
-
-    public function getByEmployee($employeeId)
-    {
-        return $this->attendanceService->getAttendanceByEmployee($employeeId);
-    }
-
-    public function getByDateRange(Request $request, $employeeId)
-    {
-        $validated = $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-        ]);
-
-        return $this->attendanceService->getAttendanceByDateRange(
-            $employeeId,
-            $validated['start_date'],
-            $validated['end_date']
-        );
-    }
-
     public function index()
     {
-        return $this->attendanceService->getAllAttendances();
+        $attendances = $this->attendanceService->getAllAttendances();
+        return ApiResponse::success($attendances, "Attendances retrieved successfully");
+    }
+
+    public function store(StoreAttendanceRequest $request)
+    {
+        try {
+            $attendance = $this->attendanceService->createAttendance($request->validated());
+            return ApiResponse::success($attendance, "Attendance created successfully", 201);
+        } catch (\Exception $e) {
+            return ApiResponse::error($e->getMessage(), 400);
+        }
+    }
+
+    public function show($id)
+    {
+        $attendance = $this->attendanceService->getAttendanceById($id);
+        if ($attendance) {
+            return ApiResponse::success($attendance, "Attendance retrieved successfully");
+        }
+        return ApiResponse::notFound("Attendance not found");
+    }
+
+    public function update(UpdateAttendanceRequest $request, Attendance $attendance)
+    {
+        try {
+            $updatedAttendance = $this->attendanceService->updateAttendance($attendance, $request->validated());
+            return ApiResponse::success($updatedAttendance, "Attendance updated successfully");
+        } catch (\Exception $e) {
+            return ApiResponse::error($e->getMessage(), 400);
+        }
+    }
+
+    public function destroy(Attendance $attendance)
+    {
+        if ($this->attendanceService->deleteAttendance($attendance)) {
+            return ApiResponse::success(null, "Attendance deleted successfully");
+        }
+        return ApiResponse::error("Failed to delete attendance", 400);
     }
 }
