@@ -109,4 +109,14 @@ class PayrollRepository
     {
         return Payroll::with('employee.department')->get();
     }
+
+    public function getPayrollsWithEmployeeAndDepartment()
+    {
+        return Payroll::with(['employee', 'employee.department'])->get();
+    }
+
+    public function getPayrollsWithEmployeeDepartmentAndPayslip()
+    {
+        return Payroll::with(['employee', 'employee.department', 'payslip'])->get();
+    }
 }

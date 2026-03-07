@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Payroll;
 use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
+use App\Http\Resources\PayrollResource;
 
 class PayrollController extends Controller
 {
     // List all payrolls
     public function index()
     {
-        return ApiResponse::success(Payroll::with('employee')->get());
+        return ApiResponse::success(PayrollResource::collection(Payroll::with('employee', 'payslip')->get()));   
     }
 
     // Create a payroll
@@ -35,13 +36,13 @@ class PayrollController extends Controller
 
         $payroll = Payroll::create($validated);
 
-        return ApiResponse::success($payroll, "Payroll created successfully", 201);
+        return ApiResponse::success(new PayrollResource($payroll), "Payroll created successfully", 201);
     }
 
     // Show a payroll
     public function show(Payroll $payroll)
     {
-        return ApiResponse::success($payroll->load('employee', 'payslip'));
+        return ApiResponse::success(new PayrollResource($payroll->load('employee', 'payslip')));
     }
 
     // Update payroll
@@ -68,7 +69,7 @@ class PayrollController extends Controller
             'net_salary' => $basic + $allowances - $deductions - $tax
         ]);
 
-        return ApiResponse::success($payroll, "Payroll updated successfully");
+        return ApiResponse::success(new PayrollResource($payroll), "Payroll updated successfully");
     }
 
     // Delete payroll

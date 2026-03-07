@@ -18,4 +18,6 @@ class Employee extends Model
     public function payrolls() { return $this->hasMany(Payroll::class); }
     public function attendance() { return $this->hasMany(Attendance::class); }
     public function leaveRequests() { return $this->hasMany(LeaveRequest::class); }
+    public function user() { return $this->belongsTo(User::class); }
+    public function role() { return $this->belongsToMany(Role::class); }
 }

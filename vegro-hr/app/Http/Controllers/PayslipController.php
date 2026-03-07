@@ -50,4 +50,9 @@ class PayslipController extends Controller
         $this->payslipService->deletePayslip($id);
         return response()->json(null, 204);
     }
+
+    public function exportToCSV()
+    {
+        return $this->payslipService->exportPayslipsToCSV();
+    }
 }
