@@ -8,60 +8,78 @@ use Illuminate\Http\Request;
 class LeaveRequestController extends Controller
 {
     protected $leaveService;
+
     public function __construct(LeaveService $leaveService)
     {
         $this->leaveService = $leaveService;
     }
-    
+
     public function index()
     {
         return $this->leaveService->getAllLeaveRequests();
     }
 
-    public function destroy($leave)
+    public function store(Request $request)
     {
+        return $this->leaveService->requestLeave($request->all());
+    }
+
+    public function approve($id)
+    {
+        $leave = $this->leaveService->getLeaveById($id);
+        return $this->leaveService->approveLeave($leave, auth()->id());
+    }
+
+    public function reject($id)
+    {
+        $leave = $this->leaveService->getLeaveById($id);
+        return $this->leaveService->rejectLeave($leave, auth()->id());
+    }
+
+    public function destroy($id)
+    {
+        $leave = $this->leaveService->getLeaveById($id);
         return $this->leaveService->deleteLeave($leave);
     }
 
-    public function approve($leave, Request $request)
+    public function show($id)
     {
-        $userId = $request->user()->id;
-        return $this->leaveService->approveLeave($leave, $userId);
+        return $this->leaveService->getLeaveById($id);
     }
 
-    public function reject($leave, Request $request)
+    public function getLeavesByEmployee($employeeId)
     {
-        $userId = $request->user()->id;
-        return $this->leaveService->rejectLeave($leave, $userId);
+        return $this->leaveService->getLeavesByEmployee($employeeId);
     }
 
-    public function store(Request $request)
+    public function getPendingLeaves()
     {
-        $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'reason' => 'nullable|string',
-        ]);
+        return $this->leaveService->getPendingLeaves();
+    }
+
+    public function getApprovedLeaves()
+    {
+        return $this->leaveService->getApprovedLeaves();
+    }
+
+    public function getRejectedLeaves()
+    {
+        return $this->leaveService->getRejectedLeaves();
+    }
     
-        return $this->leaveService->requestLeave($validated);
-        
-    }
-
-    public function getByEmployee($employeeId)
+    public function getAllLeaveRequests()
     {
-        return $this->leaveService->getLeaveRequestsByEmployee($employeeId);
+        return $this->leaveService->getAllLeaveRequests();
     }
 
-    public function update(Request $request, $leave)
+    public function getLeaveRequestsByStatus($status)
     {
-        $validated = $request->validate([
-            'start_date' => 'sometimes|required|date',
-            'end_date' => 'sometimes|required|date|after_or_equal:start_date',
-            'reason' => 'sometimes|nullable|string',
-        ]);
-
-        return $this->leaveService->updateLeave($leave, $validated);
+        return $this->leaveService->getLeaveRequestsByStatus($status);
     }
 
+    public function exportLeavesToCSV()
+    {
+        return $this->leaveService->exportLeavesToCSV();
+    }
 }
+    

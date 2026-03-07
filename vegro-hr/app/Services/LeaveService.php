@@ -21,10 +21,6 @@ class LeaveService
         return $leave;
     }
 
-    public function getAllLeaveRequests()
-    {
-        return LeaveRequest::with(['employee','approver'])->get();
-    }   
     public function rejectLeave(LeaveRequest $leave, $userId)
     {
         $leave->update([
@@ -34,21 +30,105 @@ class LeaveService
 
         return $leave;
     }
-    public function deleteLeave(LeaveRequest $leave)
+
+    public function getLeaveById($id)
     {
-            $leave->delete();
-            return true;
+        return LeaveRequest::findOrFail($id);
     }
 
-    public function getLeaveRequestsByEmployee($employeeId)
+    public function getLeavesByEmployee($employeeId)
     {
         return LeaveRequest::where('employee_id', $employeeId)->get();
     }
 
-    public function updateLeave(LeaveRequest $leave, array $data)
+    public function getPendingLeaves()
     {
-        $leave->update($data);
-        return $leave;
+        return LeaveRequest::where('status', 'pending')->get();
     }
 
+    public function getApprovedLeaves()
+    {
+        return LeaveRequest::where('status', 'approved')->get();
+    }
+
+    public function getRejectedLeaves()
+    {
+        return LeaveRequest::where('status', 'rejected')->get();
+    }
+
+    public function deleteLeave(LeaveRequest $leave)
+    {
+        return $leave->delete();
+    }
+
+    public function getLeavesWithPagination($perPage = 15)
+    {
+            return LeaveRequest::paginate($perPage);
+    }
+
+    public function getLeavesByStatus($status)
+    {
+        return LeaveRequest::where('status', $status)->get();
+    }
+
+    public function getAllLeaveRequests()
+    {
+        return LeaveRequest::with(['employee','approver'])->get();
+    }
+
+    public function getLeaveStatistics()
+    {
+        return [
+            'total' => LeaveRequest::count(),
+            'pending' => LeaveRequest::where('status', 'pending')->count(),
+            'approved' => LeaveRequest::where('status', 'approved')->count(),
+            'rejected' => LeaveRequest::where('status', 'rejected')->count(),
+        ];
+    }
+
+    public function getLeavesByDateRange($startDate, $endDate)
+    {
+        return LeaveRequest::whereBetween('start_date', [$startDate, $endDate])->get();
+    }
+
+    public function getLeavesByType($type)
+    {
+        return LeaveRequest::where('type', $type)->get();
+    }
+
+    public function getLeavesByDepartment($departmentId)
+    {
+        return LeaveRequest::whereHas('employee', function ($query) use ($departmentId) {
+            $query->where('department_id', $departmentId);
+        })->get();
+    }
+
+    public function getLeavesByApprover($approverId)
+    {
+        return LeaveRequest::where('approved_by', $approverId)->get();
+    }
+
+    public function exportLeavesToCSV()
+    {
+        $leaves = LeaveRequest::all();
+        $csvData = "ID,Employee ID,Type,Start Date,End Date,Status\n";
+
+        foreach ($leaves as $leave) {
+            $csvData .= "{$leave->id},{$leave->employee_id},{$leave->type},{$leave->start_date},{$leave->end_date},{$leave->status}\n";
+        }
+
+        return $csvData;
+    }
+
+    public function getLeavesByEmployeeAndStatus($employeeId, $status)
+    {
+        return LeaveRequest::where('employee_id', $employeeId)
+                            ->where('status', $status)
+                            ->get();
+    }
+
+    public function getLeaveRequestsByStatus($status)
+    {
+        return LeaveRequest::where('status', $status)->get();
+    }
 }
