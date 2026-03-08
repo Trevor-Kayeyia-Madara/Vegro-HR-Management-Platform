@@ -4,6 +4,8 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayslipController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LeaveRequestController;
+use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\Route;
 
 Route::apiResource('departments', DepartmentController::class);
 Route::apiResource('employees', EmployeeController::class);
@@ -11,3 +13,4 @@ Route::apiResource('payrolls', PayrollController::class);
 Route::apiResource('payslips', PayslipController::class);
 Route::apiResource('attendances', AttendanceController::class);
 Route::apiResource('leave-requests', LeaveRequestController::class);
+Route::apiResource('auth', AuthController::class);
