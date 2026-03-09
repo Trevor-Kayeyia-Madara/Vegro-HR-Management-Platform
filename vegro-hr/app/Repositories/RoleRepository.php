@@ -10,6 +10,12 @@ class RoleRepository
         return Role::all();
     }
 
+    public function getRoleIdByName($name)
+    {
+        $role = Role::where('name', $name)->first();
+        return $role ? $role->id : null;
+    }
+
     public function find($id)
     {
         return Role::find($id);
