@@ -14,10 +14,10 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
-    public function register(RegisterRequest $request)
+   public function store(RegisterRequest $request)
     {
-        $user = $this->authService->register($request->validated());
-        return ApiResponse::success(['message' => 'User registered successfully', 'user' => $user], 201);
+        $user = $this->authService->store($request->validated());
+        return ApiResponse::success(['message' => 'Registration successful', 'user' => $user]);
     }
 
     public function login()

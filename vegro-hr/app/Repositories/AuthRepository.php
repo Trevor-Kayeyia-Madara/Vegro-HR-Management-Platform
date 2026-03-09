@@ -15,7 +15,7 @@ class AuthRepository
         $this->roleRepository = $roleRepository;
     }
 
-    public function register(array $data)
+    public function store(array $data)
     {
         $user = User::create([
             'name' => $data['name'],
@@ -47,6 +47,17 @@ class AuthRepository
     {
         // Revoke the user's authentication token
         $user->tokens()->delete();
+    }
+
+    public function getRoleIdByName($name)
+    {
+        $role = Role::where('name', $name)->first();
+        return $role ? $role->id : null;
+    }
+
+    public function getUserByEmail($email)
+    {
+        return User::where('email', $email)->first();
     }
 
 }
