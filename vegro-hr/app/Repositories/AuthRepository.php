@@ -20,14 +20,9 @@ class AuthRepository
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
+            'role_id' => $this->roleRepository->getRoleIdByName('employee'), // Default role
             'password' => Hash::make($data['password']),
         ]);
-
-        // Assign default role to the user (e.g., 'user')
-        $defaultRole = $this->roleRepository->findByName('user');
-        if ($defaultRole) {
-            $user->roles()->attach($defaultRole->id);
-        }
 
         return $user;
     }
@@ -37,10 +32,14 @@ class AuthRepository
         $user = User::where('email', $credentials['email'])->first();
 
         if ($user && Hash::check($credentials['password'], $user->password)) {
-            // Generate and return an authentication token (e.g., JWT)
-            return $user->createToken('auth_token')->plainTextToken;
+            // Generate a new authentication token for the user
+            $token = $user->createToken('auth_token')->plainTextToken;
+            return ['user' => $user, 'token' => $token];
         }
 
+        if ($user) {
+            return ['error' => 'Invalid password'];
+        }
         return null;
     }
 
