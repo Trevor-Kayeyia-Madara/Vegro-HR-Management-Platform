@@ -12,9 +12,9 @@ class AuthService
         $this->authRepository = $authRepository;
     }
 
-    public function register(array $data)
+    public function store(array $data)
     {
-        return $this->authRepository->register($data);
+        return $this->authRepository->store($data);
     }
 
     public function login(array $credentials)
@@ -25,5 +25,15 @@ class AuthService
     public function logout($user)
     {
         return $this->authRepository->logout($user);
+    }
+
+    public function getRoleIdByName($name)
+    {
+        return $this->authRepository->getRoleIdByName($name);
+    }
+
+    public function getUserByEmail($email)
+    {
+        return $this->authRepository->getUserByEmail($email);
     }
 }
