@@ -2,11 +2,13 @@
 import { computed, onMounted, ref } from 'vue';
 import apiClient from '../../api/apiClient';
 import ApexCharts from 'vue3-apexcharts';
+import useAuth from '../../hooks/useAuth';
 
 defineOptions({ name: 'DashboardPage' });
 
 const isLoading = ref(true);
 const errorMessage = ref('');
+const { roleTitle } = useAuth();
 
 const employees = ref([]);
 const departments = ref([]);
@@ -140,6 +142,17 @@ const stats = computed(() => [
   },
 ]);
 
+const accessBadges = computed(() => {
+  const map = {
+    admin: ['Admin', 'Users', 'Settings', 'Payroll'],
+    hr: ['HR', 'Employees', 'Leaves', 'Payroll'],
+    finance: ['Finance', 'Payroll', 'Payslips'],
+    manager: ['Manager', 'Approvals'],
+    employee: ['Employee', 'My Profile', 'Leaves'],
+  };
+  return map[roleTitle.value] || ['Workspace'];
+});
+
 const payrollTrend = computed(() => {
   const grouped = new Map();
   payrolls.value.forEach((payroll) => {
@@ -259,6 +272,15 @@ onMounted(loadDashboard);
           >
             Refresh
           </button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-300/80">
+          <span
+            v-for="badge in accessBadges"
+            :key="badge"
+            class="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-emerald-200"
+          >
+            {{ badge }}
+          </span>
         </div>
       </section>
 

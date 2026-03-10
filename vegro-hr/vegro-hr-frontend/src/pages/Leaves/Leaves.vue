@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import apiClient from '../../api/apiClient';
+import useAuth from '../../hooks/useAuth';
 
 defineOptions({ name: 'LeaveRequestsPage' });
 
@@ -32,6 +33,25 @@ const form = ref({
 });
 
 const statuses = ['pending', 'approved', 'rejected'];
+
+const { user, roleTitle, isAdmin, checkAuth } = useAuth();
+const isEmployee = computed(() => roleTitle.value === 'employee');
+const canApprove = computed(() =>
+  isAdmin.value || ['hr', 'manager'].includes(roleTitle.value),
+);
+const currentEmployeeId = ref(null);
+
+const resolveCurrentEmployee = async () => {
+  if (!user.value?.email) return null;
+  try {
+    const response = await apiClient.get(`/api/employees/email/${user.value.email}`);
+    const employee = response?.data?.data || response?.data;
+    currentEmployeeId.value = employee?.id || null;
+    return currentEmployeeId.value;
+  } catch (error) {
+    return null;
+  }
+};
 
 const unwrapList = (response) => {
   if (Array.isArray(response?.data)) return response.data;
@@ -82,11 +102,26 @@ const loadRequests = async () => {
   errorMessage.value = '';
 
   try {
+    if (!user.value) {
+      await checkAuth();
+    }
+
+    if (isEmployee.value && !currentEmployeeId.value) {
+      await resolveCurrentEmployee();
+    }
+
+    const endpoint = isEmployee.value && currentEmployeeId.value
+      ? `/api/leave-requests/employee/${currentEmployeeId.value}`
+      : '/api/leave-requests/all';
+
+    const employeeResponsePromise = apiClient.get('/api/employees', { params: { per_page: 1000 } });
+    const requestsResponsePromise = apiClient.get(endpoint, {
+      params: { page: currentPage.value, per_page: pageSize.value },
+    });
+
     const [requestsResponse, employeeResponse] = await Promise.all([
-      apiClient.get('/api/leave-requests/all', {
-        params: { page: currentPage.value, per_page: pageSize.value },
-      }),
-      apiClient.get('/api/employees', { params: { per_page: 1000 } }),
+      requestsResponsePromise,
+      employeeResponsePromise,
     ]);
     const parsed = parsePaginated(requestsResponse);
     requests.value = parsed.items;
@@ -104,7 +139,7 @@ const openCreate = () => {
   modalMode.value = 'create';
   activeRequest.value = null;
   form.value = {
-    employee_id: '',
+    employee_id: isEmployee.value ? currentEmployeeId.value || '' : '',
     start_date: '',
     end_date: '',
     reason: '',
@@ -117,7 +152,7 @@ const openEdit = (request) => {
   modalMode.value = 'edit';
   activeRequest.value = request;
   form.value = {
-    employee_id: request?.employee_id || '',
+    employee_id: isEmployee.value ? currentEmployeeId.value || '' : request?.employee_id || '',
     start_date: request?.start_date || '',
     end_date: request?.end_date || '',
     reason: request?.reason || '',
@@ -140,7 +175,7 @@ const submitForm = async () => {
       start_date: form.value.start_date,
       end_date: form.value.end_date,
       reason: form.value.reason,
-      status: form.value.status,
+      status: isEmployee.value ? 'pending' : form.value.status,
     };
 
     if (modalMode.value === 'create') {
@@ -295,7 +330,7 @@ onMounted(loadRequests);
                         Edit
                       </button>
                       <button
-                        v-if="request.status === 'pending'"
+                        v-if="request.status === 'pending' && canApprove"
                         class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-200 transition hover:bg-emerald-300/20"
                         type="button"
                         @click="updateStatus(request, 'approved')"
@@ -303,7 +338,7 @@ onMounted(loadRequests);
                         Approve
                       </button>
                       <button
-                        v-if="request.status === 'pending'"
+                        v-if="request.status === 'pending' && canApprove"
                         class="rounded-full border border-amber-300/40 bg-amber-300/10 px-3 py-1 text-xs text-amber-200 transition hover:bg-amber-300/20"
                         type="button"
                         @click="updateStatus(request, 'rejected')"
@@ -392,6 +427,7 @@ onMounted(loadRequests);
               <select
                 v-model="form.employee_id"
                 required
+                :disabled="isEmployee"
                 class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
               >
                 <option value="" disabled>Select employee</option>
@@ -399,6 +435,9 @@ onMounted(loadRequests);
                   {{ employee.name || `Employee #${employee.id}` }}
                 </option>
               </select>
+              <span v-if="isEmployee" class="text-xs text-slate-400">
+                Your employee profile is used automatically.
+              </span>
             </label>
             <label class="flex flex-col gap-2 text-sm text-slate-200/80">
               <span>Start date</span>
@@ -431,6 +470,7 @@ onMounted(loadRequests);
               <select
                 v-model="form.status"
                 required
+                :disabled="isEmployee"
                 class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
               >
                 <option v-for="status in statuses" :key="status" :value="status">

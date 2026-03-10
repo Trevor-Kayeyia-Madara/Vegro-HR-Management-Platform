@@ -100,7 +100,19 @@ class EmployeeController extends Controller
     )]
     public function index()
     {
-        return ApiResponse::success(EmployeeResource::collection($this->employeeService->getAllEmployees()));   
+        $perPage = max((int) request()->query('per_page', 10), 1);
+        $user = auth()->user();
+
+        if ($user && $user->hasRole('employee')) {
+            $employee = \App\Models\Employee::where('user_id', $user->id)->first();
+            if (!$employee) {
+                return ApiResponse::success(EmployeeResource::collection(collect([])));
+            }
+            return ApiResponse::success(EmployeeResource::collection(collect([$employee])));
+        }
+
+        $employees = $this->employeeService->getEmployeesPaginated($perPage);
+        return ApiResponse::success(EmployeeResource::collection($employees));
     }
 
     #[OA\Get(
@@ -135,7 +147,16 @@ class EmployeeController extends Controller
     )]
     public function show($id)
     {
-        return ApiResponse::success(new EmployeeResource($this->employeeService->getEmployeeById($id)));
+        $employee = $this->employeeService->getEmployeeById($id);
+
+        $user = auth()->user();
+        if ($user && $user->hasRole('employee')) {
+            if ($employee->user_id !== $user->id) {
+                return ApiResponse::forbidden('You can only access your own profile');
+            }
+        }
+
+        return ApiResponse::success(new EmployeeResource($employee));
     }
 
     #[OA\Put(
@@ -187,6 +208,14 @@ class EmployeeController extends Controller
     public function update(Request $request, $id)
     {
         $employee = $this->employeeService->getEmployeeById($id);
+        $user = auth()->user();
+
+        if ($user && $user->hasRole('employee')) {
+            if ($employee->user_id !== $user->id) {
+                return ApiResponse::forbidden('You can only update your own profile');
+            }
+        }
+
         return ApiResponse::success($this->employeeService->updateEmployee($employee, $request->all()));
     }
 
@@ -222,7 +251,14 @@ class EmployeeController extends Controller
     )]
     public function destroy($id)
     {
-        return ApiResponse::success($this->employeeService->deleteEmployee($id));
+        $employee = $this->employeeService->getEmployeeById($id);
+        $user = auth()->user();
+
+        if ($user && $user->hasRole('employee')) {
+            return ApiResponse::forbidden('Employees cannot delete records');
+        }
+
+        return ApiResponse::success($this->employeeService->deleteEmployee($employee));
     }
 
     #[OA\Get(
@@ -257,6 +293,12 @@ class EmployeeController extends Controller
     )]
     public function getEmployeeByEmail($email)
     {
+        $user = auth()->user();
+        if ($user && $user->hasRole('employee')) {
+            if ($user->email !== $email) {
+                return ApiResponse::forbidden('You can only access your own profile');
+            }
+        }
         return ApiResponse::success($this->employeeService->getEmployeeByEmail($email));
     }
 
@@ -296,6 +338,10 @@ class EmployeeController extends Controller
     )]
     public function getEmployeesByDepartment($departmentId)
     {
+        $user = auth()->user();
+        if ($user && $user->hasRole('employee')) {
+            return ApiResponse::forbidden('Employees cannot view department rosters');
+        }
         return ApiResponse::success(EmployeeResource::collection($this->employeeService->getEmployeesByDepartment($departmentId)));
     }
 }

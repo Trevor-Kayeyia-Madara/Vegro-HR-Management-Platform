@@ -52,7 +52,14 @@ class AttendanceController extends Controller
     )]
     public function index()
     {
-        $attendances = $this->attendanceService->getAllAttendances();
+        $perPage = max((int) request()->query('per_page', 10), 1);
+        $user = auth()->user();
+        if ($user && $user->hasRole('manager')) {
+            $attendances = $this->attendanceService->getAttendancesForManagerPaginated($user->id, $perPage);
+            return ApiResponse::success($attendances, "Attendances retrieved successfully");
+        }
+
+        $attendances = $this->attendanceService->getAttendancesWithPagination($perPage);
         return ApiResponse::success($attendances, "Attendances retrieved successfully");
     }
 

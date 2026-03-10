@@ -44,7 +44,8 @@ class DepartmentController extends Controller
     )]
     public function index()
     {
-        return ApiResponse::success(Department::all(), "Departments retrieved successfully");
+        $perPage = max((int) request()->query('per_page', 10), 1);
+        return ApiResponse::success(Department::orderBy('created_at', 'desc')->paginate($perPage), "Departments retrieved successfully");
     }
 
     #[OA\Post(
@@ -84,7 +85,10 @@ class DepartmentController extends Controller
     )]
     public function store(Request $request)
     {
-        $validated = $request->validate(['name'=>'required|unique:departments']);
+        $validated = $request->validate([
+            'name' => 'required|unique:departments',
+            'description' => 'nullable|string',
+        ]);
         return Department::create($validated);
         return ApiResponse::success(Department::create($validated), "Department created successfully", 201);        
     }
@@ -175,7 +179,10 @@ class DepartmentController extends Controller
     )]
     public function update(Request $request, Department $department)
     {
-        $validated = $request->validate(['name'=>'required|unique:departments,name,'.$department->id]);
+        $validated = $request->validate([
+            'name' => 'required|unique:departments,name,'.$department->id,
+            'description' => 'nullable|string',
+        ]);
         $department->update($validated);
         return $department;
         return ApiResponse::success($department, "Department updated successfully");

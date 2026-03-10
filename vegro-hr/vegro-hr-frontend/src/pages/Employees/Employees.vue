@@ -4,6 +4,7 @@ import apiClient from '../../api/apiClient';
 import employeeService from '../../services/employeeService';
 import CreateEmployeeModal from '../../components/CreateEmployeeModal.vue';
 import EditEmployeeModal from '../../components/EditEmployeeModal.vue';
+import useAuth from '../../hooks/useAuth';
 
 defineOptions({ name: 'EmployeesPage' });
 
@@ -20,6 +21,8 @@ const selectedEmployee = ref(null);
 const searchQuery = ref('');
 const pageSize = ref(8);
 const currentPage = ref(1);
+const { hasRole } = useAuth();
+const canManageEmployees = computed(() => hasRole(['admin', 'hr']));
 const pagination = ref({
   current_page: 1,
   last_page: 1,
@@ -192,6 +195,7 @@ onMounted(loadEmployees);
             class="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-xs text-slate-200 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
           />
           <button
+            v-if="canManageEmployees"
             class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20"
             type="button"
             @click="openModal"
@@ -263,6 +267,7 @@ onMounted(loadEmployees);
                       View
                     </button>
                     <button
+                      v-if="canManageEmployees"
                       class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200 transition hover:bg-white/10"
                       type="button"
                       @click="openEdit(employee)"
@@ -270,6 +275,7 @@ onMounted(loadEmployees);
                       Edit
                     </button>
                     <button
+                      v-if="canManageEmployees"
                       class="rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs text-rose-200 transition hover:bg-rose-500/20"
                       type="button"
                       @click="deleteEmployee(employee)"

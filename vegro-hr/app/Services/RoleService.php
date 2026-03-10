@@ -24,12 +24,14 @@ class RoleService
 
     public function createRole(array $data)
     {
-        return $this->roleRepository->create($data);
+        $role = $this->roleRepository->create($data);
+        return $role?->load('permissions');
     }
 
     public function updateRole($id, array $data)
     {
-        return $this->roleRepository->update($id, $data);
+        $role = $this->roleRepository->update($id, $data);
+        return $role?->load('permissions');
     }
 
     public function deleteRole($id)

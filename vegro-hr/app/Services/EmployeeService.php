@@ -19,8 +19,14 @@ class EmployeeService
         return $this->employeeRepository->getAll();
     }
 
+    public function getEmployeesPaginated($perPage = 15)
+    {
+        return $this->employeeRepository->getPaginated($perPage);
+    }
+
     public function createEmployee(array $data)
     {
+        $roleIds = $data['role_ids'] ?? ($data['role_id'] ?? null);
         // Generate employee_number if not provided
         if (!isset($data['employee_number'])) {
             $data['employee_number'] = 'EMP' . date('Ymd') . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
@@ -32,7 +38,7 @@ class EmployeeService
         }
 
         // Remove first_name and last_name from data as they're not database columns
-        unset($data['first_name'], $data['last_name']);
+        unset($data['first_name'], $data['last_name'], $data['role_id'], $data['role_ids']);
 
         // Set default position if not provided
         if (!isset($data['position'])) {
@@ -44,11 +50,19 @@ class EmployeeService
             $data['hire_date'] = date('Y-m-d');
         }
 
-        return $this->employeeRepository->create($data);
+        $employee = $this->employeeRepository->create($data);
+
+        if ($roleIds) {
+            $ids = is_array($roleIds) ? $roleIds : [$roleIds];
+            $employee->role()->sync($ids);
+        }
+
+        return $employee->load(['department', 'role']);
     }
 
     public function updateEmployee(Employee $employee, array $data)
     {
+        $roleIds = $data['role_ids'] ?? ($data['role_id'] ?? null);
         // Combine first_name and last_name into name if both are provided
         if (isset($data['first_name']) && isset($data['last_name'])) {
             $data['name'] = $data['first_name'] . ' ' . $data['last_name'];
@@ -63,9 +77,16 @@ class EmployeeService
         }
 
         // Remove first_name and last_name from data as they're not database columns
-        unset($data['first_name'], $data['last_name']);
+        unset($data['first_name'], $data['last_name'], $data['role_id'], $data['role_ids']);
 
-        return $this->employeeRepository->update($employee, $data);
+        $updated = $this->employeeRepository->update($employee, $data);
+
+        if ($roleIds) {
+            $ids = is_array($roleIds) ? $roleIds : [$roleIds];
+            $updated->role()->sync($ids);
+        }
+
+        return $updated->load(['department', 'role']);
     }
 
     public function deleteEmployee(Employee $employee)

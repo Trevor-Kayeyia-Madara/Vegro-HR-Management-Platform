@@ -4,7 +4,7 @@ import useAuth from '../../hooks/useAuth';
 
 defineOptions({ name: 'UserProfilePage' });
 
-const { user, isLoading, error, checkAuth } = useAuth();
+const { user, isLoading, error, checkAuth, roleTitle } = useAuth();
 
 const displayName = computed(() => user.value?.name || user.value?.full_name || 'Unknown User');
 const displayEmail = computed(() => user.value?.email || 'Not provided');
@@ -21,6 +21,41 @@ const displayJoined = computed(() => user.value?.created_at || user.value?.creat
 const authStatus = computed(() => {
   if (isLoading.value) return 'Checking...';
   return user.value ? 'Authenticated' : 'Not authenticated';
+});
+
+const permissionBadges = computed(() => {
+  const role = roleTitle.value;
+  const map = {
+    admin: [
+      'Full access',
+      'User management',
+      'System settings',
+      'Payroll oversight',
+    ],
+    hr: [
+      'Employee management',
+      'Attendance tracking',
+      'Leave approvals',
+      'Payroll access',
+    ],
+    finance: [
+      'Payroll processing',
+      'Payslip management',
+      'Finance reports',
+    ],
+    manager: [
+      'Department leaves',
+      'Team approvals',
+      'Leave insights',
+    ],
+    employee: [
+      'My profile',
+      'Leave requests',
+      'Personal info',
+    ],
+  };
+
+  return map[role] || ['Standard access'];
 });
 
 onMounted(() => {
@@ -109,6 +144,15 @@ onMounted(() => {
             <p class="mt-2 text-xs text-slate-400/80">
               Permissions are determined by your role assignment in Vegro HR.
             </p>
+            <div class="mt-4 flex flex-wrap gap-2">
+              <span
+                v-for="badge in permissionBadges"
+                :key="badge"
+                class="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-200"
+              >
+                {{ badge }}
+              </span>
+            </div>
           </div>
         </aside>
       </div>

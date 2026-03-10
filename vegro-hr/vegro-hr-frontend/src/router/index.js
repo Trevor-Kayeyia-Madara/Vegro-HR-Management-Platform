@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router"
 
+import Landing from "../pages/Landing/Landing.vue"
+import Pricing from "../pages/Pricing/Pricing.vue"
 import Login from "../pages/Login/Login.vue"
 import DashboardLayout from "../layouts/DashboardLayout.vue"
 import DashboardHome from "../pages/Dashboard/Dashboard.vue"
@@ -13,12 +15,21 @@ import Payslips from "../pages/Payslips/Payslips.vue"
 import Users from "../pages/Users/Users.vue"
 import Profile from "../pages/Profile/Profile.vue"
 import TaxProfiles from "../pages/TaxProfiles/TaxProfiles.vue"
+import Settings from "../pages/Settings/Settings.vue"
+import Roles from "../pages/Roles/Roles.vue"
+import RoleMatrix from "../pages/Roles/RoleMatrix.vue"
 
 
 const routes = [
   {
     path: "/",
-    redirect: "/login"
+    name: "Landing",
+    component: Landing
+  },
+  {
+    path: "/pricing",
+    name: "Pricing",
+    component: Pricing
   },
   {
     path: "/login",
@@ -37,61 +48,80 @@ const routes = [
           {
             path: "home",
             name: "DashboardHome",
-            component: DashboardHome
+            component: DashboardHome,
+            meta: { roles: ['admin'], permissions: 'dashboard.view' }
           },
           {
             path: "employees",
             name: "Employees",
             component: Employees,
-            meta: { roles: ['admin', 'hr'] }
+            meta: { roles: ['admin', 'hr'], permissions: 'employees.view' }
           },
           {
             path: "departments",
             name: "Departments",
             component: Departments,
-            meta: { roles: ['admin', 'hr'] }
+            meta: { roles: ['admin', 'hr'], permissions: 'departments.view' }
           },
           {
             path: "tax-profiles",
             name: "TaxProfiles",
             component: TaxProfiles,
-            meta: { roles: ['admin'] }
+            meta: { roles: ['admin'], permissions: 'taxprofiles.view' }
           },
           {
             path: "users",
             name: "Users",
             component: Users,
-            meta: { roles: ['admin'] }
+            meta: { roles: ['admin'], permissions: 'users.manage' }
           },
           {
             path: "payroll",
             name: "Payroll",
             component: Payroll,
-            meta: { roles: ['admin', 'hr', 'finance'] }
+            meta: { roles: ['admin', 'hr', 'finance'], permissions: 'payroll.view' }
           },
           {
             path: "attendance",
             name: "Attendance",
             component: Attendance,
-            meta: { roles: ['admin', 'hr'] }
+            meta: { roles: ['admin', 'hr'], permissions: 'attendance.view' }
           },
           {
             path: "leaves",
             name: "Leaves",
             component: Leaves,
-            meta: { roles: ['admin', 'hr', 'manager', 'employee'] }
+            meta: { roles: ['admin', 'hr', 'manager', 'employee'], permissions: 'leaves.view' }
           },
           {
             path: "payslips",
             name: "Payslips",
             component: Payslips,
-            meta: { roles: ['admin', 'hr', 'finance'] }
+            meta: { roles: ['admin', 'hr', 'finance'], permissions: 'payslips.view' }
           },
           {
             path: "profile",
             name: "Profile",
             component: Profile,
-            meta: { roles: ['admin', 'hr', 'finance', 'manager', 'employee'] }
+            meta: { roles: ['admin', 'hr', 'finance', 'manager', 'employee'], permissions: 'profile.view' }
+          },
+          {
+            path: "settings",
+            name: "Settings",
+            component: Settings,
+            meta: { roles: ['admin'], permissions: 'settings.manage' }
+          },
+          {
+            path: "roles",
+            name: "Roles",
+            component: Roles,
+            meta: { roles: ['admin'], permissions: 'roles.manage' }
+          },
+          {
+            path: "role-matrix",
+            name: "RoleMatrix",
+            component: RoleMatrix,
+            meta: { roles: ['admin'], permissions: 'roles.manage' }
           }
         ]
       }

@@ -10,6 +10,11 @@ class PayslipRepository
         return Payslip::with('payroll.employee')->get();
     }
 
+    public function getPayslipsPaginated($perPage = 15)
+    {
+        return Payslip::with('payroll.employee')->paginate($perPage);
+    }
+
     public function getPayslipById($id)
     {
         return Payslip::with('payroll.employee')->findOrFail($id);

@@ -50,7 +50,8 @@ class PayslipController extends Controller
     )]
     public function index()
     {
-        return response()->json($this->payslipService->getAllPayslips());
+        $perPage = max((int) request()->query('per_page', 10), 1);
+        return ApiResponse::success($this->payslipService->getPayslipsPaginated($perPage), "Payslips retrieved successfully");
     }
 
     #[OA\Get(
