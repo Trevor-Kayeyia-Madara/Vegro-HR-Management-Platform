@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Services\RoleService;
+use App\Models\Role;
+use App\Models\User;
 use OpenApi\Attributes as OA;
 
 class RoleController extends Controller
@@ -231,5 +233,69 @@ class RoleController extends Controller
     public function destroy($id)
     {
         return response()->json(['success' => $this->roleService->deleteRole($id)]);
+    }
+
+    #[OA\Post(
+        path: "/api/roles/{role}/users/{user}",
+        operationId: "assignUserRoleByRoute",
+        description: "Attach a user to a role using route params",
+        summary: "Assign role to user (route params)",
+        tags: ["Roles"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "role",
+                in: "path",
+                required: true,
+                description: "Role ID",
+                schema: new OA\Schema(type: "integer")
+            ),
+            new OA\Parameter(
+                name: "user",
+                in: "path",
+                required: true,
+                description: "User ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Role assigned successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Role assigned successfully"),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 404, description: "User or role not found")
+        ]
+    )]
+    public function assignUserByRoute(Role $role, User $user)
+    {
+        $previousRoleId = $user->role_id;
+        $user->role_id = $role->id;
+        $user->save();
+        $user->load('role');
+
+        \DB::table('role_assignment_audits')->insert([
+            'user_id' => $user->id,
+            'role_id' => $role->id,
+            'previous_role_id' => $previousRoleId,
+            'assigned_by' => auth()->id(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Role assigned successfully',
+            'data' => [
+                'user' => $user,
+            ]
+        ]);
     }
 }
