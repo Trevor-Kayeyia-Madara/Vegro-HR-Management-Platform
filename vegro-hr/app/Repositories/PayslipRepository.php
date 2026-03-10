@@ -2,30 +2,30 @@
 
 namespace App\Repositories;
 use App\Models\Payslip;
-use App\Models\Employee;
 
 class PayslipRepository
 {
     public function getAllPayslips()
     {
-        return Payslip::with('employee')->get();
+        return Payslip::with('payroll.employee')->get();
     }
 
     public function getPayslipById($id)
     {
-        return Payslip::with('employee')->findOrFail($id);
+        return Payslip::with('payroll.employee')->findOrFail($id);
     }
 
     public function createPayslip($data)
     {
-        return Payslip::create($data);
+        $payslip = Payslip::create($data);
+        return $payslip->load('payroll.employee');
     }
 
     public function updatePayslip($id, $data)
     {
         $payslip = Payslip::findOrFail($id);
         $payslip->update($data);
-        return $payslip;
+        return $payslip->load('payroll.employee');
     }
 
     public function deletePayslip($id)
@@ -37,16 +37,24 @@ class PayslipRepository
 
     public function getPayslipsByEmployee($employeeId)
     {
-        return Payslip::where('employee_id', $employeeId)->get();
+        return Payslip::with('payroll.employee')
+            ->whereHas('payroll', function ($query) use ($employeeId) {
+                $query->where('employee_id', $employeeId);
+            })
+            ->get();
     }   
 
     public function exportPayslipsToCSV()
     {
-        $payslips = Payslip::with('employee')->get();
+        $payslips = Payslip::with('payroll.employee')->get();
         $csvData = "Employee Name,Month,Year,Net Salary\n";
 
         foreach ($payslips as $payslip) {
-            $csvData .= "{$payslip->employee->name},{$payslip->month},{$payslip->year},{$payslip->net_salary}\n";
+            $employeeName = $payslip->payroll?->employee?->name ?? '';
+            $month = $payslip->payroll?->month ?? '';
+            $year = $payslip->payroll?->year ?? '';
+            $netSalary = $payslip->payroll?->net_salary ?? '';
+            $csvData .= "{$employeeName},{$month},{$year},{$netSalary}\n";
         }
 
         return $csvData;

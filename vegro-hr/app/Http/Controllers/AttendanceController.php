@@ -6,6 +6,7 @@ use App\Http\Requests\StoreAttendanceRequest;
 use App\Http\Requests\UpdateAttendanceRequest;
 use App\Models\Attendance; 
 use App\Helpers\ApiResponse;
+use OpenApi\Attributes as OA;
 
 class AttendanceController extends Controller
 {
@@ -16,12 +17,80 @@ class AttendanceController extends Controller
         $this->attendanceService = $attendanceService;
     }
 
+    #[OA\Get(
+        path: "/api/attendance",
+        operationId: "getAttendances",
+        description: "Get list of all attendances",
+        summary: "List all attendances",
+        tags: ["Attendance"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Attendances retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Attendances retrieved successfully"),
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: "id", type: "integer"),
+                                    new OA\Property(property: "employee_id", type: "integer"),
+                                    new OA\Property(property: "date", type: "string", format: "date"),
+                                    new OA\Property(property: "status", type: "string", enum: ["present", "absent", "late", "excused"]),
+                                    new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                    new OA\Property(property: "updated_at", type: "string", format: "date-time")
+                                ]
+                            )
+                        )
+                    ]
+                )
+            )
+        ]
+    )]
     public function index()
     {
         $attendances = $this->attendanceService->getAllAttendances();
         return ApiResponse::success($attendances, "Attendances retrieved successfully");
     }
 
+    #[OA\Post(
+        path: "/api/attendance",
+        operationId: "storeAttendance",
+        description: "Create a new attendance record",
+        summary: "Create attendance",
+        tags: ["Attendance"],
+        requestBody: new OA\RequestBody(
+            description: "Attendance data",
+            required: true,
+            content: new OA\JsonContent(
+                type: "object",
+                required: ["employee_id", "date", "status"],
+                properties: [
+                    new OA\Property(property: "employee_id", type: "integer", description: "Employee ID", example: 1),
+                    new OA\Property(property: "date", type: "string", format: "date", description: "Attendance date", example: "2026-03-09"),
+                    new OA\Property(property: "status", type: "string", description: "Attendance status", enum: ["present", "absent", "late", "excused"], example: "present")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Attendance created successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Attendance created successfully"),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: "Error creating attendance"),
+            new OA\Response(response: 422, description: "Validation error")
+        ]
+    )]
     public function store(StoreAttendanceRequest $request)
     {
         try {
@@ -32,6 +101,36 @@ class AttendanceController extends Controller
         }
     }
 
+    #[OA\Get(
+        path: "/api/attendance/{id}",
+        operationId: "getAttendance",
+        description: "Get a specific attendance record",
+        summary: "Get attendance by ID",
+        tags: ["Attendance"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Attendance ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Attendance retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Attendance retrieved successfully"),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Attendance not found")
+        ]
+    )]
     public function show($id)
     {
         $attendance = $this->attendanceService->getAttendanceById($id);
@@ -41,6 +140,49 @@ class AttendanceController extends Controller
         return ApiResponse::notFound("Attendance not found");
     }
 
+    #[OA\Put(
+        path: "/api/attendance/{id}",
+        operationId: "updateAttendance",
+        description: "Update an attendance record",
+        summary: "Update attendance",
+        tags: ["Attendance"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Attendance ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            description: "Attendance data",
+            content: new OA\JsonContent(
+                type: "object",
+                properties: [
+                    new OA\Property(property: "employee_id", type: "integer", description: "Employee ID", example: 1, nullable: true),
+                    new OA\Property(property: "date", type: "string", format: "date", description: "Attendance date", example: "2026-03-09", nullable: true),
+                    new OA\Property(property: "status", type: "string", description: "Attendance status", enum: ["present", "absent", "late", "excused"], example: "present", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Attendance updated successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Attendance updated successfully"),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: "Error updating attendance"),
+            new OA\Response(response: 404, description: "Attendance not found"),
+            new OA\Response(response: 422, description: "Validation error")
+        ]
+    )]
     public function update(UpdateAttendanceRequest $request, Attendance $attendance)
     {
         try {
@@ -51,6 +193,37 @@ class AttendanceController extends Controller
         }
     }
 
+    #[OA\Delete(
+        path: "/api/attendance/{id}",
+        operationId: "destroyAttendance",
+        description: "Delete an attendance record",
+        summary: "Delete attendance",
+        tags: ["Attendance"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Attendance ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Attendance deleted successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Attendance deleted successfully"),
+                        new OA\Property(property: "data", type: "null")
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: "Error deleting attendance"),
+            new OA\Response(response: 404, description: "Attendance not found")
+        ]
+    )]
     public function destroy(Attendance $attendance)
     {
         if ($this->attendanceService->deleteAttendance($attendance)) {

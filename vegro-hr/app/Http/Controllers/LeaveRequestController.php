@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Services\LeaveService;
 use Illuminate\Http\Request;
 use App\Helpers\ApiResponse;
+use OpenApi\Attributes as OA;
+
 class LeaveRequestController extends Controller
 {
     protected $leaveService;
@@ -14,72 +16,423 @@ class LeaveRequestController extends Controller
         $this->leaveService = $leaveService;
     }
 
+    #[OA\Get(
+        path: "/api/leave-requests",
+        operationId: "getLeaveRequests",
+        description: "Get list of all leave requests",
+        summary: "List all leave requests",
+        tags: ["Leave Requests"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Leave requests retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: "id", type: "integer"),
+                                    new OA\Property(property: "employee_id", type: "integer"),
+                                    new OA\Property(property: "start_date", type: "string", format: "date"),
+                                    new OA\Property(property: "end_date", type: "string", format: "date"),
+                                    new OA\Property(property: "reason", type: "string"),
+                                    new OA\Property(property: "status", type: "string", enum: ["pending", "approved", "rejected"]),
+                                    new OA\Property(property: "created_at", type: "string", format: "date-time"),
+                                    new OA\Property(property: "updated_at", type: "string", format: "date-time")
+                                ]
+                            )
+                        )
+                    ]
+                )
+            )
+        ]
+    )]
     public function index()
     {
         return ApiResponse::success($this->leaveService->getAllLeaveRequests());
     }
 
+    #[OA\Post(
+        path: "/api/leave-requests",
+        operationId: "storeLeaveRequest",
+        description: "Create a new leave request",
+        summary: "Create leave request",
+        tags: ["Leave Requests"],
+        requestBody: new OA\RequestBody(
+            description: "Leave request data",
+            required: true,
+            content: new OA\JsonContent(
+                type: "object",
+                required: ["employee_id", "start_date", "end_date", "status"],
+                properties: [
+                    new OA\Property(property: "employee_id", type: "integer", description: "Employee ID", example: 1),
+                    new OA\Property(property: "start_date", type: "string", format: "date", description: "Leave start date", example: "2026-03-15"),
+                    new OA\Property(property: "end_date", type: "string", format: "date", description: "Leave end date", example: "2026-03-20"),
+                    new OA\Property(property: "reason", type: "string", description: "Reason for leave", example: "Vacation", nullable: true),
+                    new OA\Property(property: "status", type: "string", description: "Leave status", enum: ["pending", "approved", "rejected"], example: "pending")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Leave request created successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Leave request submitted successfully"),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Validation error")
+        ]
+    )]
     public function store(Request $request)
     {
         return ApiResponse::success($this->leaveService->requestLeave($request->all()), "Leave request submitted successfully", 201);
     }
 
+    #[OA\Get(
+        path: "/api/leave-requests/{id}",
+        operationId: "getLeaveRequest",
+        description: "Get a specific leave request",
+        summary: "Get leave request by ID",
+        tags: ["Leave Requests"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Leave Request ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Leave request retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Leave request not found")
+        ]
+    )]
+    public function show($id)
+    {
+        return $this->leaveService->getLeaveById($id);
+    }
+
+    #[OA\Post(
+        path: "/api/leave-requests/{id}/approve",
+        operationId: "approveLeaveRequest",
+        description: "Approve a leave request",
+        summary: "Approve leave request",
+        tags: ["Leave Requests"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Leave Request ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Leave request approved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Leave request not found")
+        ]
+    )]
     public function approve($id)
     {
         $leave = $this->leaveService->getLeaveById($id);
         return ApiResponse::success($this->leaveService->approveLeave($leave, auth()->id()));
     }
 
+    #[OA\Post(
+        path: "/api/leave-requests/{id}/reject",
+        operationId: "rejectLeaveRequest",
+        description: "Reject a leave request",
+        summary: "Reject leave request",
+        tags: ["Leave Requests"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Leave Request ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Leave request rejected successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Leave request not found")
+        ]
+    )]
     public function reject($id)
     {
         $leave = $this->leaveService->getLeaveById($id);
         return ApiResponse::success($this->leaveService->rejectLeave($leave, auth()->id()));
     }
 
+    #[OA\Delete(
+        path: "/api/leave-requests/{id}",
+        operationId: "deleteLeaveRequest",
+        description: "Delete a leave request",
+        summary: "Delete leave request",
+        tags: ["Leave Requests"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Leave Request ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Leave request deleted successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "null")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Leave request not found")
+        ]
+    )]
     public function destroy($id)
     {
         $leave = $this->leaveService->getLeaveById($id);
         return $this->leaveService->deleteLeave($leave);
     }
 
-    public function show($id)
-    {
-        return $this->leaveService->getLeaveById($id);
-    }
-
+    #[OA\Get(
+        path: "/api/leave-requests/employee/{employeeId}",
+        operationId: "getLeavesByEmployee",
+        description: "Get leave requests by employee",
+        summary: "Get leaves by employee",
+        tags: ["Leave Requests"],
+        parameters: [
+            new OA\Parameter(
+                name: "employeeId",
+                in: "path",
+                required: true,
+                description: "Employee ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Leave requests retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(type: "object"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Employee not found")
+        ]
+    )]
     public function getLeavesByEmployee($employeeId)
     {
         return $this->leaveService->getLeavesByEmployee($employeeId);
     }
 
+    #[OA\Get(
+        path: "/api/leave-requests/status/pending",
+        operationId: "getPendingLeaves",
+        description: "Get pending leave requests",
+        summary: "Get pending leaves",
+        tags: ["Leave Requests"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Pending leave requests retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(type: "object"))
+                    ]
+                )
+            )
+        ]
+    )]
     public function getPendingLeaves()
     {
         return $this->leaveService->getPendingLeaves();
     }
 
+    #[OA\Get(
+        path: "/api/leave-requests/status/approved",
+        operationId: "getApprovedLeaves",
+        description: "Get approved leave requests",
+        summary: "Get approved leaves",
+        tags: ["Leave Requests"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Approved leave requests retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(type: "object"))
+                    ]
+                )
+            )
+        ]
+    )]
     public function getApprovedLeaves()
     {
         return $this->leaveService->getApprovedLeaves();
     }
 
+    #[OA\Get(
+        path: "/api/leave-requests/status/rejected",
+        operationId: "getRejectedLeaves",
+        description: "Get rejected leave requests",
+        summary: "Get rejected leaves",
+        tags: ["Leave Requests"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Rejected leave requests retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(type: "object"))
+                    ]
+                )
+            )
+        ]
+    )]
     public function getRejectedLeaves()
     {
         return $this->leaveService->getRejectedLeaves();
     }
-    
+
+    #[OA\Get(
+        path: "/api/leave-requests/all",
+        operationId: "getAllLeaveRequests",
+        description: "Get all leave requests",
+        summary: "Get all leave requests",
+        tags: ["Leave Requests"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "All leave requests retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(type: "object"))
+                    ]
+                )
+            )
+        ]
+    )]
     public function getAllLeaveRequests()
     {
         return ApiResponse::success($this->leaveService->getAllLeaveRequests());
     }
 
+    #[OA\Get(
+        path: "/api/leave-requests/status/{status}",
+        operationId: "getLeaveRequestsByStatus",
+        description: "Get leave requests by status",
+        summary: "Get leaves by status",
+        tags: ["Leave Requests"],
+        parameters: [
+            new OA\Parameter(
+                name: "status",
+                in: "path",
+                required: true,
+                description: "Leave status",
+                schema: new OA\Schema(type: "string", enum: ["pending", "approved", "rejected"])
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Leave requests retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(type: "object"))
+                    ]
+                )
+            )
+        ]
+    )]
     public function getLeaveRequestsByStatus($status)
     {
         return ApiResponse::success($this->leaveService->getLeaveRequestsByStatus($status));
     }
 
+    #[OA\Get(
+        path: "/api/leave-requests/export/csv",
+        operationId: "exportLeavesToCSV",
+        description: "Export leave requests to CSV",
+        summary: "Export leaves to CSV",
+        tags: ["Leave Requests"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Leave requests exported successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "string")
+                    ]
+                )
+            )
+        ]
+    )]
     public function exportLeavesToCSV()
     {
         return ApiResponse::success($this->leaveService->exportLeavesToCSV());
     }
 }
+
     

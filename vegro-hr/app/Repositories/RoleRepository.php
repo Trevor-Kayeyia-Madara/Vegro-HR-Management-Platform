@@ -12,7 +12,7 @@ class RoleRepository
 
     public function getRoleIdByName($name)
     {
-        $role = Role::where('name', $name)->first();
+        $role = Role::where('title', $name)->first();
         return $role ? $role->id : null;
     }
 
@@ -23,7 +23,7 @@ class RoleRepository
 
     public function findByName($name)
     {
-        return Role::where('name', $name)->first();
+        return Role::where('title', $name)->first();
     }
 
     public function create(array $data)
