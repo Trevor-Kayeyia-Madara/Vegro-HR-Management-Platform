@@ -7,7 +7,7 @@ class RoleRepository
 {
     public function all()
     {
-        return Role::all();
+        return Role::with('permissions')->get();
     }
 
     public function getRoleIdByName($name)
@@ -18,7 +18,7 @@ class RoleRepository
 
     public function find($id)
     {
-        return Role::find($id);
+        return Role::with('permissions')->find($id);
     }
 
     public function findByName($name)

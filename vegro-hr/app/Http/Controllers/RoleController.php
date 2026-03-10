@@ -5,6 +5,8 @@ use Illuminate\Http\Request;
 use App\Services\RoleService;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Permission;
+use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
 class RoleController extends Controller
@@ -296,6 +298,164 @@ class RoleController extends Controller
             'data' => [
                 'user' => $user,
             ]
+        ]);
+    }
+
+    #[OA\Get(
+        path: "/api/permissions",
+        operationId: "getPermissions",
+        description: "Get list of all permissions",
+        summary: "List all permissions",
+        tags: ["Permissions"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Permissions retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items())
+                    ]
+                )
+            )
+        ]
+    )]
+    public function permissions()
+    {
+        return response()->json([
+            'success' => true,
+            'message' => '',
+            'data' => Permission::orderBy('group')->orderBy('label')->get(),
+        ]);
+    }
+
+    #[OA\Get(
+        path: "/api/roles/permissions/matrix",
+        operationId: "getRolePermissionMatrix",
+        description: "Get role-permission matrix",
+        summary: "Role permission matrix",
+        tags: ["Roles"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Matrix retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(
+                            property: "data",
+                            properties: [
+                                new OA\Property(property: "roles", type: "array", items: new OA\Items()),
+                                new OA\Property(property: "permissions", type: "array", items: new OA\Items())
+                            ]
+                        )
+                    ]
+                )
+            )
+        ]
+    )]
+    public function permissionsMatrix()
+    {
+        $roles = Role::with('permissions')->orderBy('title')->get();
+        $permissions = Permission::orderBy('group')->orderBy('label')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => '',
+            'data' => [
+                'roles' => $roles,
+                'permissions' => $permissions,
+            ],
+        ]);
+    }
+
+    #[OA\Put(
+        path: "/api/roles/{role}/permissions",
+        operationId: "updateRolePermissions",
+        description: "Update permissions for a role",
+        summary: "Update role permissions",
+        tags: ["Roles"],
+        parameters: [
+            new OA\Parameter(
+                name: "role",
+                in: "path",
+                required: true,
+                description: "Role ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            description: "Permission IDs",
+            required: true,
+            content: new OA\JsonContent(
+                type: "object",
+                required: ["permission_ids"],
+                properties: [
+                    new OA\Property(
+                        property: "permission_ids",
+                        type: "array",
+                        items: new OA\Items(type: "integer")
+                    )
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Permissions updated successfully"),
+            new OA\Response(response: 422, description: "Validation error")
+        ]
+    )]
+    public function updatePermissions(Request $request, Role $role)
+    {
+        $validated = $request->validate([
+            'permission_ids' => 'required|array',
+            'permission_ids.*' => 'integer|exists:permissions,id',
+        ]);
+
+        $newIds = collect($validated['permission_ids'])->unique()->values()->all();
+        $currentIds = $role->permissions()->pluck('permissions.id')->all();
+
+        $added = array_values(array_diff($newIds, $currentIds));
+        $removed = array_values(array_diff($currentIds, $newIds));
+
+        $role->permissions()->sync($newIds);
+
+        $now = now();
+        $auditRows = [];
+        foreach ($added as $permissionId) {
+            $auditRows[] = [
+                'role_id' => $role->id,
+                'permission_id' => $permissionId,
+                'assigned_by' => auth()->id(),
+                'action' => 'assigned',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        foreach ($removed as $permissionId) {
+            $auditRows[] = [
+                'role_id' => $role->id,
+                'permission_id' => $permissionId,
+                'assigned_by' => auth()->id(),
+                'action' => 'revoked',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if (count($auditRows)) {
+            DB::table('permission_assignment_audits')->insert($auditRows);
+        }
+
+        $role->load('permissions');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Permissions updated successfully',
+            'data' => [
+                'role' => $role,
+            ],
         ]);
     }
 }

@@ -10,21 +10,19 @@ class RoleSeeder extends Seeder
     public function run(): void
     {
         $roles = [
-         ['title' => 'Admin', 'description' => 'Administrator with full access'],
-         ['title' => 'Manager', 'description' => 'Manager with limited access'],
-         ['title' => 'Employee', 'description' => 'Employee with basic access'],
+         ['title' => 'Super Admin', 'description' => 'Global administrator with full access'],
+         ['title' => 'Company Admin', 'description' => 'Company-level administrator with full access'],
          ['title' => 'HR', 'description' => 'Human Resources with access to employee data'],
          ['title' => 'Finance', 'description' => 'Finance team with access to financial data'],
-         ['title' => 'IT', 'description' => 'IT team with access to technical resources'],
-         ['title' => 'Sales', 'description' => 'Sales team with access to sales data'],
-         ['title' => 'Marketing', 'description' => 'Marketing team with access to marketing data'],
-         ['title' => 'Support', 'description' => 'Support team with access to customer support data'],
-         ['title' => 'Intern', 'description' => 'Intern with limited access for learning purposes'],
+         ['title' => 'Manager', 'description' => 'Manager with limited access'],
+         ['title' => 'Employee', 'description' => 'Employee with basic access'],
         ];
 
         foreach ($roles as $role) {
-            \App\Models\Role::create($role);
+            \App\Models\Role::firstOrCreate(
+                ['title' => $role['title']],
+                $role,
+            );
         }
     }
 }
-

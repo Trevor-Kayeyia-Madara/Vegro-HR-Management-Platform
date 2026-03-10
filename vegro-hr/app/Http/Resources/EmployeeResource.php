@@ -15,6 +15,7 @@ class EmployeeResource extends JsonResource
             'phone' => $this->phone,
             'department' => $this->department->name ?? null,
             'role' => $this->role->first()?->title ?? null,
+            'roles' => $this->role->pluck('title'),
             'salary' => $this->salary,
             'created_at' => $this->created_at
         ];

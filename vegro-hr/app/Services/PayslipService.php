@@ -17,6 +17,11 @@ class PayslipService
         return $this->payslipRepository->getAllPayslips();
     }
 
+    public function getPayslipsPaginated($perPage = 15)
+    {
+        return $this->payslipRepository->getPayslipsPaginated($perPage);
+    }
+
     public function getPayslipById($id)
     {
         return $this->payslipRepository->getPayslipById($id);

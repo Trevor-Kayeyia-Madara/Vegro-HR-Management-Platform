@@ -7,16 +7,26 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
     tailwindcss(),
     vueJsx(),
-    vueDevTools(),
-  ],
+    mode === 'development' ? vueDevTools() : null,
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
-})
+  build: {
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          apexcharts: ['apexcharts', 'vue3-apexcharts'],
+        },
+      },
+    },
+  },
+}))

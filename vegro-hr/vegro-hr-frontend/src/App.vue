@@ -1,12 +1,31 @@
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import useAuth from './hooks/useAuth';
 
 const { checkAuth } = useAuth();
+const route = useRoute();
+
+const shouldCheck = () => route.path.startsWith('/dashboard');
+
+const runCheck = () => {
+  if (!shouldCheck()) return;
+  const token = localStorage.getItem('vegro_hr_token');
+  if (token) {
+    checkAuth();
+  }
+};
 
 onMounted(() => {
-  checkAuth();
+  runCheck();
 });
+
+watch(
+  () => route.fullPath,
+  () => {
+    runCheck();
+  },
+);
 </script>
 
 <template>

@@ -1,20 +1,78 @@
-use App\Http\Controllers\DepartmentController;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\PayrollController;
-use App\Http\Controllers\PayslipController;
-use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\LeaveRequestController;
-use App\Http\Controllers\AuthController;
+<?php
+
 use Illuminate\Support\Facades\Route;
 
-Route::apiResource('departments', DepartmentController::class);
-Route::apiResource('employees', EmployeeController::class);
-Route::apiResource('payrolls', PayrollController::class);
-Route::apiResource('payslips', PayslipController::class);
-Route::apiResource('attendances', AttendanceController::class);
-Route::apiResource('leave-requests', LeaveRequestController::class);
-Route::apiResource('auth/register', AuthController::class)->only(['store']);
-Route::apiResource('auth/login', AuthController::class)->only(['login']);
-Route::apiResource('auth/logout', AuthController::class)->only(['logout']);
-Route::apiResource('auth/me', AuthController::class)->only(['me']);
-Route::apiResource('auth/check', AuthController::class)->only(['authCheck']);
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Root `/` route returns JSON with dynamic API URLs based on APP_URL.
+|
+*/
+
+Route::get('/', function () {
+    $base = rtrim(config('app.url'), '/'); // Get APP_URL from .env
+
+    return response()->json([
+        'message' => 'Welcome to Vegro HR API',
+        'routes' => [
+            'departments' => $base . '/api/departments',
+            'employees' => $base . '/api/employees',
+            'payrolls' => $base . '/api/payrolls',
+            'payslips' => $base . '/api/payslips',
+            'attendances' => $base . '/api/attendances',
+            'leave-requests' => $base . '/api/leave-requests',
+            'auth' => [
+                'login' => $base . '/api/auth/login',
+                'register' => $base . '/api/auth/register',
+                'logout' => $base . '/api/auth/logout',
+                'me' => $base . '/api/auth/me',
+                'check' => $base . '/api/auth/check',
+            ]
+        ]
+    ]);
+});
+
+// Authentication Routes
+Route::post('/auth/register', 'App\Http\Controllers\AuthController@store');
+Route::post('/auth/login', 'App\Http\Controllers\AuthController@login');
+Route::post('/auth/logout', 'App\Http\Controllers\AuthController@logout')->middleware('check.api.token');
+Route::get('/auth/me', 'App\Http\Controllers\AuthController@me')->middleware('check.api.token');
+Route::get('/auth/check', 'App\Http\Controllers\AuthController@authCheck');
+
+// Protected Routes (require authentication)
+Route::middleware('check.api.token')->group(function () {
+    Route::apiResource('departments', 'App\Http\Controllers\DepartmentController')->middleware('role:admin,hr');
+    Route::get('/employees', 'App\Http\Controllers\EmployeeController@index')->middleware('role:admin,hr,finance,employee');
+    Route::post('/employees', 'App\Http\Controllers\EmployeeController@store')->middleware('role:admin,hr');
+    Route::get('/employees/{employee}', 'App\Http\Controllers\EmployeeController@show')->middleware('role:admin,hr,finance,employee');
+    Route::put('/employees/{employee}', 'App\Http\Controllers\EmployeeController@update')->middleware('role:admin,hr,employee');
+    Route::delete('/employees/{employee}', 'App\Http\Controllers\EmployeeController@destroy')->middleware('role:admin,hr');
+    Route::get('/employees/email/{email}', 'App\Http\Controllers\EmployeeController@getEmployeeByEmail')->middleware('role:admin,hr,finance,employee');
+    Route::get('/employees/department/{departmentId}', 'App\Http\Controllers\EmployeeController@getEmployeesByDepartment')->middleware('role:admin,hr');
+    
+    Route::apiResource('payrolls', 'App\Http\Controllers\PayrollController')->middleware('role:admin,hr,finance');
+    Route::apiResource('payslips', 'App\Http\Controllers\PayslipController')->middleware('role:admin,hr,finance');
+    Route::get('/payslips/export/csv', 'App\Http\Controllers\PayslipController@exportToCSV')->middleware('role:admin,hr,finance');
+    
+    Route::apiResource('attendances', 'App\Http\Controllers\AttendanceController')->middleware('role:admin,hr,manager');
+    
+    Route::get('/leave-requests/pending', 'App\Http\Controllers\LeaveRequestController@getPendingLeaves')->middleware('role:admin,hr,manager');
+    Route::get('/leave-requests/approved', 'App\Http\Controllers\LeaveRequestController@getApprovedLeaves')->middleware('role:admin,hr,manager');
+    Route::get('/leave-requests/rejected', 'App\Http\Controllers\LeaveRequestController@getRejectedLeaves')->middleware('role:admin,hr,manager');
+    Route::get('/leave-requests/employee/{employeeId}', 'App\Http\Controllers\LeaveRequestController@getLeaveRequestsByEmployee')->middleware('role:admin,hr,manager,employee');
+    Route::post('/leave-requests/{leaveRequest}/approve', 'App\Http\Controllers\LeaveRequestController@approve')->middleware('role:admin,hr,manager');
+    Route::post('/leave-requests/{leaveRequest}/reject', 'App\Http\Controllers\LeaveRequestController@reject')->middleware('role:admin,hr,manager');
+    Route::get('leave-requests/all','App\Http\Controllers\LeaveRequestController@getAllLeaveRequests')->middleware('role:admin,hr,manager');
+    Route::get('/leave-requests/export/csv', 'App\Http\Controllers\LeaveRequestController@exportLeavesToCSV')->middleware('role:admin,hr,manager');
+    Route::apiResource('leave-requests', 'App\Http\Controllers\LeaveRequestController')->middleware('role:admin,hr,manager,employee');
+    
+    Route::apiResource('roles', 'App\Http\Controllers\RoleController')->middleware('role:admin');
+    Route::get('/permissions', 'App\Http\Controllers\RoleController@permissions')->middleware('role:admin');
+    Route::get('/roles/permissions/matrix', 'App\Http\Controllers\RoleController@permissionsMatrix')->middleware('role:admin');
+    Route::put('/roles/{role}/permissions', 'App\Http\Controllers\RoleController@updatePermissions')->middleware('role:admin');
+    Route::apiResource('users', 'App\Http\Controllers\UserController')->middleware('role:admin');
+    Route::apiResource('tax-profiles', 'App\Http\Controllers\TaxProfileController')->middleware('role:admin');
+    Route::post('/roles/{role}/users/{user}', 'App\Http\Controllers\RoleController@assignUserByRoute')->middleware('role:admin');
+});

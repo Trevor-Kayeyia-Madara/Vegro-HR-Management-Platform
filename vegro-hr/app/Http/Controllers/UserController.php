@@ -10,6 +10,13 @@ use OpenApi\Attributes as OA;
 
 class UserController extends Controller
 {
+    protected function isProtectedAdmin(User $user): bool
+    {
+        $roleTitle = strtolower(trim((string) ($user->role?->title ?? '')));
+        $roleTitle = str_replace([' ', '-', '_'], '', $roleTitle);
+        return in_array($roleTitle, ['superadmin', 'companyadmin'], true);
+    }
+
     #[OA\Get(
         path: "/api/users",
         operationId: "listUsers",
@@ -47,7 +54,8 @@ class UserController extends Controller
     )]
     public function index()
     {
-        return ApiResponse::success(User::with('role')->get(), "Users retrieved successfully");
+        $perPage = max((int) request()->query('per_page', 10), 1);
+        return ApiResponse::success(User::with('role')->paginate($perPage), "Users retrieved successfully");
     }
 
     #[OA\Post(
@@ -188,15 +196,11 @@ class UserController extends Controller
     )]
     public function update(Request $request, User $user)
     {
-        if (
-            $user->id === 1 ||
-            $user->role_id === 1 ||
-            $user->name === 'Admin User' ||
-            $user->email === 'admin@example.com'
-        ) {
+        $user->loadMissing('role');
+        if ($this->isProtectedAdmin($user)) {
             $payload = $request->only(['name', 'email', 'role_id']);
             if (!empty($payload)) {
-                return ApiResponse::forbidden('Admin User cannot be modified');
+                return ApiResponse::forbidden('Protected admin user cannot be modified');
             }
         }
 
@@ -242,13 +246,9 @@ class UserController extends Controller
     )]
     public function destroy(User $user)
     {
-        if (
-            $user->id === 1 ||
-            $user->role_id === 1 ||
-            $user->name === 'Admin User' ||
-            $user->email === 'admin@example.com'
-        ) {
-            return ApiResponse::forbidden('Admin User cannot be deleted');
+        $user->loadMissing('role');
+        if ($this->isProtectedAdmin($user)) {
+            return ApiResponse::forbidden('Protected admin user cannot be deleted');
         }
 
         $user->delete();

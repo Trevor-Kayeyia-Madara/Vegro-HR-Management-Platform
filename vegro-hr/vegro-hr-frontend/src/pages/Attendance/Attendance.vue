@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import apiClient from '../../api/apiClient';
+import useAuth from '../../hooks/useAuth';
 
 defineOptions({ name: 'AttendancePage' });
 
@@ -30,6 +31,8 @@ const form = ref({
 });
 
 const statuses = ['present', 'absent', 'late', 'excused'];
+const { hasRole } = useAuth();
+const canManageAttendance = computed(() => hasRole(['admin', 'hr']));
 
 const unwrapList = (response) => {
   if (Array.isArray(response?.data)) return response.data;
@@ -204,6 +207,7 @@ onMounted(loadAttendance);
             class="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-xs text-slate-200 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
           />
           <button
+            v-if="canManageAttendance"
             class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20"
             type="button"
             @click="openCreate"
@@ -264,6 +268,7 @@ onMounted(loadAttendance);
                   <td class="px-6 py-4">
                     <div class="flex items-center justify-end gap-2">
                       <button
+                        v-if="canManageAttendance"
                         class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200 transition hover:bg-white/10"
                         type="button"
                         @click="openEdit(record)"
@@ -271,6 +276,7 @@ onMounted(loadAttendance);
                         Edit
                       </button>
                       <button
+                        v-if="canManageAttendance"
                         class="rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs text-rose-200 transition hover:bg-rose-500/20"
                         type="button"
                         @click="deleteRecord(record)"

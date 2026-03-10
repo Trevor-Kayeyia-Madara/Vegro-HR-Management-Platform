@@ -1,8 +1,11 @@
+<!-- eslint-disable no-unused-vars -->
 <script setup>
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import useAuth from '../hooks/useAuth';
 import {
   LayoutDashboard,
+  Grid2x2,
   UserRound,
   Users,
   Building2,
@@ -12,6 +15,8 @@ import {
   CalendarDays,
   FileText,
   LogOut,
+  Settings,
+  ShieldCheck,
 } from 'lucide-vue-next';
 
 defineOptions({ name: 'SidebarNav' });
@@ -25,28 +30,46 @@ const emit = defineEmits(['close']);
 
 const route = useRoute();
 const router = useRouter();
+const { hasRole, hasPermission, logout: authLogout } = useAuth();
 
-const navItems = [
-  { label: 'Dashboard', to: '/dashboard/home', icon: LayoutDashboard },
-  { label: 'Users', to: '/dashboard/users', icon: UserRound },
-  { label: 'Employees', to: '/dashboard/employees', icon: Users },
-  { label: 'Departments', to: '/dashboard/departments', icon: Building2 },
-  { label: 'Tax Profiles', to: '/dashboard/tax-profiles', icon: Landmark },
-  { label: 'Payroll', to: '/dashboard/payroll', icon: Wallet },
-  { label: 'Attendance', to: '/dashboard/attendance', icon: ClipboardCheck },
-  { label: 'Leaves', to: '/dashboard/leaves', icon: CalendarDays },
-  { label: 'Payslips', to: '/dashboard/payslips', icon: FileText },
-  { label: 'Profile', to: '/dashboard/profile', icon: FileText },
+const adminNavItems = [
+  { label: 'Dashboard', to: '/dashboard/home', icon: LayoutDashboard, roles: ['admin'], permissions: 'dashboard.view' },
+  { label: 'Users', to: '/dashboard/users', icon: UserRound, roles: ['admin'], permissions: 'users.manage' },
+  { label: 'RBAC Roles', to: '/dashboard/roles', icon: ShieldCheck, roles: ['admin'], permissions: 'roles.manage' },
+  { label: 'Profile', to: '/dashboard/profile', icon: FileText, roles: ['admin', 'hr', 'finance', 'manager', 'employee'], permissions: 'profile.view' },
+  { label: 'Settings', to: '/dashboard/settings', icon: Settings, roles: ['admin'], permissions: 'settings.manage' },
+];
+
+const standardNavItems = [
+  { label: 'Employees', to: '/dashboard/employees', icon: Users, roles: ['admin', 'hr'], permissions: 'employees.view' },
+  { label: 'Departments', to: '/dashboard/departments', icon: Building2, roles: ['admin', 'hr'], permissions: 'departments.view' },
+  { label: 'Payroll', to: '/dashboard/payroll', icon: Wallet, roles: ['admin', 'hr', 'finance'], permissions: 'payroll.view' },
+  { label: 'Attendance', to: '/dashboard/attendance', icon: ClipboardCheck, roles: ['admin', 'hr'], permissions: 'attendance.view' },
+  { label: 'Leaves', to: '/dashboard/leaves', icon: CalendarDays, roles: ['admin', 'hr', 'manager', 'employee'], permissions: 'leaves.view' },
+  { label: 'Payslips', to: '/dashboard/payslips', icon: FileText, roles: ['admin', 'hr', 'finance'], permissions: 'payslips.view' },
+  { label: 'Profile', to: '/dashboard/profile', icon: FileText, roles: ['admin', 'hr', 'finance', 'manager', 'employee'], permissions: 'profile.view' },
 ];
 
 const isActive = (path) => route.path === path;
 
-const logout = () => {
+const isAdmin = computed(() => hasRole(['admin']));
+
+const visibleNavItems = computed(() => {
+  const items = isAdmin.value ? adminNavItems : standardNavItems;
+  return items.filter((item) => {
+    const roleAllowed = !item.roles || hasRole(item.roles);
+    const permissionAllowed = !item.permissions || hasPermission(item.permissions);
+    return roleAllowed && permissionAllowed;
+  });
+});
+
+const logout = async () => {
+  await authLogout();
   router.push('/login');
   emit('close');
 };
 
-const activeLabel = computed(() => navItems.find((item) => isActive(item.to))?.label || 'Dashboard');
+const activeLabel = computed(() => visibleNavItems.value.find((item) => isActive(item.to))?.label || 'Menu');
 
 const handleNavigate = () => {
   if (props.isMobile) emit('close');
@@ -68,7 +91,7 @@ const handleNavigate = () => {
 
     <nav class="flex flex-1 flex-col gap-2">
       <RouterLink
-        v-for="item in navItems"
+        v-for="item in visibleNavItems"
         :key="item.label"
         :to="item.to"
         class="group flex items-center gap-3 rounded-2xl border border-transparent px-3 py-3 text-sm text-slate-200 transition hover:border-white/10 hover:bg-white/5"

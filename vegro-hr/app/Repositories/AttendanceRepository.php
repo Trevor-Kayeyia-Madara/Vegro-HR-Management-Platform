@@ -6,7 +6,12 @@ class AttendanceRepository
 {
     public function getAll()
     {
-        return Attendance::all();
+        return Attendance::with('employee')->get();
+    }
+
+    public function getPaginated($perPage = 15)
+    {
+        return Attendance::with('employee')->paginate($perPage);
     }
 
     public function create(array $data)

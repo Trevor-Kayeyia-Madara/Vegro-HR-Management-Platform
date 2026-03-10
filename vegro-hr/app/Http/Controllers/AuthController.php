@@ -113,7 +113,7 @@ class AuthController extends Controller
         if (isset($result['error'])) {
             return ApiResponse::error($result['error'], 401);
         }
-        
+
         return ApiResponse::success(['message' => 'Login successful', 'token' => $result['token']]);
     }   
 
@@ -180,7 +180,11 @@ class AuthController extends Controller
     )]
     public function me()
     {
-        return ApiResponse::success(['user' => auth()->user()]);
+        $user = auth()->user();
+        if ($user) {
+            $user->load('role.permissions');
+        }
+        return ApiResponse::success(['user' => $user]);
     }   
 
     #[OA\Get(

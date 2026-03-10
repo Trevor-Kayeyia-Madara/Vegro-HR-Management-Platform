@@ -16,6 +16,39 @@ class LeaveRequestController extends Controller
         $this->leaveService = $leaveService;
     }
 
+    protected function userCanApprove($leave): bool
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->hasRole(['admin', 'hr'])) {
+            return true;
+        }
+
+        if ($user->hasRole('manager')) {
+            $departmentId = $leave?->employee?->department_id;
+            if (!$departmentId) {
+                return false;
+            }
+            return \App\Models\Department::where('id', $departmentId)
+                ->where('manager_id', $user->id)
+                ->exists();
+        }
+
+        return false;
+    }
+
+    protected function resolveEmployeeForUser($user)
+    {
+        if (!$user) {
+            return null;
+        }
+
+        return \App\Models\Employee::where('user_id', $user->id)->first();
+    }
+
     #[OA\Get(
         path: "/api/leave-requests",
         operationId: "getLeaveRequests",
@@ -53,7 +86,22 @@ class LeaveRequestController extends Controller
     )]
     public function index()
     {
-        return ApiResponse::success($this->leaveService->getAllLeaveRequests());
+        $perPage = max((int) request()->query('per_page', 10), 1);
+        $user = auth()->user();
+
+        if ($user && $user->hasRole('employee')) {
+            $employee = $this->resolveEmployeeForUser($user);
+            if (!$employee) {
+                return ApiResponse::success(collect([]));
+            }
+            return ApiResponse::success($this->leaveService->getLeavesByEmployee($employee->id));
+        }
+
+        if ($user && $user->hasRole('manager')) {
+            return ApiResponse::success($this->leaveService->getLeavesForManagerPaginated($user->id, $perPage));
+        }
+
+        return ApiResponse::success($this->leaveService->getAllLeaveRequestsPaginated($perPage));
     }
 
     #[OA\Post(
@@ -94,7 +142,18 @@ class LeaveRequestController extends Controller
     )]
     public function store(Request $request)
     {
-        return ApiResponse::success($this->leaveService->requestLeave($request->all()), "Leave request submitted successfully", 201);
+        $user = auth()->user();
+        $payload = $request->all();
+
+        if ($user && $user->hasRole('employee')) {
+            $employee = $this->resolveEmployeeForUser($user);
+            if (!$employee) {
+                return ApiResponse::error('Employee profile not found', 404);
+            }
+            $payload['employee_id'] = $employee->id;
+        }
+
+        return ApiResponse::success($this->leaveService->requestLeave($payload), "Leave request submitted successfully", 201);
     }
 
     #[OA\Get(
@@ -129,7 +188,17 @@ class LeaveRequestController extends Controller
     )]
     public function show($id)
     {
-        return $this->leaveService->getLeaveById($id);
+        $leave = $this->leaveService->getLeaveById($id);
+        $user = auth()->user();
+
+        if ($user && $user->hasRole('employee')) {
+            $employee = $this->resolveEmployeeForUser($user);
+            if (!$employee || $leave->employee_id !== $employee->id) {
+                return ApiResponse::forbidden('You can only view your own leave requests');
+            }
+        }
+
+        return $leave;
     }
 
     #[OA\Post(
@@ -165,6 +234,9 @@ class LeaveRequestController extends Controller
     public function approve($id)
     {
         $leave = $this->leaveService->getLeaveById($id);
+        if (!$this->userCanApprove($leave)) {
+            return ApiResponse::forbidden('You are not allowed to approve this leave request');
+        }
         return ApiResponse::success($this->leaveService->approveLeave($leave, auth()->id()));
     }
 
@@ -201,6 +273,9 @@ class LeaveRequestController extends Controller
     public function reject($id)
     {
         $leave = $this->leaveService->getLeaveById($id);
+        if (!$this->userCanApprove($leave)) {
+            return ApiResponse::forbidden('You are not allowed to reject this leave request');
+        }
         return ApiResponse::success($this->leaveService->rejectLeave($leave, auth()->id()));
     }
 
@@ -237,6 +312,13 @@ class LeaveRequestController extends Controller
     public function destroy($id)
     {
         $leave = $this->leaveService->getLeaveById($id);
+        $user = auth()->user();
+        if ($user && $user->hasRole('employee')) {
+            $employee = $this->resolveEmployeeForUser($user);
+            if (!$employee || $leave->employee_id !== $employee->id) {
+                return ApiResponse::forbidden('You can only delete your own leave requests');
+            }
+        }
         return $this->leaveService->deleteLeave($leave);
     }
 
@@ -272,6 +354,13 @@ class LeaveRequestController extends Controller
     )]
     public function getLeavesByEmployee($employeeId)
     {
+        $user = auth()->user();
+        if ($user && $user->hasRole('employee')) {
+            $employee = $this->resolveEmployeeForUser($user);
+            if (!$employee || (int) $employeeId !== (int) $employee->id) {
+                return ApiResponse::forbidden('You can only view your own leave requests');
+            }
+        }
         return $this->leaveService->getLeavesByEmployee($employeeId);
     }
 
@@ -297,6 +386,13 @@ class LeaveRequestController extends Controller
     )]
     public function getPendingLeaves()
     {
+        if (!auth()->user()?->hasRole(['admin', 'hr', 'manager'])) {
+            return ApiResponse::forbidden('Forbidden');
+        }
+        $user = auth()->user();
+        if ($user && $user->hasRole('manager')) {
+            return $this->leaveService->getLeavesForManagerByStatus($user->id, 'pending');
+        }
         return $this->leaveService->getPendingLeaves();
     }
 
@@ -322,6 +418,13 @@ class LeaveRequestController extends Controller
     )]
     public function getApprovedLeaves()
     {
+        if (!auth()->user()?->hasRole(['admin', 'hr', 'manager'])) {
+            return ApiResponse::forbidden('Forbidden');
+        }
+        $user = auth()->user();
+        if ($user && $user->hasRole('manager')) {
+            return $this->leaveService->getLeavesForManagerByStatus($user->id, 'approved');
+        }
         return $this->leaveService->getApprovedLeaves();
     }
 
@@ -347,6 +450,13 @@ class LeaveRequestController extends Controller
     )]
     public function getRejectedLeaves()
     {
+        if (!auth()->user()?->hasRole(['admin', 'hr', 'manager'])) {
+            return ApiResponse::forbidden('Forbidden');
+        }
+        $user = auth()->user();
+        if ($user && $user->hasRole('manager')) {
+            return $this->leaveService->getLeavesForManagerByStatus($user->id, 'rejected');
+        }
         return $this->leaveService->getRejectedLeaves();
     }
 
@@ -372,7 +482,15 @@ class LeaveRequestController extends Controller
     )]
     public function getAllLeaveRequests()
     {
-        return ApiResponse::success($this->leaveService->getAllLeaveRequests());
+        if (!auth()->user()?->hasRole(['admin', 'hr', 'manager'])) {
+            return ApiResponse::forbidden('Forbidden');
+        }
+        $perPage = max((int) request()->query('per_page', 10), 1);
+        $user = auth()->user();
+        if ($user && $user->hasRole('manager')) {
+            return ApiResponse::success($this->leaveService->getLeavesForManagerPaginated($user->id, $perPage));
+        }
+        return ApiResponse::success($this->leaveService->getAllLeaveRequestsPaginated($perPage));
     }
 
     #[OA\Get(
@@ -406,6 +524,9 @@ class LeaveRequestController extends Controller
     )]
     public function getLeaveRequestsByStatus($status)
     {
+        if (!auth()->user()?->hasRole(['admin', 'hr', 'manager'])) {
+            return ApiResponse::forbidden('Forbidden');
+        }
         return ApiResponse::success($this->leaveService->getLeaveRequestsByStatus($status));
     }
 
@@ -431,6 +552,9 @@ class LeaveRequestController extends Controller
     )]
     public function exportLeavesToCSV()
     {
+        if (!auth()->user()?->hasRole(['admin', 'hr', 'manager'])) {
+            return ApiResponse::forbidden('Forbidden');
+        }
         return ApiResponse::success($this->leaveService->exportLeavesToCSV());
     }
 }

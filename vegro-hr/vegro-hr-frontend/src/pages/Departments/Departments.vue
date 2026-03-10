@@ -11,6 +11,7 @@ const isModalOpen = ref(false);
 const modalMode = ref('create');
 const activeDepartment = ref(null);
 const nameInput = ref('');
+const descriptionInput = ref('');
 const isSubmitting = ref(false);
 const searchQuery = ref('');
 const pageSize = ref(8);
@@ -98,6 +99,7 @@ const openCreate = () => {
   modalMode.value = 'create';
   activeDepartment.value = null;
   nameInput.value = '';
+  descriptionInput.value = '';
   isModalOpen.value = true;
 };
 
@@ -105,6 +107,7 @@ const openEdit = (department) => {
   modalMode.value = 'edit';
   activeDepartment.value = department;
   nameInput.value = department?.name || '';
+  descriptionInput.value = department?.description || '';
   isModalOpen.value = true;
 };
 
@@ -118,9 +121,15 @@ const submitForm = async () => {
 
   try {
     if (modalMode.value === 'create') {
-      await apiClient.post('/api/departments', { name: nameInput.value });
+      await apiClient.post('/api/departments', {
+        name: nameInput.value,
+        description: descriptionInput.value,
+      });
     } else if (activeDepartment.value?.id) {
-      await apiClient.put(`/api/departments/${activeDepartment.value.id}`, { name: nameInput.value });
+      await apiClient.put(`/api/departments/${activeDepartment.value.id}`, {
+        name: nameInput.value,
+        description: descriptionInput.value,
+      });
     }
     await loadDepartments();
     closeModal();
@@ -184,17 +193,18 @@ onMounted(loadDepartments);
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
         <div class="max-h-130 overflow-auto">
           <div class="overflow-x-auto">
-            <table class="min-w-150 w-full text-left text-xs sm:text-sm">
+            <table class="min-w-200 w-full text-left text-xs sm:text-sm">
             <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
               <tr>
                 <th class="px-6 py-4 font-medium">ID</th>
                 <th class="px-6 py-4 font-medium">Name</th>
+                <th class="px-6 py-4 font-medium hidden lg:table-cell">Description</th>
                 <th class="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
               <tr v-if="isLoading">
-                <td class="px-6 py-6 text-center text-slate-400" colspan="3">
+                <td class="px-6 py-6 text-center text-slate-400" colspan="4">
                   Loading departments...
                 </td>
               </tr>
@@ -205,6 +215,9 @@ onMounted(loadDepartments);
               >
                 <td class="px-6 py-4 font-medium text-slate-100">{{ department.id }}</td>
                 <td class="px-6 py-4 text-slate-200/80">{{ department.name }}</td>
+                <td class="px-6 py-4 text-slate-300/80 hidden lg:table-cell">
+                  {{ department.description || 'â€”' }}
+                </td>
                 <td class="px-6 py-4">
                   <div class="flex items-center justify-end gap-2">
                     <button
@@ -225,7 +238,7 @@ onMounted(loadDepartments);
                 </td>
               </tr>
               <tr v-if="!isLoading && !filteredDepartments.length">
-                <td class="px-6 py-6 text-center text-slate-400" colspan="3">
+                <td class="px-6 py-6 text-center text-slate-400" colspan="4">
                   No departments found yet.
                 </td>
               </tr>
@@ -303,6 +316,14 @@ onMounted(loadDepartments);
                 required
                 class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
               />
+            </label>
+            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+              <span>Description</span>
+              <textarea
+                v-model="descriptionInput"
+                rows="3"
+                class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+              ></textarea>
             </label>
 
             <button

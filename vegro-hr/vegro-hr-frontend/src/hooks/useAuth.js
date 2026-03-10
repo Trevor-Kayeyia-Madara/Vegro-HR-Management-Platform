@@ -1,9 +1,45 @@
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import authService from '../services/authService';
 
 const user = ref(null);
 const isLoading = ref(false);
 const error = ref('');
+
+const normalizeRole = (value) => {
+  const normalized = String(value || '')
+    .toLowerCase()
+    .replace(/[\s-_]/g, '');
+  const aliases = {
+    hrmanager: 'hr',
+    humanresourcesmanager: 'hr',
+  };
+  return aliases[normalized] || normalized;
+};
+
+const roleTitle = computed(() =>
+  normalizeRole(user.value?.role?.title || user.value?.role?.name || user.value?.role),
+);
+
+const isAdmin = computed(() =>
+  ['admin', 'administrator', 'superadmin', 'companyadmin', 'companyadministrator'].includes(roleTitle.value),
+);
+
+const permissions = computed(() => user.value?.role?.permissions || []);
+
+const hasRole = (roles = []) => {
+  if (isAdmin.value) return true;
+  const list = Array.isArray(roles) ? roles : [roles];
+  const normalized = list.map((role) => normalizeRole(role));
+  return normalized.includes(roleTitle.value);
+};
+
+const hasPermission = (permissionKey) => {
+  if (isAdmin.value) return true;
+  if (!permissionKey) return true;
+  const keys = Array.isArray(permissionKey) ? permissionKey : [permissionKey];
+  const normalized = keys.map((key) => normalizeRole(key));
+  return permissions.value.some((permission) => normalized.includes(normalizeRole(permission?.key)));
+};
 
 const fetchUser = async () => {
   error.value = '';
@@ -11,7 +47,8 @@ const fetchUser = async () => {
 
   try {
     const response = await authService.getCurrentUser();
-    user.value = response?.data?.user ?? response?.data ?? null;
+    const payload = response?.data?.data ?? response?.data ?? null;
+    user.value = payload?.user ?? payload ?? null;
     return user.value;
   } catch (err) {
     user.value = null;
@@ -44,6 +81,11 @@ export default function useAuth() {
     user,
     isLoading,
     error,
+    roleTitle,
+    isAdmin,
+    permissions,
+    hasRole,
+    hasPermission,
     checkAuth,
     fetchUser,
     logout,

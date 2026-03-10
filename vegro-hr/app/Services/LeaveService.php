@@ -63,7 +63,7 @@ class LeaveService
 
     public function getLeavesWithPagination($perPage = 15)
     {
-            return LeaveRequest::paginate($perPage);
+        return LeaveRequest::with(['employee', 'approver'])->paginate($perPage);
     }
 
     public function getLeavesByStatus($status)
@@ -74,6 +74,40 @@ class LeaveService
     public function getAllLeaveRequests()
     {
         return LeaveRequest::with(['employee','approver'])->get();
+    }
+
+    public function getAllLeaveRequestsPaginated($perPage = 15)
+    {
+        return LeaveRequest::with(['employee', 'approver'])->paginate($perPage);
+    }
+
+    public function getLeavesForManagerPaginated($managerId, $perPage = 15)
+    {
+        $departmentIds = \App\Models\Department::where('manager_id', $managerId)->pluck('id');
+        if ($departmentIds->isEmpty()) {
+            return LeaveRequest::whereRaw('1=0')->paginate($perPage);
+        }
+
+        return LeaveRequest::with(['employee', 'approver'])
+            ->whereHas('employee', function ($query) use ($departmentIds) {
+                $query->whereIn('department_id', $departmentIds);
+            })
+            ->paginate($perPage);
+    }
+
+    public function getLeavesForManagerByStatus($managerId, $status)
+    {
+        $departmentIds = \App\Models\Department::where('manager_id', $managerId)->pluck('id');
+        if ($departmentIds->isEmpty()) {
+            return collect([]);
+        }
+
+        return LeaveRequest::with(['employee', 'approver'])
+            ->where('status', $status)
+            ->whereHas('employee', function ($query) use ($departmentIds) {
+                $query->whereIn('department_id', $departmentIds);
+            })
+            ->get();
     }
 
     public function getLeaveStatistics()
