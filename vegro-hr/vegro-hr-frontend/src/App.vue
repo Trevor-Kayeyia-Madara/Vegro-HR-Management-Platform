@@ -1,4 +1,13 @@
-<script setup></script>
+<script setup>
+import { onMounted } from 'vue';
+import useAuth from './hooks/useAuth';
+
+const { checkAuth } = useAuth();
+
+onMounted(() => {
+  checkAuth();
+});
+</script>
 
 <template>
   <router-view />
