@@ -2,9 +2,11 @@
 
 namespace App\Repositories;
 use App\Models\User;
+use App\Models\ApiToken;
 use App\Repositories\RoleRepository;
 use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AuthRepository
 {
@@ -32,8 +34,16 @@ class AuthRepository
         $user = User::where('email', $credentials['email'])->first();
 
         if ($user && Hash::check($credentials['password'], $user->password)) {
-            // Generate a new authentication token for the user
-            $token = $user->createToken('auth_token')->plainTextToken;
+            // Generate a simple token
+            $token = hash_hmac('sha256', Str::random(32) . $user->id, config('app.key'));
+            
+            // Store token in database
+            ApiToken::create([
+                'user_id' => $user->id,
+                'token' => $token,
+                'expires_at' => now()->addDays(30),
+            ]);
+            
             return ['user' => $user, 'token' => $token];
         }
 
@@ -45,8 +55,9 @@ class AuthRepository
 
     public function logout($user)
     {
-        // Revoke the user's authentication token
-        $user->tokens()->delete();
+        // Delete user's tokens
+        ApiToken::where('user_id', $user->id)->delete();
+        return true;
     }
 
     public function getRoleIdByName($name)

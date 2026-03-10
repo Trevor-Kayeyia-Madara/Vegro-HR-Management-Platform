@@ -10,11 +10,11 @@ class EmployeeResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->first_name . ' ' . $this->last_name,
+            'name' => $this->name ?? null,
             'email' => $this->email,
             'phone' => $this->phone,
             'department' => $this->department->name ?? null,
-            'role' => $this->role->name ?? null,
+            'role' => $this->role->first()?->title ?? null,
             'salary' => $this->salary,
             'created_at' => $this->created_at
         ];
