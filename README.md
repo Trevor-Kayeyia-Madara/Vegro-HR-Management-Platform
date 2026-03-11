@@ -1,132 +1,72 @@
-# Vegro HR — Employee Management & Payroll System
+# Vegro HR
 
-## Overview
+Modern HR platform for employee management, payroll, attendance, and access control. Built as a portfolio-grade system with clean domain modeling, API-ready modules, and room for a rich front-end experience.
 
-Vegro HR is a modern Employee Management and Payroll system built with Laravel, designed for small to medium businesses.
+**Highlights**
+- End-to-end HR core: employees, departments, attendance, leave, payroll, payslips
+- Role-based access with audit-friendly activity logs
+- Laravel-first architecture with clear module boundaries
+- Designed for Phase 3 UI expansion and analytics
 
-This system allows you to:
+**Project Layout**
+- `vegro-hr/` Laravel backend and core modules
+- `vegro-hr/vegro-hr-frontend/` UI workspace (in progress)
 
-- Create and manage employee records
-- Track departments and roles
-- Handle payroll generation and payslips
-- Manage attendance and leave requests
-- Integrate roles and permissions for secure access
-- Log activity with MongoDB for audit purposes
+**Tech Stack**
+- Backend: PHP 8, Laravel 10
+- Database: MySQL (core HR), MongoDB (activity logs)
+- Auth: Laravel Breeze + Spatie Permissions
+- UI (Phase 3): Blade + Tailwind CSS / Livewire
 
-This README covers the current Phase 2, which includes full database architecture and backend modules.
+**Core Modules**
+- Departments: structure, managers, assignments
+- Employees: profiles, positions, salary, status
+- Attendance: clock-in/out, status tracking
+- Leave Requests: approval workflows
+- Payroll + Payslips: net salary calculation and records
+- Activity Logs: audit trail for critical actions
 
-## Tech Stack
+**API Snapshot**
+| Module | Endpoint | Method | Description |
+|---|---|---|---|
+| Departments | `/departments` | GET | List all departments |
+| Departments | `/departments` | POST | Create a department |
+| Employees | `/employees` | GET | List all employees |
+| Payrolls | `/payrolls` | POST | Create payroll |
+| Payslips | `/payslips` | POST | Generate payslip |
+| Attendance | `/attendances` | POST | Record attendance |
+| Leave | `/leave-requests` | POST | Submit leave request |
 
-- **Backend:** PHP 8, Laravel 10
-- **Database:** MySQL (core HR data), MongoDB (activity logs)
-- **Authentication & Authorization:** Laravel Breeze / Spatie Permissions
-- **Frontend (Phase 3 upcoming):** Blade + Tailwind CSS / Livewire (planned)
-
-## Phase 2 — Core Modules & Database
-
-### Tables & Relationships
-
-**Departments**
-
-- Fields: `id`, `name`, `manager_id`
-- Relationships: 1 department → many employees
-
-**Employees**
-
-- Fields: `id`, `employee_number`, `user_id`, `name`, `email`, `phone`, `department_id`, `position`, `salary`, `hire_date`, `status`
-- Relationships: belongs to department, has many payrolls, attendance, leave requests
-
-**Payrolls & Payslips**
-
-- Payroll: calculates `net_salary` automatically
-- Payslip: linked to payroll, stores PDF path
-
-**Attendance**
-
-- Tracks clock in/out and status (present, absent, late)
-
-**Leave Requests**
-
-- Tracks leave type, start/end dates, status, approved by user
-
-**Users / Roles & Permissions**
-
-- Roles via Spatie package
-- Users assigned roles with permissions
-
-**Activity Logs (MongoDB)**
-
-- Stores user actions, timestamps, and metadata for auditing
-
-### Module Features (Phase 2)
-
-- Full MCR (Model + Controller + Resource) structure
-- CRUD operations ready for:
-  - Departments
-  - Employees
-  - Payrolls & Payslips
-  - Attendance
-  - Leave Requests
-- Relationships defined and validated
-- Net salary calculation and payslip generation logic implemented
-
-## Installation
-
+**Quick Start**
 ```bash
-# Clone the repository
 git clone https://github.com/Trevor-Kayeyia-Madara/vegro.git
-cd vegro
-
-# Install dependencies
+cd vegro/vegro-hr
 composer install
 npm install
 npm run dev
-
-# Configure .env file
-# DB_CONNECTION=mysql
-# DB_HOST=127.0.0.1
-# DB_PORT=3306
-# DB_DATABASE=vegro_hr
-# DB_USERNAME=root
-# DB_PASSWORD=
-
-# Run migrations
 php artisan migrate
-
-# Seed initial data (optional)
 php artisan db:seed
-
-# Serve the app
 php artisan serve
 ```
 
-## API Endpoints (Phase 2)
+**Environment**
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=vegro_hr
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-| Module       | Endpoint             | Method | Description                  |
-|--------------|-------------------|--------|------------------------------|
-| Departments  | /departments       | GET    | List all departments         |
-| Departments  | /departments       | POST   | Create a department          |
-| Employees    | /employees         | GET    | List all employees           |
-| Payrolls     | /payrolls          | POST   | Create payroll               |
-| Payslips     | /payslips          | POST   | Generate payslip             |
-| Attendance   | /attendances       | POST   | Record attendance            |
-| Leave        | /leave-requests    | POST   | Submit leave request         |
+**Roadmap**
+- Phase 3 UI: modern dashboard, real-time Livewire components
+- PDF payslips and exportable reports
+- Analytics and workforce insights
 
-## Next Steps (Phase 3)
+**Notes**
+- Backend implementation details live in `vegro-hr/README.md`.
+- This repo is intended as a portfolio project; contributions are welcome.
 
-- Build modern UI dashboard using Tailwind CSS and Blade
-- Implement Livewire components for real-time updates
-- Add PDF generation for payslips
-- Integrate reporting and analytics dashboards
-
-## Contributing
-
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m "feat: description"`)
-4. Push to branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
-
-## License
-
-MIT License — free for personal and commercial use.
+**License**
+MIT License � free for personal and commercial use.
