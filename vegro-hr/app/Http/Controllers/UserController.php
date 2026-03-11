@@ -109,6 +109,30 @@ class UserController extends Controller
         $user = User::create($validated);
         $user->load('role');
 
+        $roleTitle = strtolower(trim((string) ($user->role?->title ?? '')));
+        $roleTitle = str_replace([' ', '-', '_'], '', $roleTitle);
+        if (!in_array($roleTitle, ['superadmin', 'companyadmin'], true)) {
+            $defaultDepartmentId = \App\Models\Department::value('id');
+            $employee = \App\Models\Employee::updateOrCreate(
+                ['email' => $user->email],
+                [
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'department_id' => $defaultDepartmentId,
+                    'position' => $user->role?->title ?? 'Employee',
+                    'salary' => 0,
+                    'hire_date' => now()->toDateString(),
+                    'employee_number' => 'EMP' . date('Ymd') . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT),
+                    'status' => 'active',
+                ]
+            );
+
+            if ($user->role_id) {
+                $employee->roles()->syncWithoutDetaching([$user->role_id]);
+            }
+        }
+
         return ApiResponse::success($user, "User created successfully", 201);
     }
 

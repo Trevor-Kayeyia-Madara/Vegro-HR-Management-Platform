@@ -1,8 +1,9 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import apiClient from '../../api/apiClient';
+import useAuth from '../../hooks/useAuth';
 
-defineOptions({ name: 'DepartmentsPage' });
+defineOptions({ name: 'Org UnitsPage' });
 
 const departments = ref([]);
 const isLoading = ref(true);
@@ -16,6 +17,8 @@ const isSubmitting = ref(false);
 const searchQuery = ref('');
 const pageSize = ref(8);
 const currentPage = ref(1);
+const { hasPermission } = useAuth();
+const canManageDepartments = computed(() => hasPermission('departments.manage'));
 const pagination = ref({
   current_page: 1,
   last_page: 1,
@@ -157,13 +160,13 @@ onMounted(loadDepartments);
 
 <template>
   <div class="min-h-full bg-slate-950 text-white">
-    <div class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">Departments</p>
           <h1 class="text-3xl font-semibold">Departments</h1>
           <p class="mt-2 text-sm text-slate-300/70">
-            Create, edit, and manage organizational departments.
+            Create, edit, and manage enterprise business units.
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
@@ -174,11 +177,12 @@ onMounted(loadDepartments);
             class="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-xs text-slate-200 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
           />
           <button
+            v-if="canManageDepartments"
             class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20"
             type="button"
             @click="openCreate"
           >
-            Add department
+            Add unit
           </button>
         </div>
       </div>
@@ -191,9 +195,9 @@ onMounted(loadDepartments);
       </p>
 
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="max-h-130 overflow-auto">
+        <div class="max-h-150 overflow-auto">
           <div class="overflow-x-auto">
-            <table class="min-w-200 w-full text-left text-xs sm:text-sm">
+            <table class="min-w-250 w-full text-left text-xs sm:text-sm">
             <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
               <tr>
                 <th class="px-6 py-4 font-medium">ID</th>
@@ -221,6 +225,7 @@ onMounted(loadDepartments);
                 <td class="px-6 py-4">
                   <div class="flex items-center justify-end gap-2">
                     <button
+                      v-if="canManageDepartments"
                       class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200 transition hover:bg-white/10"
                       type="button"
                       @click="openEdit(department)"
@@ -228,6 +233,7 @@ onMounted(loadDepartments);
                       Edit
                     </button>
                     <button
+                      v-if="canManageDepartments"
                       class="rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs text-rose-200 transition hover:bg-rose-500/20"
                       type="button"
                       @click="deleteDepartment(department)"
@@ -239,7 +245,7 @@ onMounted(loadDepartments);
               </tr>
               <tr v-if="!isLoading && !filteredDepartments.length">
                 <td class="px-6 py-6 text-center text-slate-400" colspan="4">
-                  No departments found yet.
+                  No units found yet.
                 </td>
               </tr>
             </tbody>
@@ -281,33 +287,27 @@ onMounted(loadDepartments);
     <transition name="fade">
       <div
         v-if="isModalOpen"
-        class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm"
+        class="vegro-modal-overlay"
         @click="closeModal"
       ></div>
     </transition>
 
     <transition name="slide-up">
-      <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div class="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-[0_30px_90px_rgba(15,23,42,0.75)]">
-          <div class="flex items-center justify-between">
+      <div v-if="isModalOpen" class="vegro-modal-wrap">
+        <div class="vegro-modal">
+          <div class="vegro-modal-header">
             <div>
-              <p class="text-xs uppercase tracking-[0.24em] text-emerald-200/80">
+              <p class="vegro-modal-title">
                 {{ modalMode === 'create' ? 'Create' : 'Edit' }} Department
               </p>
-              <h2 class="text-2xl font-semibold">
-                {{ modalMode === 'create' ? 'New Department' : 'Update Department' }}
+              <h2 class="vegro-modal-subtitle">
+                {{ modalMode === 'create' ? 'New Unit' : 'Update Unit' }}
               </h2>
             </div>
-            <button
-              class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200"
-              type="button"
-              @click="closeModal"
-            >
-              Close
-            </button>
+            <button class="vegro-modal-close" type="button" @click="closeModal">Close</button>
           </div>
 
-          <form class="mt-6 flex flex-col gap-4" @submit.prevent="submitForm">
+          <form class="vegro-modal-body flex flex-col gap-4" @submit.prevent="submitForm">
             <label class="flex flex-col gap-2 text-sm text-slate-200/80">
               <span>Department name</span>
               <input
@@ -331,7 +331,7 @@ onMounted(loadDepartments);
               type="submit"
               :disabled="isSubmitting"
             >
-              {{ isSubmitting ? 'Saving...' : 'Save department' }}
+              {{ isSubmitting ? 'Saving...' : 'Save unit' }}
             </button>
           </form>
         </div>

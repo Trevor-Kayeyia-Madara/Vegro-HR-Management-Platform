@@ -249,14 +249,14 @@ onMounted(loadDashboard);
     <div class="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
       <section class="flex flex-col gap-4">
         <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">
-          Vegro HR Control Center
+          Vegro Command Center
         </p>
         <h1 class="text-3xl font-semibold leading-tight sm:text-4xl">
-          Multi-tenant HR insights in one decisive dashboard.
+          Enterprise workforce insights in one decisive dashboard.
         </h1>
         <p class="max-w-2xl text-sm text-slate-200/70 sm:text-base">
-          Track workforce health, compliance, and payroll readiness across all business units.
-          Metrics are pulled live from your HR API.
+          Track workforce health, compliance, and payroll readiness across your enterprise.
+          Metrics are streamed live from your operational data.
         </p>
         <div class="flex flex-wrap items-center gap-3 text-xs text-slate-300/80">
           <span v-if="isLoading" class="rounded-full border border-white/10 bg-white/5 px-3 py-1">
@@ -365,7 +365,7 @@ onMounted(loadDashboard);
         <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
           <h2 class="text-lg font-semibold">Today at a glance</h2>
           <p class="mt-2 text-sm text-slate-300/70">
-            Attendance, leave requests, and payroll approvals are now streamed from your backend.
+            Attendance, leave requests, and payroll approvals are now streamed from your operations layer.
           </p>
           <div class="mt-6 grid gap-4 sm:grid-cols-2">
             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">

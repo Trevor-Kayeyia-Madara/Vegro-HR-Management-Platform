@@ -7,6 +7,11 @@ defineOptions({ name: 'LeaveRequestsPage' });
 
 const requests = ref([]);
 const employees = ref([]);
+const approvers = ref({
+  manager: null,
+  hr: [],
+  directors: [],
+});
 const isLoading = ref(true);
 const errorMessage = ref('');
 const isModalOpen = ref(false);
@@ -15,6 +20,7 @@ const activeRequest = ref(null);
 const isSubmitting = ref(false);
 
 const searchQuery = ref('');
+const statusFilter = ref('all');
 const pageSize = ref(8);
 const currentPage = ref(1);
 const pagination = ref({
@@ -29,17 +35,16 @@ const form = ref({
   start_date: '',
   end_date: '',
   reason: '',
-  status: 'pending',
 });
 
-const statuses = ['pending', 'approved', 'rejected'];
-
-const { user, roleTitle, isAdmin, checkAuth } = useAuth();
+const { user, roleTitle, isAdmin, checkAuth, hasPermission } = useAuth();
 const isEmployee = computed(() => roleTitle.value === 'employee');
-const canApprove = computed(() =>
-  isAdmin.value || ['hr', 'manager'].includes(roleTitle.value),
-);
+const canApprove = computed(() => hasPermission('leaves.approve'));
+const canManageRequests = computed(() => hasPermission('leaves.manage'));
 const currentEmployeeId = ref(null);
+const currentEmployee = computed(() =>
+  employees.value.find((employee) => employee.id === currentEmployeeId.value),
+);
 
 const resolveCurrentEmployee = async () => {
   if (!user.value?.email) return null;
@@ -118,16 +123,19 @@ const loadRequests = async () => {
     const requestsResponsePromise = apiClient.get(endpoint, {
       params: { page: currentPage.value, per_page: pageSize.value },
     });
+    const approverResponsePromise = apiClient.get('/api/leave-requests/approvers');
 
-    const [requestsResponse, employeeResponse] = await Promise.all([
+    const [requestsResponse, employeeResponse, approverResponse] = await Promise.all([
       requestsResponsePromise,
       employeeResponsePromise,
+      approverResponsePromise,
     ]);
     const parsed = parsePaginated(requestsResponse);
     requests.value = parsed.items;
     pagination.value = parsed.meta;
     currentPage.value = parsed.meta.current_page;
     employees.value = unwrapList(employeeResponse);
+    approvers.value = approverResponse?.data?.data || approvers.value;
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || 'Unable to load leave requests.';
   } finally {
@@ -143,7 +151,6 @@ const openCreate = () => {
     start_date: '',
     end_date: '',
     reason: '',
-    status: 'pending',
   };
   isModalOpen.value = true;
 };
@@ -156,7 +163,6 @@ const openEdit = (request) => {
     start_date: request?.start_date || '',
     end_date: request?.end_date || '',
     reason: request?.reason || '',
-    status: request?.status || 'pending',
   };
   isModalOpen.value = true;
 };
@@ -175,7 +181,6 @@ const submitForm = async () => {
       start_date: form.value.start_date,
       end_date: form.value.end_date,
       reason: form.value.reason,
-      status: isEmployee.value ? 'pending' : form.value.status,
     };
 
     if (modalMode.value === 'create') {
@@ -220,11 +225,12 @@ const updateStatus = async (request, status) => {
 
 const filteredRequests = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
-  if (!query) return requests.value;
   return requests.value.filter((request) => {
     const employeeName = request?.employee?.name?.toLowerCase() || '';
     const status = request?.status?.toLowerCase() || '';
-    return employeeName.includes(query) || status.includes(query);
+    const matchesQuery = !query || employeeName.includes(query) || status.includes(query);
+    const matchesStatus = statusFilter.value === 'all' || status === statusFilter.value;
+    return matchesQuery && matchesStatus;
   });
 });
 
@@ -258,7 +264,42 @@ onMounted(loadRequests);
             placeholder="Search leave..."
             class="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-xs text-slate-200 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
           />
+          <div class="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs">
+            <button
+              class="rounded-full px-3 py-1 transition"
+              :class="statusFilter === 'all' ? 'bg-emerald-300/20 text-emerald-200' : 'text-slate-300/70'"
+              type="button"
+              @click="statusFilter = 'all'"
+            >
+              All
+            </button>
+            <button
+              class="rounded-full px-3 py-1 transition"
+              :class="statusFilter === 'pending' ? 'bg-amber-300/20 text-amber-200' : 'text-slate-300/70'"
+              type="button"
+              @click="statusFilter = 'pending'"
+            >
+              Pending
+            </button>
+            <button
+              class="rounded-full px-3 py-1 transition"
+              :class="statusFilter === 'approved' ? 'bg-emerald-300/20 text-emerald-200' : 'text-slate-300/70'"
+              type="button"
+              @click="statusFilter = 'approved'"
+            >
+              Approved
+            </button>
+            <button
+              class="rounded-full px-3 py-1 transition"
+              :class="statusFilter === 'rejected' ? 'bg-rose-300/20 text-rose-200' : 'text-slate-300/70'"
+              type="button"
+              @click="statusFilter = 'rejected'"
+            >
+              Rejected
+            </button>
+          </div>
           <button
+            v-if="isEmployee || canManageRequests"
             class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20"
             type="button"
             @click="openCreate"
@@ -278,7 +319,7 @@ onMounted(loadRequests);
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
         <div class="max-h-130 overflow-auto">
           <div class="overflow-x-auto">
-            <table class="min-w-225 w-full text-left text-xs sm:text-sm">
+            <table class="min-w-245 w-full text-left text-xs sm:text-sm">
               <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
                 <tr>
                   <th class="px-6 py-4 font-medium">Employee</th>
@@ -286,6 +327,7 @@ onMounted(loadRequests);
                   <th class="px-6 py-4 font-medium">End</th>
                   <th class="px-6 py-4 font-medium hidden lg:table-cell">Reason</th>
                   <th class="px-6 py-4 font-medium">Status</th>
+                  <th class="px-6 py-4 font-medium hidden xl:table-cell">Approved by</th>
                   <th class="px-6 py-4 font-medium text-right">Actions</th>
                 </tr>
               </thead>
@@ -320,9 +362,17 @@ onMounted(loadRequests);
                       {{ request.status }}
                     </span>
                   </td>
+                  <td class="px-6 py-4 text-slate-300/80 hidden xl:table-cell">
+                    <div v-if="request.approver" class="text-xs">
+                      <p class="text-slate-100">{{ request.approver.name }}</p>
+                      <p class="text-slate-400">{{ request.approved_role || 'Approver' }}</p>
+                    </div>
+                    <span v-else class="text-slate-400">—</span>
+                  </td>
                   <td class="px-6 py-4">
                     <div class="flex items-center justify-end gap-2">
                       <button
+                        v-if="isEmployee || canManageRequests"
                         class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200 transition hover:bg-white/10"
                         type="button"
                         @click="openEdit(request)"
@@ -346,6 +396,7 @@ onMounted(loadRequests);
                         Reject
                       </button>
                       <button
+                        v-if="isEmployee || canManageRequests"
                         class="rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs text-rose-200 transition hover:bg-rose-500/20"
                         type="button"
                         @click="deleteRequest(request)"
@@ -395,33 +446,27 @@ onMounted(loadRequests);
     <transition name="fade">
       <div
         v-if="isModalOpen"
-        class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm"
+        class="vegro-modal-overlay"
         @click="closeModal"
       ></div>
     </transition>
 
     <transition name="slide-up">
-      <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div class="w-full max-w-xl rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-[0_30px_90px_rgba(15,23,42,0.75)]">
-          <div class="flex items-center justify-between">
+      <div v-if="isModalOpen" class="vegro-modal-wrap">
+        <div class="vegro-modal">
+          <div class="vegro-modal-header">
             <div>
-              <p class="text-xs uppercase tracking-[0.24em] text-emerald-200/80">
+              <p class="vegro-modal-title">
                 {{ modalMode === 'create' ? 'Create' : 'Edit' }} Leave Request
               </p>
-              <h2 class="text-2xl font-semibold">
+              <h2 class="vegro-modal-subtitle">
                 {{ modalMode === 'create' ? 'New Request' : 'Update Request' }}
               </h2>
             </div>
-            <button
-              class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200"
-              type="button"
-              @click="closeModal"
-            >
-              Close
-            </button>
+            <button class="vegro-modal-close" type="button" @click="closeModal">Close</button>
           </div>
 
-          <form class="mt-6 grid gap-4 sm:grid-cols-2" @submit.prevent="submitForm">
+          <form class="vegro-modal-body grid gap-4 sm:grid-cols-2" @submit.prevent="submitForm">
             <label class="flex flex-col gap-2 text-sm text-slate-200/80 sm:col-span-2">
               <span>Employee</span>
               <select
@@ -439,6 +484,18 @@ onMounted(loadRequests);
                 Your employee profile is used automatically.
               </span>
             </label>
+            <div
+              v-if="isEmployee"
+              class="sm:col-span-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-slate-300/80"
+            >
+              <span class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Annual leave balance</span>
+              <p class="mt-2 text-sm text-emerald-200">
+                {{ currentEmployee?.annual_leave_balance ?? 0 }} days remaining
+              </p>
+              <p class="mt-1 text-xs text-slate-400">
+                {{ currentEmployee?.annual_leave_used ?? 0 }} used / {{ currentEmployee?.annual_leave_days ?? 0 }} total
+              </p>
+            </div>
             <label class="flex flex-col gap-2 text-sm text-slate-200/80">
               <span>Start date</span>
               <input
@@ -465,19 +522,54 @@ onMounted(loadRequests);
                 class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
               ></textarea>
             </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
-              <span>Status</span>
-              <select
-                v-model="form.status"
-                required
-                :disabled="isEmployee"
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              >
-                <option v-for="status in statuses" :key="status" :value="status">
-                  {{ status }}
-                </option>
-              </select>
-            </label>
+
+            <div class="sm:col-span-2 rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-xs text-slate-300/80">
+              <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Approval flow</p>
+              <div class="mt-3 flex flex-wrap items-center gap-2">
+                <span class="rounded-full border border-amber-300/40 bg-amber-300/10 px-3 py-1 text-amber-200">
+                  Submitted
+                </span>
+                <span class="text-slate-500">→</span>
+                <span class="rounded-full border border-blue-300/40 bg-blue-300/10 px-3 py-1 text-blue-200">
+                  Department manager
+                </span>
+                <span class="text-slate-500">→</span>
+                <span class="rounded-full border border-indigo-300/40 bg-indigo-300/10 px-3 py-1 text-indigo-200">
+                  HR review
+                </span>
+                <span class="text-slate-500">→</span>
+                <span class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-emerald-200">
+                  Approved
+                </span>
+                <span class="text-slate-500">/</span>
+                <span class="rounded-full border border-rose-400/40 bg-rose-400/10 px-3 py-1 text-rose-200">
+                  Rejected
+                </span>
+              </div>
+              <div class="mt-4 grid gap-2 text-xs text-slate-300/70">
+                <div class="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                  <span class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Manager</span>
+                  <p class="mt-1 text-slate-200">
+                    {{ approvers.manager?.name || 'Not assigned' }}
+                    <span v-if="approvers.manager?.email" class="text-slate-400">({{ approvers.manager.email }})</span>
+                  </p>
+                </div>
+                <div class="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                  <span class="text-[11px] uppercase tracking-[0.2em] text-slate-400">HR</span>
+                  <p v-if="approvers.hr?.length" class="mt-1 text-slate-200">
+                    {{ approvers.hr.map((person) => person.name).join(', ') }}
+                  </p>
+                  <p v-else class="mt-1 text-slate-400">No HR approvers assigned.</p>
+                </div>
+                <div class="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                  <span class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Director / MD</span>
+                  <p v-if="approvers.directors?.length" class="mt-1 text-slate-200">
+                    {{ approvers.directors.map((person) => person.name).join(', ') }}
+                  </p>
+                  <p v-else class="mt-1 text-slate-400">No director or MD assigned.</p>
+                </div>
+              </div>
+            </div>
 
             <button
               class="sm:col-span-2 mt-2 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-400 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"

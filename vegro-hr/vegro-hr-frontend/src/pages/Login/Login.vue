@@ -33,17 +33,27 @@ const handleSubmit = async () => {
     }
 
     if (hasRole(['hr'])) {
-      await router.push('/dashboard/employees');
+      await router.push('/dashboard/hr');
       return;
     }
 
     if (hasRole(['finance'])) {
-      await router.push('/dashboard/payroll');
+      await router.push('/dashboard/finance');
       return;
     }
 
     if (hasRole(['manager'])) {
-      await router.push('/dashboard/leaves');
+      await router.push('/dashboard/manager');
+      return;
+    }
+
+    if (hasRole(['director', 'md'])) {
+      await router.push('/dashboard/director');
+      return;
+    }
+
+    if (hasRole(['employee'])) {
+      await router.push('/dashboard/employee');
       return;
     }
 
@@ -70,34 +80,34 @@ const handleSubmit = async () => {
         <div class="flex flex-col justify-center gap-8">
           <div class="flex items-center gap-3">
             <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-sm font-semibold">
-              VH
+              V
             </div>
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">
-                Vegro HR Platform
+                Vegro
               </p>
-              <p class="text-sm text-slate-400">Administrator console</p>
+              <p class="text-sm text-slate-400">Enterprise access portal</p>
             </div>
           </div>
 
           <div class="space-y-4">
             <h1 class="text-4xl font-semibold leading-tight sm:text-5xl">
-              Authenticate to your workforce command center.
+              Welcome back to the enterprise workforce cloud.
             </h1>
             <p class="max-w-xl text-base text-slate-200/80 sm:text-lg">
-              Consolidate hiring, payroll, attendance, and leave management across every company you manage.
-              Built for secure, audit‑ready operations.
+              Sign in to manage payroll, attendance, leave, and workforce operations with real-time
+              analytics and custom reporting.
             </p>
           </div>
 
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Live Oversight</p>
-              <p class="mt-2 text-sm text-slate-200">Track payroll, attendance, and requests in real time.</p>
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Operational clarity</p>
+              <p class="mt-2 text-sm text-slate-200">Track payroll, attendance, and leave in real time.</p>
             </div>
             <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p class="text-xs uppercase tracking-[0.24em] text-slate-400">RBAC Control</p>
-              <p class="mt-2 text-sm text-slate-200">Assign access by role and keep a compliance trail.</p>
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Dynamic reporting</p>
+              <p class="mt-2 text-sm text-slate-200">Build reports tailored to your enterprise.</p>
             </div>
           </div>
         </div>
@@ -109,7 +119,7 @@ const handleSubmit = async () => {
           <div class="flex flex-col gap-2">
             <h2 class="text-2xl font-semibold">Sign in</h2>
             <p class="text-sm text-slate-200/70">
-              Use your Vegro admin credentials to continue.
+              Use your enterprise credentials to continue.
             </p>
           </div>
 
@@ -122,7 +132,7 @@ const handleSubmit = async () => {
               autocomplete="email"
               required
               class="h-12 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              placeholder="admin@company.com"
+              placeholder="you@company.com"
             />
           </label>
 

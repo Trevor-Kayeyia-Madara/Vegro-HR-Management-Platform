@@ -156,13 +156,13 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-full bg-slate-950 text-white">
-    <div class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">RBAC</p>
-          <h1 class="text-3xl font-semibold">Role Access Control</h1>
+          <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">Roles</p>
+          <h1 class="text-3xl font-semibold">Role Governance</h1>
           <p class="mt-2 text-sm text-slate-300/70">
-            Create and manage role definitions for the Vegro HR platform.
+            Define responsibilities and access levels across your enterprise teams.
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
@@ -170,7 +170,7 @@ onMounted(async () => {
             to="/dashboard/role-matrix"
             class="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 transition hover:bg-white/10"
           >
-            Role Matrix
+            Access Matrix
           </RouterLink>
           <input
             v-model="searchQuery"
@@ -196,9 +196,9 @@ onMounted(async () => {
       </p>
 
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="max-h-130 overflow-auto">
+        <div class="max-h-150 overflow-auto">
           <div class="overflow-x-auto">
-            <table class="min-w-200 w-full text-left text-xs sm:text-sm">
+            <table class="min-w-250 w-full text-left text-xs sm:text-sm">
               <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
                 <tr>
                   <th class="px-6 py-4 font-medium">Role</th>
@@ -260,7 +260,7 @@ onMounted(async () => {
                 </tr>
                 <tr v-if="!isLoading && !filteredRoles.length">
                   <td class="px-6 py-6 text-center text-slate-400" colspan="4">
-                    No roles found.
+                    No roles found yet.
                   </td>
                 </tr>
               </tbody>
@@ -273,33 +273,27 @@ onMounted(async () => {
     <transition name="fade">
       <div
         v-if="isModalOpen"
-        class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm"
+        class="vegro-modal-overlay"
         @click="closeModal"
       ></div>
     </transition>
 
     <transition name="slide-up">
-      <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div class="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-[0_30px_90px_rgba(15,23,42,0.75)]">
-          <div class="flex items-center justify-between">
+      <div v-if="isModalOpen" class="vegro-modal-wrap">
+        <div class="vegro-modal">
+          <div class="vegro-modal-header">
             <div>
-              <p class="text-xs uppercase tracking-[0.24em] text-emerald-200/80">
+              <p class="vegro-modal-title">
                 {{ modalMode === 'create' ? 'Create' : 'Edit' }} Role
               </p>
-              <h2 class="text-2xl font-semibold">
+              <h2 class="vegro-modal-subtitle">
                 {{ modalMode === 'create' ? 'New Role' : 'Update Role' }}
               </h2>
             </div>
-            <button
-              class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200"
-              type="button"
-              @click="closeModal"
-            >
-              Close
-            </button>
+            <button class="vegro-modal-close" type="button" @click="closeModal">Close</button>
           </div>
 
-          <form class="mt-6 flex flex-col gap-4" @submit.prevent="submitForm">
+          <form class="vegro-modal-body flex flex-col gap-4" @submit.prevent="submitForm">
             <label class="flex flex-col gap-2 text-sm text-slate-200/80">
               <span>Role title</span>
               <input

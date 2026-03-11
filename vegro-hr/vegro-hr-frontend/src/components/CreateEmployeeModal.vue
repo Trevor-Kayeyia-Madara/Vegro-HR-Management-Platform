@@ -15,7 +15,7 @@ const emit = defineEmits(['close', 'created']);
 const isSubmitting = ref(false);
 const errorMessage = ref('');
 
-  const form = ref({
+const form = ref({
   first_name: '',
   last_name: '',
   email: '',
@@ -23,6 +23,7 @@ const errorMessage = ref('');
   department_id: '',
   role_ids: [],
   salary: '',
+  status: 'active',
 });
 
 const resetForm = () => {
@@ -32,8 +33,9 @@ const resetForm = () => {
     email: '',
     phone: '',
     department_id: '',
-  role_ids: [],
+    role_ids: [],
     salary: '',
+    status: 'active',
   };
   errorMessage.value = '';
 };
@@ -52,6 +54,7 @@ const submitForm = async () => {
       department_id: Number(form.value.department_id),
       role_ids: form.value.role_ids.map((id) => Number(id)),
       salary: Number(form.value.salary),
+      status: form.value.status,
     });
     emit('created');
     resetForm();
@@ -75,29 +78,23 @@ watch(
   <transition name="fade">
     <div
       v-if="isOpen"
-      class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm"
+      class="vegro-modal-overlay"
       @click="closeModal"
     ></div>
   </transition>
 
   <transition name="slide-up">
-    <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div class="w-full max-w-xl rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-[0_30px_90px_rgba(15,23,42,0.75)]">
-        <div class="flex items-center justify-between">
+    <div v-if="isOpen" class="vegro-modal-wrap">
+      <div class="vegro-modal">
+        <div class="vegro-modal-header">
           <div>
-            <p class="text-xs uppercase tracking-[0.24em] text-emerald-200/80">Create Employee</p>
-            <h2 class="text-2xl font-semibold">New Employee</h2>
+            <p class="vegro-modal-title">Create Employee</p>
+            <h2 class="vegro-modal-subtitle">New Employee</h2>
           </div>
-          <button
-            class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200"
-            type="button"
-            @click="closeModal"
-          >
-            Close
-          </button>
+          <button class="vegro-modal-close" type="button" @click="closeModal">Close</button>
         </div>
 
-        <form class="mt-6 grid gap-4 sm:grid-cols-2" @submit.prevent="submitForm">
+        <form class="vegro-modal-body grid gap-4 sm:grid-cols-2" @submit.prevent="submitForm">
           <label class="flex flex-col gap-2 text-sm text-slate-200/80">
             <span>First name</span>
             <input
@@ -181,6 +178,16 @@ watch(
             </div>
             <span class="text-xs text-slate-400">Select one or more roles.</span>
           </div>
+          <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+            <span>Status</span>
+            <select
+              v-model="form.status"
+              class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </label>
 
           <p v-if="errorMessage" class="sm:col-span-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs text-rose-100">
             {{ errorMessage }}

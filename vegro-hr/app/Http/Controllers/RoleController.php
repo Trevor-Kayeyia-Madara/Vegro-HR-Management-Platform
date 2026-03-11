@@ -302,6 +302,37 @@ class RoleController extends Controller
     }
 
     #[OA\Get(
+        path: "/api/roles/assignable",
+        operationId: "getAssignableRoles",
+        description: "Get roles that can be assigned to employees",
+        summary: "List assignable roles",
+        tags: ["Roles"],
+        security: [["bearerAuth" => []]],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Assignable roles retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: ""),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items())
+                    ]
+                )
+            )
+        ]
+    )]
+    public function assignable()
+    {
+        $roles = Role::whereIn('title', ['HR', 'Finance', 'Manager', 'Employee'])->orderBy('title')->get();
+        return response()->json([
+            'success' => true,
+            'message' => '',
+            'data' => $roles,
+        ]);
+    }
+
+    #[OA\Get(
         path: "/api/permissions",
         operationId: "getPermissions",
         description: "Get list of all permissions",

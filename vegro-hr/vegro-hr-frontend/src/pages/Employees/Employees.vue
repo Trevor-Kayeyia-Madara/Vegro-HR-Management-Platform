@@ -21,8 +21,8 @@ const selectedEmployee = ref(null);
 const searchQuery = ref('');
 const pageSize = ref(8);
 const currentPage = ref(1);
-const { hasRole } = useAuth();
-const canManageEmployees = computed(() => hasRole(['admin', 'hr']));
+const { hasPermission } = useAuth();
+const canManageEmployees = computed(() => hasPermission('employees.manage'));
 const pagination = ref({
   current_page: 1,
   last_page: 1,
@@ -82,7 +82,7 @@ const loadEmployees = async () => {
     const [employeesResponse, departmentsResponse, rolesResponse] = await Promise.all([
       employeeService.getEmployees({ page: currentPage.value, per_page: pageSize.value }),
       apiClient.get('/api/departments', { params: { per_page: 500 } }),
-      apiClient.get('/api/roles'),
+      apiClient.get('/api/roles/assignable'),
     ]);
 
     const parsed = parsePaginated(employeesResponse);
@@ -178,13 +178,13 @@ onMounted(loadEmployees);
 
 <template>
   <div class="min-h-full bg-slate-950 text-white">
-    <div class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">Employees</p>
-          <h1 class="text-3xl font-semibold">Employee Directory</h1>
+          <h1 class="text-3xl font-semibold">Workforce Directory</h1>
           <p class="mt-2 text-sm text-slate-300/70">
-            Track employee records, departments, roles, and salary.
+            Track employee records, departments, and workforce roles in one secure directory.
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
@@ -200,7 +200,7 @@ onMounted(loadEmployees);
             type="button"
             @click="openModal"
           >
-            Add employee
+            Add member
           </button>
         </div>
       </div>
@@ -213,9 +213,9 @@ onMounted(loadEmployees);
       </p>
 
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="max-h-130 overflow-auto">
+        <div class="max-h-150 overflow-auto">
           <div class="overflow-x-auto">
-            <table class="min-w-225 w-full text-left text-xs sm:text-sm">
+            <table class="min-w-250 w-full text-left text-xs sm:text-sm">
             <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
               <tr>
                 <th class="px-6 py-4 font-medium">Employee ID</th>
@@ -287,7 +287,7 @@ onMounted(loadEmployees);
               </tr>
               <tr v-if="!isLoading && !filteredEmployees.length">
                 <td class="px-6 py-6 text-center text-slate-400" colspan="7">
-                  No employees found yet.
+                  No team members found yet.
                 </td>
               </tr>
             </tbody>
@@ -346,28 +346,22 @@ onMounted(loadEmployees);
     <transition name="fade">
       <div
         v-if="isViewOpen"
-        class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm"
+        class="vegro-modal-overlay"
         @click="closeView"
       ></div>
     </transition>
 
     <transition name="slide-up">
-      <div v-if="isViewOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div class="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-[0_30px_90px_rgba(15,23,42,0.75)]">
-          <div class="flex items-center justify-between">
+      <div v-if="isViewOpen" class="vegro-modal-wrap">
+        <div class="vegro-modal">
+          <div class="vegro-modal-header">
             <div>
-              <p class="text-xs uppercase tracking-[0.24em] text-emerald-200/80">Employee</p>
-              <h2 class="text-2xl font-semibold">Profile Snapshot</h2>
+              <p class="vegro-modal-title">Employee</p>
+              <h2 class="vegro-modal-subtitle">Profile Snapshot</h2>
             </div>
-            <button
-              class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200"
-              type="button"
-              @click="closeView"
-            >
-              Close
-            </button>
+            <button class="vegro-modal-close" type="button" @click="closeView">Close</button>
           </div>
-          <div class="mt-6 grid gap-4 text-sm">
+          <div class="vegro-modal-body grid gap-4 text-sm">
             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
               <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Name</p>
               <p class="mt-2 text-lg font-semibold">{{ selectedEmployee?.name || '—' }}</p>

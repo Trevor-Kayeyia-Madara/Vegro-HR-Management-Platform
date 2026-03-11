@@ -1,10 +1,16 @@
 import { createRouter, createWebHistory } from "vue-router"
 
 import Landing from "../pages/Landing/Landing.vue"
+import Contact from "../pages/Contact/Contact.vue"
 import Pricing from "../pages/Pricing/Pricing.vue"
 import Login from "../pages/Login/Login.vue"
 import DashboardLayout from "../layouts/DashboardLayout.vue"
 import DashboardHome from "../pages/Dashboard/Dashboard.vue"
+import HrDashboard from "../pages/HR/Dashboard.vue"
+import FinanceDashboard from "../pages/Finance/Dashboard.vue"
+import EmployeeDashboard from "../pages/Employee/Dashboard.vue"
+import ManagerDashboard from "../pages/Manager/Dashboard.vue"
+import DirectorDashboard from "../pages/Director/Dashboard.vue"
 import ProtectedRoute from "../components/ProtectedRoute.vue"
 import Employees from "../pages/Employees/Employees.vue"
 import Departments from "../pages/Departments/Departments.vue"
@@ -25,6 +31,11 @@ const routes = [
     path: "/",
     name: "Landing",
     component: Landing
+  },
+  {
+    path: "/contact",
+    name: "Contact",
+    component: Contact
   },
   {
     path: "/pricing",
@@ -52,6 +63,36 @@ const routes = [
             meta: { roles: ['admin'], permissions: 'dashboard.view' }
           },
           {
+            path: "hr",
+            name: "HrDashboard",
+            component: HrDashboard,
+            meta: { roles: ['hr'], permissions: 'dashboard.view' }
+          },
+          {
+            path: "finance",
+            name: "FinanceDashboard",
+            component: FinanceDashboard,
+            meta: { roles: ['finance'], permissions: 'dashboard.view' }
+          },
+          {
+            path: "employee",
+            name: "EmployeeDashboard",
+            component: EmployeeDashboard,
+            meta: { roles: ['employee'], permissions: 'dashboard.view' }
+          },
+          {
+            path: "manager",
+            name: "ManagerDashboard",
+            component: ManagerDashboard,
+            meta: { roles: ['manager'], permissions: 'dashboard.view' }
+          },
+          {
+            path: "director",
+            name: "DirectorDashboard",
+            component: DirectorDashboard,
+            meta: { roles: ['director', 'md'], permissions: 'dashboard.view' }
+          },
+          {
             path: "employees",
             name: "Employees",
             component: Employees,
@@ -67,7 +108,7 @@ const routes = [
             path: "tax-profiles",
             name: "TaxProfiles",
             component: TaxProfiles,
-            meta: { roles: ['admin'], permissions: 'taxprofiles.view' }
+            meta: { roles: ['admin', 'finance'], permissions: 'taxprofiles.view' }
           },
           {
             path: "users",
@@ -97,7 +138,7 @@ const routes = [
             path: "payslips",
             name: "Payslips",
             component: Payslips,
-            meta: { roles: ['admin', 'hr', 'finance'], permissions: 'payslips.view' }
+            meta: { roles: ['admin', 'hr', 'finance', 'employee'], permissions: 'payslips.view' }
           },
           {
             path: "profile",

@@ -16,8 +16,8 @@ const isModalOpen = ref(false);
 const modalMode = ref('create');
 const activePayroll = ref(null);
 const isSubmitting = ref(false);
-const { hasRole } = useAuth();
-const canManagePayroll = computed(() => hasRole(['admin', 'hr', 'finance']));
+const { hasPermission } = useAuth();
+const canManagePayroll = computed(() => hasPermission('payroll.manage'));
 
 const searchQuery = ref('');
 const pageSize = ref(8);
@@ -494,146 +494,174 @@ onMounted(loadPayrolls);
     <transition name="fade">
       <div
         v-if="isModalOpen"
-        class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm"
+        class="vegro-modal-overlay"
         @click="closeModal"
       ></div>
     </transition>
 
     <transition name="slide-up">
-      <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div class="w-full max-w-xl rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-[0_30px_90px_rgba(15,23,42,0.75)]">
-          <div class="flex items-center justify-between">
+      <div v-if="isModalOpen" class="vegro-modal-wrap">
+        <div class="vegro-modal max-h-[90vh] overflow-hidden flex flex-col">
+          <div class="vegro-modal-header">
             <div>
-              <p class="text-xs uppercase tracking-[0.24em] text-emerald-200/80">
+              <p class="vegro-modal-title">
                 {{ modalMode === 'create' ? 'Create' : 'Edit' }} Payroll
               </p>
-              <h2 class="text-2xl font-semibold">
+              <h2 class="vegro-modal-subtitle">
                 {{ modalMode === 'create' ? 'New Payroll' : 'Update Payroll' }}
               </h2>
             </div>
-            <button
-              class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200"
-              type="button"
-              @click="closeModal"
-            >
-              Close
-            </button>
+            <button class="vegro-modal-close" type="button" @click="closeModal">Close</button>
           </div>
 
-          <form class="mt-6 grid gap-4 sm:grid-cols-2" @submit.prevent="submitForm">
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80 sm:col-span-2">
-              <span>Employee</span>
-              <select
-                v-model="form.employee_id"
-                required
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              >
-                <option value="" disabled>Select employee</option>
-                <option v-for="employee in employees" :key="employee.id" :value="employee.id">
-                  {{ employee.name || `Employee #${employee.id}` }}
-                </option>
-              </select>
-            </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80 sm:col-span-2">
-              <span>Tax Profile</span>
-              <select
-                v-model="form.tax_profile_id"
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              >
-                <option value="">Default profile</option>
-                <option v-for="profile in taxProfiles" :key="profile.id" :value="profile.id">
-                  {{ profile.name }} ({{ profile.country_code }})
-                </option>
-              </select>
-            </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
-              <span>Month</span>
-              <select
-                v-model="form.month"
-                required
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              >
-                <option value="" disabled>Select month</option>
-                <option v-for="month in 12" :key="month" :value="month">
-                  {{ monthLabel(month) }}
-                </option>
-              </select>
-            </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
-              <span>Year</span>
-              <input
-                v-model="form.year"
-                type="number"
-                min="2000"
-                max="2100"
-                required
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              />
-            </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
-              <span>Basic salary</span>
-              <input
-                v-model="form.basic_salary"
-                type="number"
-                min="0"
-                step="0.01"
-                required
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              />
-            </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
-              <span>Allowances</span>
-              <input
-                v-model="form.allowances"
-                type="number"
-                step="0.01"
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              />
-            </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
-              <span>Other Deductions</span>
-              <input
-                v-model="form.deductions"
-                type="number"
-                step="0.01"
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              />
-            </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
-              <span>Insurance Premium</span>
-              <input
-                v-model="form.insurance_premium"
-                type="number"
-                step="0.01"
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              />
-            </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
-              <span>Pension Contribution</span>
-              <input
-                v-model="form.pension_contribution"
-                type="number"
-                step="0.01"
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              />
-            </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
-              <span>Mortgage Interest</span>
-              <input
-                v-model="form.mortgage_interest"
-                type="number"
-                step="0.01"
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              />
-            </label>
+          <form class="vegro-modal-body relative flex flex-1 flex-col gap-6 overflow-y-auto pr-2" @submit.prevent="submitForm">
+            <div class="sticky top-0 z-10 -mt-2 flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-2 text-xs text-slate-300/80 backdrop-blur">
+              <span>Scroll down to complete the payroll details.</span>
+              <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-slate-300">
+                More fields
+              </span>
+            </div>
+            <div class="grid gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-400">Payroll context</p>
+                <p class="mt-1 text-sm text-slate-300/70">Select the employee, period, and tax profile.</p>
+              </div>
+              <label class="flex flex-col gap-2 text-sm text-slate-200/80 sm:col-span-2">
+                <span>Employee</span>
+                <select
+                  v-model="form.employee_id"
+                  required
+                  class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                >
+                  <option value="" disabled>Select employee</option>
+                  <option v-for="employee in employees" :key="employee.id" :value="employee.id">
+                    {{ employee.name || `Employee #${employee.id}` }}
+                  </option>
+                </select>
+              </label>
+              <label class="flex flex-col gap-2 text-sm text-slate-200/80 sm:col-span-2">
+                <span>Tax Profile</span>
+                <select
+                  v-model="form.tax_profile_id"
+                  class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                >
+                  <option value="">Default profile</option>
+                  <option v-for="profile in taxProfiles" :key="profile.id" :value="profile.id">
+                    {{ profile.name }} ({{ profile.country_code }})
+                  </option>
+                </select>
+              </label>
+              <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+                <span>Month</span>
+                <select
+                  v-model="form.month"
+                  required
+                  class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                >
+                  <option value="" disabled>Select month</option>
+                  <option v-for="month in 12" :key="month" :value="month">
+                    {{ monthLabel(month) }}
+                  </option>
+                </select>
+              </label>
+              <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+                <span>Year</span>
+                <input
+                  v-model="form.year"
+                  type="number"
+                  min="2000"
+                  max="2100"
+                  required
+                  class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                />
+              </label>
+            </div>
+
+            <div class="grid gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-400">Compensation</p>
+                <p class="mt-1 text-sm text-slate-300/70">Base salary and allowances.</p>
+              </div>
+              <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+                <span>Basic salary</span>
+                <input
+                  v-model="form.basic_salary"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                />
+              </label>
+              <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+                <span>Allowances</span>
+                <input
+                  v-model="form.allowances"
+                  type="number"
+                  step="0.01"
+                  class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                />
+              </label>
+            </div>
+
+            <div class="grid gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-400">Deductions & reliefs</p>
+                <p class="mt-1 text-sm text-slate-300/70">Capture optional deductions and reliefs.</p>
+              </div>
+              <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+                <span>Other deductions</span>
+                <input
+                  v-model="form.deductions"
+                  type="number"
+                  step="0.01"
+                  class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                />
+              </label>
+              <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+                <span>Insurance premium</span>
+                <input
+                  v-model="form.insurance_premium"
+                  type="number"
+                  step="0.01"
+                  class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                />
+              </label>
+              <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+                <span>Pension contribution</span>
+                <input
+                  v-model="form.pension_contribution"
+                  type="number"
+                  step="0.01"
+                  class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                />
+              </label>
+              <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+                <span>Mortgage interest</span>
+                <input
+                  v-model="form.mortgage_interest"
+                  type="number"
+                  step="0.01"
+                  class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                />
+              </label>
+            </div>
 
             <button
-              class="sm:col-span-2 mt-2 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-400 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
+              class="mt-2 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-400 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
               type="submit"
               :disabled="isSubmitting"
             >
               {{ isSubmitting ? 'Saving...' : 'Save payroll' }}
             </button>
+
+            <div class="pointer-events-none sticky bottom-0 z-10 -mx-2 mt-6 flex items-end justify-center">
+              <div class="h-16 w-full bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent"></div>
+              <div class="absolute bottom-2 flex flex-col items-center gap-1 text-[10px] uppercase tracking-[0.3em] text-slate-300/70">
+                <span class="animate-bounce">▼</span>
+                <span>Scroll</span>
+              </div>
+            </div>
           </form>
         </div>
       </div>

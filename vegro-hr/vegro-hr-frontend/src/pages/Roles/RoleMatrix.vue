@@ -88,9 +88,9 @@ onMounted(loadMatrix);
           <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">
             Access Control
           </p>
-          <h1 class="text-3xl font-semibold">Role Matrix</h1>
+          <h1 class="text-3xl font-semibold">Access Matrix</h1>
           <p class="mt-2 text-sm text-slate-300/70">
-            Define which dashboards and modules each role can access. Changes are recorded in audit logs.
+            Define which dashboards and modules each role can access across your enterprise.
           </p>
         </div>
         <button
@@ -132,8 +132,8 @@ onMounted(loadMatrix);
       </p>
 
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="max-h-130 overflow-auto">
-          <div class="min-w-[900px]">
+        <div class="max-h-150 overflow-auto">
+          <div class="min-w-[1100px]">
             <table class="w-full text-left text-xs sm:text-sm">
               <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
                 <tr>

@@ -1,1 +1,39 @@
 @import "tailwindcss";
+
+@layer components {
+  .vegro-modal-overlay {
+    @apply fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm;
+  }
+
+  .vegro-modal-wrap {
+    @apply fixed inset-0 z-50 flex items-center justify-center px-4 py-6 sm:py-10;
+  }
+
+  .vegro-modal {
+    @apply relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950 text-white shadow-[0_30px_90px_rgba(6,11,23,0.75)];
+  }
+
+  .vegro-modal-header {
+    @apply flex flex-wrap items-center justify-between gap-4 border-b border-white/10 bg-gradient-to-r from-slate-950 via-slate-950 to-slate-900/80 px-6 py-5 sm:px-8;
+  }
+
+  .vegro-modal-title {
+    @apply text-xs font-semibold uppercase tracking-[0.28em] text-emerald-200/80;
+  }
+
+  .vegro-modal-subtitle {
+    @apply text-2xl font-semibold text-white;
+  }
+
+  .vegro-modal-body {
+    @apply px-6 py-6 sm:px-8;
+  }
+
+  .vegro-modal-footer {
+    @apply border-t border-white/10 bg-slate-950/60 px-6 py-5 sm:px-8;
+  }
+
+  .vegro-modal-close {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-slate-200 transition hover:border-white/30 hover:text-white;
+  }
+}

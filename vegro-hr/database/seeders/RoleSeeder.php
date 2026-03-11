@@ -15,6 +15,8 @@ class RoleSeeder extends Seeder
          ['title' => 'HR', 'description' => 'Human Resources with access to employee data'],
          ['title' => 'Finance', 'description' => 'Finance team with access to financial data'],
          ['title' => 'Manager', 'description' => 'Manager with limited access'],
+         ['title' => 'Director', 'description' => 'Director with high-level approvals'],
+         ['title' => 'MD', 'description' => 'Managing Director with executive visibility'],
          ['title' => 'Employee', 'description' => 'Employee with basic access'],
         ];
 

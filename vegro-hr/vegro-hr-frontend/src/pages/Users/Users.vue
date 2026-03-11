@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import apiClient from '../../api/apiClient';
 
-defineOptions({ name: 'UsersPage' });
+defineOptions({ name: 'Access DirectoryPage' });
 
 const users = ref([]);
 const roles = ref([]);
@@ -214,13 +214,13 @@ onMounted(loadUsers);
 
 <template>
   <div class="min-h-full bg-slate-950 text-white">
-    <div class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">Users</p>
-          <h1 class="text-3xl font-semibold">Manage Access</h1>
+          <h1 class="text-3xl font-semibold">Access Directory</h1>
           <p class="mt-2 text-sm text-slate-300/70">
-            Create, update, and protect accounts across your Vegro HR workspace.
+            Create, assign, and protect access for every team member in your enterprise.
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
@@ -238,7 +238,7 @@ onMounted(loadUsers);
             type="button"
             @click="openCreate"
           >
-            Add user
+            Add member
           </button>
         </div>
       </div>
@@ -251,9 +251,9 @@ onMounted(loadUsers);
       </p>
 
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="max-h-130 overflow-auto">
+        <div class="max-h-150 overflow-auto">
           <div class="overflow-x-auto">
-            <table class="min-w-200 w-full text-left text-xs sm:text-sm">
+            <table class="min-w-250 w-full text-left text-xs sm:text-sm">
             <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
               <tr>
                 <th class="px-6 py-4 font-medium">Name</th>
@@ -311,7 +311,7 @@ onMounted(loadUsers);
               </tr>
               <tr v-if="!isLoading && !filteredUsers.length">
                 <td class="px-6 py-6 text-center text-slate-400" colspan="5">
-                  No users found yet.
+                  No team members found yet.
                 </td>
               </tr>
             </tbody>
@@ -353,33 +353,27 @@ onMounted(loadUsers);
     <transition name="fade">
       <div
         v-if="isModalOpen"
-        class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm"
+        class="vegro-modal-overlay"
         @click="closeModal"
       ></div>
     </transition>
 
     <transition name="slide-up">
-      <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div class="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-[0_30px_90px_rgba(15,23,42,0.75)]">
-          <div class="flex items-center justify-between">
+      <div v-if="isModalOpen" class="vegro-modal-wrap">
+        <div class="vegro-modal">
+          <div class="vegro-modal-header">
             <div>
-              <p class="text-xs uppercase tracking-[0.24em] text-emerald-200/80">
+              <p class="vegro-modal-title">
                 {{ modalMode === 'create' ? 'Create' : 'Edit' }} User
               </p>
-              <h2 class="text-2xl font-semibold">
-                {{ modalMode === 'create' ? 'New Account' : 'Update Account' }}
+              <h2 class="vegro-modal-subtitle">
+                {{ modalMode === 'create' ? 'New Member' : 'Update Member' }}
               </h2>
             </div>
-            <button
-              class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200"
-              type="button"
-              @click="closeModal"
-            >
-              Close
-            </button>
+            <button class="vegro-modal-close" type="button" @click="closeModal">Close</button>
           </div>
 
-          <form class="mt-6 flex flex-col gap-4" @submit.prevent="submitForm">
+          <form class="vegro-modal-body flex flex-col gap-4" @submit.prevent="submitForm">
             <label class="flex flex-col gap-2 text-sm text-slate-200/80">
               <span>Name</span>
               <input
@@ -434,7 +428,7 @@ onMounted(loadUsers);
               type="submit"
               :disabled="isSubmitting"
             >
-              {{ isSubmitting ? 'Saving...' : 'Save user' }}
+              {{ isSubmitting ? 'Saving...' : 'Save member' }}
             </button>
           </form>
         </div>
