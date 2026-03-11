@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Payroll;
 use App\Models\TaxProfile;
 use App\Helpers\ApiResponse;
+use App\Services\PayslipService;
 use Illuminate\Http\Request;
 use App\Http\Resources\PayrollResource;
 use OpenApi\Attributes as OA;
@@ -13,6 +14,13 @@ use OpenApi\Attributes as OA;
 
 class PayrollController extends Controller
 {
+    protected PayslipService $payslipService;
+
+    public function __construct(PayslipService $payslipService)
+    {
+        $this->payslipService = $payslipService;
+    }
+
     protected function calculateNssf(float $gross, ?TaxProfile $profile): float
     {
         $rate = (float) ($profile?->nssf_rate ?? 0.06);
@@ -207,6 +215,7 @@ class PayrollController extends Controller
         $validated['net_salary'] = $netSalary;
 
         $payroll = Payroll::create($validated);
+        $this->payslipService->createPayslip(['payroll_id' => $payroll->id]);
 
         return ApiResponse::success(new PayrollResource($payroll), "Payroll created successfully", 201);
     }
@@ -355,6 +364,8 @@ class PayrollController extends Controller
             'tax' => $paye,
             'net_salary' => $netSalary
         ]);
+
+        $this->payslipService->syncPayslipForPayroll($payroll->load('employee', 'payslip'));
 
         return ApiResponse::success(new PayrollResource($payroll), "Payroll updated successfully");
     }

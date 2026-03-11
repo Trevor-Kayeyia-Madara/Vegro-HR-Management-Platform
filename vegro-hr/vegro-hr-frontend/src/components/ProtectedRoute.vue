@@ -36,10 +36,11 @@ const isAllowed = computed(() => {
 
 const getFallbackRoute = () => {
   if (isAdmin.value) return '/dashboard/home';
-  if (hasRole(['hr'])) return '/dashboard/employees';
-  if (hasRole(['finance'])) return '/dashboard/payroll';
-  if (hasRole(['manager'])) return '/dashboard/leaves';
-  if (hasRole(['employee'])) return '/dashboard/profile';
+  if (hasRole(['hr'])) return '/dashboard/hr';
+  if (hasRole(['finance'])) return '/dashboard/finance';
+  if (hasRole(['manager'])) return '/dashboard/manager';
+  if (hasRole(['director', 'md'])) return '/dashboard/director';
+  if (hasRole(['employee'])) return '/dashboard/employee';
   return '/dashboard/profile';
 };
 

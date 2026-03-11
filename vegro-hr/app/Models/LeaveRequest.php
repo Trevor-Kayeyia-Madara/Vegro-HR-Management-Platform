@@ -10,7 +10,22 @@ class LeaveRequest extends Model
     use HasFactory;
 
     protected $fillable = [
-        'employee_id','type','start_date','end_date','status','approved_by'
+        'employee_id',
+        'type',
+        'start_date',
+        'end_date',
+        'reason',
+        'leave_days',
+        'status',
+        'approved_by',
+        'approved_role',
+        'approved_at',
+    ];
+
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+        'approved_at' => 'datetime',
     ];
 
     public function employee()

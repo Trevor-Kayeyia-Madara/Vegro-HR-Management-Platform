@@ -31,8 +31,8 @@ const form = ref({
 });
 
 const statuses = ['present', 'absent', 'late', 'excused'];
-const { hasRole } = useAuth();
-const canManageAttendance = computed(() => hasRole(['admin', 'hr']));
+const { hasPermission } = useAuth();
+const canManageAttendance = computed(() => hasPermission('attendance.manage'));
 
 const unwrapList = (response) => {
   if (Array.isArray(response?.data)) return response.data;
@@ -326,33 +326,27 @@ onMounted(loadAttendance);
     <transition name="fade">
       <div
         v-if="isModalOpen"
-        class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm"
+        class="vegro-modal-overlay"
         @click="closeModal"
       ></div>
     </transition>
 
     <transition name="slide-up">
-      <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div class="w-full max-w-xl rounded-3xl border border-white/10 bg-slate-950 p-6 text-white shadow-[0_30px_90px_rgba(15,23,42,0.75)]">
-          <div class="flex items-center justify-between">
+      <div v-if="isModalOpen" class="vegro-modal-wrap">
+        <div class="vegro-modal">
+          <div class="vegro-modal-header">
             <div>
-              <p class="text-xs uppercase tracking-[0.24em] text-emerald-200/80">
+              <p class="vegro-modal-title">
                 {{ modalMode === 'create' ? 'Create' : 'Edit' }} Attendance
               </p>
-              <h2 class="text-2xl font-semibold">
+              <h2 class="vegro-modal-subtitle">
                 {{ modalMode === 'create' ? 'New Record' : 'Update Record' }}
               </h2>
             </div>
-            <button
-              class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200"
-              type="button"
-              @click="closeModal"
-            >
-              Close
-            </button>
+            <button class="vegro-modal-close" type="button" @click="closeModal">Close</button>
           </div>
 
-          <form class="mt-6 grid gap-4 sm:grid-cols-2" @submit.prevent="submitForm">
+          <form class="vegro-modal-body grid gap-4 sm:grid-cols-2" @submit.prevent="submitForm">
             <label class="flex flex-col gap-2 text-sm text-slate-200/80 sm:col-span-2">
               <span>Employee</span>
               <select

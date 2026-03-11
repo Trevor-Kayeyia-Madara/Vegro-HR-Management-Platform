@@ -11,7 +11,8 @@ class Employee extends Model
 
     protected $fillable = [
         'employee_number','user_id','name','email','phone',
-        'department_id','position','salary','hire_date','status'
+        'department_id','position','salary','hire_date','status',
+        'annual_leave_days','annual_leave_used','annual_leave_balance'
     ];
 
     public function department() { return $this->belongsTo(Department::class); }

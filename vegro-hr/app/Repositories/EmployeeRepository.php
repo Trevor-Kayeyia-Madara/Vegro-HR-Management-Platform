@@ -8,12 +8,12 @@ class EmployeeRepository
 {
     public function getAll()
     {
-        return Employee::with(['department', 'role'])->get();
+        return Employee::with(['department', 'roles'])->get();
     }
 
     public function findById($id)
     {
-        return Employee::with(['department', 'role'])->findOrFail($id);
+        return Employee::with(['department', 'roles'])->findOrFail($id);
     }
 
     public function create(array $data)
@@ -36,18 +36,18 @@ class EmployeeRepository
     {
         return Employee::where('name', 'like', "%$query%")
             ->orWhere('email', 'like', "%$query%")
-            ->with(['department', 'role'])
+            ->with(['department', 'roles'])
             ->get();
     }
 
     public function getByDepartment($departmentId)
     {
-        return Employee::where('department_id', $departmentId)->with(['department', 'role'])->get();
+        return Employee::where('department_id', $departmentId)->with(['department', 'roles'])->get();
     }
 
     public function getPaginated($perPage = 15)
     {
-        return Employee::with(['department', 'role'])->paginate($perPage);
+        return Employee::with(['department', 'roles'])->paginate($perPage);
     }
 
     public function getByEmail($email)
@@ -62,12 +62,12 @@ class EmployeeRepository
 
     public function getActiveEmployees()
     {
-        return Employee::where('status', 'active')->with(['department', 'role'])->get();
+        return Employee::where('status', 'active')->with(['department', 'roles'])->get();
     }
 
     public function findByDepartment($departmentId)
     {
-        return Employee::where('department_id', $departmentId)->with(['department', 'role'])->get();
+        return Employee::where('department_id', $departmentId)->with(['department', 'roles'])->get();
     }
 
     public function findByEmail($email)

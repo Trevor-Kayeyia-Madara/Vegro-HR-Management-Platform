@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use App\Models\Role;
 use Symfony\Component\HttpFoundation\Response;
 
 class RequireRole
@@ -36,7 +37,11 @@ class RequireRole
             ], 401);
         }
 
-        $userRole = $this->normalize($user->role?->title ?? '');
+        $userRoleTitle = $user->role?->title;
+        if (!$userRoleTitle && $user->role_id) {
+            $userRoleTitle = Role::where('id', $user->role_id)->value('title');
+        }
+        $userRole = $this->normalize($userRoleTitle ?? '');
 
         if ($this->isAdmin($userRole)) {
             return $next($request);

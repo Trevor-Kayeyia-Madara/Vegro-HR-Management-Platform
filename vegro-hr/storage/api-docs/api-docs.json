@@ -3112,6 +3112,179 @@
                 ]
             }
         },
+        "/api/roles/assignable": {
+            "get": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "List assignable roles",
+                "description": "Get roles that can be assigned to employees",
+                "operationId": "getAssignableRoles",
+                "responses": {
+                    "200": {
+                        "description": "Assignable roles retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": ""
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/permissions": {
+            "get": {
+                "tags": [
+                    "Permissions"
+                ],
+                "summary": "List all permissions",
+                "description": "Get list of all permissions",
+                "operationId": "getPermissions",
+                "responses": {
+                    "200": {
+                        "description": "Permissions retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": ""
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/roles/permissions/matrix": {
+            "get": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Role permission matrix",
+                "description": "Get role-permission matrix",
+                "operationId": "getRolePermissionMatrix",
+                "responses": {
+                    "200": {
+                        "description": "Matrix retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": ""
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "roles": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "permissions": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/roles/{role}/permissions": {
+            "put": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Update role permissions",
+                "description": "Update permissions for a role",
+                "operationId": "updateRolePermissions",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "description": "Role ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Permission IDs",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "permission_ids"
+                                ],
+                                "properties": {
+                                    "permission_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Permissions updated successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
         "/api/tax-profiles": {
             "get": {
                 "tags": [
@@ -3635,6 +3808,10 @@
         {
             "name": "Roles",
             "description": "Roles"
+        },
+        {
+            "name": "Permissions",
+            "description": "Permissions"
         },
         {
             "name": "Tax Profiles",

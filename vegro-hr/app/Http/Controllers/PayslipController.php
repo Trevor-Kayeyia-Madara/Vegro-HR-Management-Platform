@@ -5,6 +5,7 @@ use App\Services\PayslipService;
 use Illuminate\Http\Request;
 use App\Helpers\ApiResponse;
 use OpenApi\Attributes as OA;
+use App\Models\Employee;
 
 class PayslipController extends Controller
 {
@@ -52,6 +53,21 @@ class PayslipController extends Controller
     {
         $perPage = max((int) request()->query('per_page', 10), 1);
         return ApiResponse::success($this->payslipService->getPayslipsPaginated($perPage), "Payslips retrieved successfully");
+    }
+
+    public function myPayslips(Request $request)
+    {
+        $user = $request->user();
+        $employee = Employee::where('user_id', $user->id)->first();
+        if (!$employee) {
+            return ApiResponse::forbidden('Employee profile not found.');
+        }
+
+        $perPage = max((int) $request->query('per_page', 10), 1);
+        return ApiResponse::success(
+            $this->payslipService->getPayslipsByEmployeePaginated($employee->id, $perPage),
+            "Payslips retrieved successfully"
+        );
     }
 
     #[OA\Get(
@@ -128,7 +144,6 @@ class PayslipController extends Controller
         $data = $request->validate([
             'payroll_id' => 'required|integer|exists:payrolls,id',
             'pdf_path' => 'nullable|string|max:255',
-            'generated_at' => 'nullable|date',
         ]);
 
         return response()->json($this->payslipService->createPayslip($data), 201);
@@ -179,12 +194,20 @@ class PayslipController extends Controller
     public function update(Request $request, $id)
     {
         $data = $request->validate([
-            'payroll_id' => 'sometimes|integer|exists:payrolls,id',
             'pdf_path' => 'nullable|string|max:255',
-            'generated_at' => 'nullable|date',
         ]);
 
         return response()->json($this->payslipService->updatePayslip($id, $data));
+    }
+
+    public function approve($id, Request $request)
+    {
+        return response()->json($this->payslipService->approvePayslip($id, $request->user()->id));
+    }
+
+    public function issue($id)
+    {
+        return response()->json($this->payslipService->issuePayslip($id));
     }
 
     #[OA\Delete(

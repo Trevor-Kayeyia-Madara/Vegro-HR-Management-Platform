@@ -49,15 +49,19 @@ class EmployeeService
         if (!isset($data['hire_date'])) {
             $data['hire_date'] = date('Y-m-d');
         }
+        // Set salary to 0 if not provided
+        if (!isset($data['salary'])) {
+            $data['salary'] = 0;
+        }
 
         $employee = $this->employeeRepository->create($data);
 
         if ($roleIds) {
             $ids = is_array($roleIds) ? $roleIds : [$roleIds];
-            $employee->role()->sync($ids);
+            $employee->roles()->sync($ids);
         }
 
-        return $employee->load(['department', 'role']);
+        return $employee->load(['department', 'roles']);
     }
 
     public function updateEmployee(Employee $employee, array $data)
@@ -83,10 +87,10 @@ class EmployeeService
 
         if ($roleIds) {
             $ids = is_array($roleIds) ? $roleIds : [$roleIds];
-            $updated->role()->sync($ids);
+            $updated->roles()->sync($ids);
         }
 
-        return $updated->load(['department', 'role']);
+        return $updated->load(['department', 'roles']);
     }
 
     public function deleteEmployee(Employee $employee)
