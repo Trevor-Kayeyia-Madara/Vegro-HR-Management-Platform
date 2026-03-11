@@ -82,7 +82,10 @@ DB_PASSWORD=
 - This repo is intended as a portfolio project; contributions are welcome.
 
 **About the Author**
-Hi, I’m `Your Name` — a software engineer focused on building practical, well-structured products. I enjoy working on clean architecture, robust APIs, and polished user experiences. Connect with me on `LinkedIn` and see more of my work on `GitHub`.
+Hi, I’m Trevor Madara — a software engineer focused on building practical, well-structured products. I enjoy working on clean architecture, robust APIs, and polished user experiences. Connect with me on LinkedIn and see more of my work on GitHub.
+
+- LinkedIn: `https://www.linkedin.com/in/trevor-madara/`
+- GitHub: `https://github.com/Trevor-Kayeyia-Madara`
 
 **License**
 MIT License — free for personal and commercial use.
