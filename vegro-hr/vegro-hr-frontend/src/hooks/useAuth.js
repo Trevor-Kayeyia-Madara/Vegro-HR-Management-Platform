@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import authService from '../services/authService';
+import AuthService from '../services/AuthService';
 
 const user = ref(null);
 const isLoading = ref(false);
@@ -46,14 +46,14 @@ const fetchUser = async () => {
   isLoading.value = true;
 
   try {
-    const response = await authService.getCurrentUser();
+    const response = await AuthService.getCurrentUser();
     const payload = response?.data?.data ?? response?.data ?? null;
     user.value = payload?.user ?? payload ?? null;
     return user.value;
   } catch (err) {
     user.value = null;
     if (err?.response?.status === 401) {
-      authService.clearToken();
+      AuthService.clearToken();
     }
     error.value = err?.response?.data?.message || 'Unable to fetch user.';
     return null;
@@ -69,7 +69,7 @@ const logout = async () => {
   isLoading.value = true;
 
   try {
-    await authService.logout();
+    await AuthService.logout();
   } finally {
     user.value = null;
     isLoading.value = false;
