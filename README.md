@@ -1,6 +1,12 @@
-# Vegro HR
+﻿# Vegro HR
 
 Modern HR platform for employee management, payroll, attendance, and access control. Built as a portfolio-grade system with clean domain modeling, API-ready modules, and room for a rich front-end experience.
+
+**Badges**
+![License](https://img.shields.io/badge/License-MIT-black)
+![Backend](https://img.shields.io/badge/Backend-Laravel%2010-red)
+![PHP](https://img.shields.io/badge/PHP-8-blue)
+![DB](https://img.shields.io/badge/DB-MySQL%20%2B%20MongoDB-teal)
 
 **Highlights**
 - End-to-end HR core: employees, departments, attendance, leave, payroll, payslips
@@ -25,6 +31,13 @@ Modern HR platform for employee management, payroll, attendance, and access cont
 - Leave Requests: approval workflows
 - Payroll + Payslips: net salary calculation and records
 - Activity Logs: audit trail for critical actions
+
+**Demo**
+- Live demo: `TBD`
+- Walkthrough video: `TBD`
+
+**Screenshots**
+- Coming soon. I will add UI previews here.
 
 **API Snapshot**
 | Module | Endpoint | Method | Description |
@@ -68,5 +81,8 @@ DB_PASSWORD=
 - Backend implementation details live in `vegro-hr/README.md`.
 - This repo is intended as a portfolio project; contributions are welcome.
 
+**About the Author**
+Hi, I’m `Your Name` — a software engineer focused on building practical, well-structured products. I enjoy working on clean architecture, robust APIs, and polished user experiences. Connect with me on `LinkedIn` and see more of my work on `GitHub`.
+
 **License**
-MIT License � free for personal and commercial use.
+MIT License — free for personal and commercial use.
