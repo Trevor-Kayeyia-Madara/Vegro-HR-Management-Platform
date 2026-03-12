@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
-import employeeService from '../services/employeeService';
+import employeeService from '../services/EmployeeService';
 
 defineOptions({ name: 'CreateEmployeeModal' });
 
