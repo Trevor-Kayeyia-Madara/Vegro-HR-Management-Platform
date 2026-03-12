@@ -26,7 +26,7 @@ class EmployeeService
 
     public function createEmployee(array $data)
     {
-        $roleIds = $data['role_ids'] ?? ($data['role_id'] ?? null);
+        $roleIds = $this->normalizeRoleIds($data['role_ids'] ?? ($data['role_id'] ?? null));
         // Generate employee_number if not provided
         if (!isset($data['employee_number'])) {
             $data['employee_number'] = 'EMP' . date('Ymd') . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
@@ -56,9 +56,8 @@ class EmployeeService
 
         $employee = $this->employeeRepository->create($data);
 
-        if ($roleIds) {
-            $ids = is_array($roleIds) ? $roleIds : [$roleIds];
-            $employee->roles()->sync($ids);
+        if (!empty($roleIds)) {
+            $employee->roles()->sync($roleIds);
         }
 
         return $employee->load(['department', 'roles']);
@@ -66,7 +65,7 @@ class EmployeeService
 
     public function updateEmployee(Employee $employee, array $data)
     {
-        $roleIds = $data['role_ids'] ?? ($data['role_id'] ?? null);
+        $roleIds = $this->normalizeRoleIds($data['role_ids'] ?? ($data['role_id'] ?? null));
         // Combine first_name and last_name into name if both are provided
         if (isset($data['first_name']) && isset($data['last_name'])) {
             $data['name'] = $data['first_name'] . ' ' . $data['last_name'];
@@ -85,12 +84,19 @@ class EmployeeService
 
         $updated = $this->employeeRepository->update($employee, $data);
 
-        if ($roleIds) {
-            $ids = is_array($roleIds) ? $roleIds : [$roleIds];
-            $updated->roles()->sync($ids);
+        if (!empty($roleIds)) {
+            $updated->roles()->sync($roleIds);
         }
 
         return $updated->load(['department', 'roles']);
+    }
+
+    protected function normalizeRoleIds($roleIds): array
+    {
+        $ids = is_array($roleIds) ? $roleIds : ($roleIds !== null ? [$roleIds] : []);
+        return array_values(array_filter($ids, function ($id) {
+            return is_numeric($id) && (int) $id > 0;
+        }));
     }
 
     public function deleteEmployee(Employee $employee)

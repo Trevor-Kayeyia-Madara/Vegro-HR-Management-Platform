@@ -19,11 +19,17 @@ class AuthRepository
 
     public function store(array $data)
     {
+        $companyId = $data['company_id'] ?? null;
+        if (!$companyId && !empty($data['company_domain'])) {
+            $companyId = \App\Models\Company::where('domain', $data['company_domain'])->value('id');
+        }
+
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'role_id' => $this->roleRepository->getRoleIdByName('employee'), // Default role
             'password' => Hash::make($data['password']),
+            'company_id' => $companyId,
         ]);
 
         return $user;
@@ -31,7 +37,21 @@ class AuthRepository
 
     public function login(array $credentials)
     {
-        $user = User::where('email', $credentials['email'])->first();
+        $query = User::where('email', $credentials['email']);
+        if (!empty($credentials['company_id'])) {
+            $query->where('company_id', $credentials['company_id']);
+        } elseif (!empty($credentials['company_domain'])) {
+            $query->whereHas('company', function ($q) use ($credentials) {
+                $q->where('domain', $credentials['company_domain']);
+            });
+        }
+
+        $users = $query->get();
+        if ($users->count() > 1 && empty($credentials['company_id']) && empty($credentials['company_domain'])) {
+            return ['error' => 'Multiple companies found for this email. Provide company_id or company_domain.'];
+        }
+
+        $user = $users->first();
 
         if ($user && Hash::check($credentials['password'], $user->password)) {
             // Generate a simple token
@@ -62,7 +82,7 @@ class AuthRepository
 
     public function getRoleIdByName($name)
     {
-        $role = Role::where('name', $name)->first();
+        $role = Role::whereRaw('LOWER(title) = ?', [strtolower($name)])->first();
         return $role ? $role->id : null;
     }
 

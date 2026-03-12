@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Permission;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
 class RoleController extends Controller
@@ -125,8 +126,13 @@ class RoleController extends Controller
     )]
     public function store(Request $request)
     {
+        $companyId = $request->attributes->get('company_id') ?? auth()->user()?->company_id;
         $request->validate([
-            'name' => 'required|string|unique:roles,title',
+            'name' => [
+                'required',
+                'string',
+                Rule::unique('roles', 'title')->where('company_id', $companyId),
+            ],
             'description' => 'nullable|string'
         ]);
         
@@ -187,8 +193,13 @@ class RoleController extends Controller
     )]
     public function update(Request $request, $id)
     {
+        $companyId = $request->attributes->get('company_id') ?? auth()->user()?->company_id;
         $validated = $request->validate([
-            'name' => 'nullable|string|unique:roles,title,' . $id,
+            'name' => [
+                'nullable',
+                'string',
+                Rule::unique('roles', 'title')->where('company_id', $companyId)->ignore($id),
+            ],
             'description' => 'nullable|string'
         ]);
         

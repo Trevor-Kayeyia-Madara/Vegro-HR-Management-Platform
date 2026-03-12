@@ -11,6 +11,7 @@ import FinanceDashboard from "../pages/Finance/Dashboard.vue"
 import EmployeeDashboard from "../pages/Employee/Dashboard.vue"
 import ManagerDashboard from "../pages/Manager/Dashboard.vue"
 import DirectorDashboard from "../pages/Director/Dashboard.vue"
+import ManagerTeam from "../pages/Manager/Team.vue"
 import ProtectedRoute from "../components/ProtectedRoute.vue"
 import Employees from "../pages/Employees/Employees.vue"
 import Departments from "../pages/Departments/Departments.vue"
@@ -91,6 +92,12 @@ const routes = [
             name: "DirectorDashboard",
             component: DirectorDashboard,
             meta: { roles: ['director', 'md'], permissions: 'dashboard.view' }
+          },
+          {
+            path: "my-team",
+            name: "ManagerTeam",
+            component: ManagerTeam,
+            meta: { roles: ['manager'], permissions: 'employees.view' }
           },
           {
             path: "employees",

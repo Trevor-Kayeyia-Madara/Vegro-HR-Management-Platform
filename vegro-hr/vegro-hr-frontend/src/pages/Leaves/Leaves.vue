@@ -119,7 +119,9 @@ const loadRequests = async () => {
       ? `/api/leave-requests/employee/${currentEmployeeId.value}`
       : '/api/leave-requests/all';
 
-    const employeeResponsePromise = apiClient.get('/api/employees', { params: { per_page: 1000 } });
+    const employeeResponsePromise = canManageRequests.value
+      ? apiClient.get('/api/employees', { params: { per_page: 1000 } })
+      : Promise.resolve({ data: { data: [] } });
     const requestsResponsePromise = apiClient.get(endpoint, {
       params: { page: currentPage.value, per_page: pageSize.value },
     });

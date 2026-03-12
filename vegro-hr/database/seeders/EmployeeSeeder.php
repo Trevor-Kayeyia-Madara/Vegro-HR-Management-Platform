@@ -9,6 +9,9 @@ class EmployeeSeeder extends Seeder
 {
     public function run(): void
     {
+        $companyId = app()->has('company_id')
+            ? app('company_id')
+            : \App\Models\Company::where('domain', 'default.local')->value('id');
         $departments = \App\Models\Department::pluck('id', 'name');
         $defaultDepartmentId = $departments->values()->first();
         $hrDepartmentId = $departments['Human Resources'] ?? $defaultDepartmentId;
@@ -55,6 +58,7 @@ class EmployeeSeeder extends Seeder
                 'position' => $user->role?->title ?? 'Employee',
                 'status' => 'active',
                 'salary' => $roleSalaries[$roleTitle] ?? 80000,
+                'company_id' => $companyId,
             ];
 
             if (empty($employeeData['employee_number'])) {

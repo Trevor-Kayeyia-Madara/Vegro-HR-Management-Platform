@@ -35,14 +35,36 @@ Route::get('/', function () {
 });
 
 // Authentication Routes
-Route::post('/auth/register', 'App\Http\Controllers\AuthController@store');
-Route::post('/auth/login', 'App\Http\Controllers\AuthController@login');
+Route::post('/auth/register', 'App\Http\Controllers\AuthController@store')->middleware('tenant.domain');
+Route::post('/auth/login', 'App\Http\Controllers\AuthController@login')->middleware('tenant.domain');
 Route::post('/auth/logout', 'App\Http\Controllers\AuthController@logout')->middleware('check.api.token');
 Route::get('/auth/me', 'App\Http\Controllers\AuthController@me')->middleware('check.api.token');
 Route::get('/auth/check', 'App\Http\Controllers\AuthController@authCheck');
 
+// Super Admin only routes (no tenant scoping)
+Route::middleware(['check.api.token', 'superadmin'])->group(function () {
+    Route::apiResource('companies', 'App\Http\Controllers\CompanyController')->only(['index', 'store']);
+    Route::get('/super/dashboard', 'App\Http\Controllers\SuperAdminController@dashboard');
+    Route::post('/companies/{company}/suspend', 'App\Http\Controllers\CompanyController@suspend');
+    Route::post('/companies/{company}/resume', 'App\Http\Controllers\CompanyController@resume');
+    Route::get('/companies/{company}/domains', 'App\Http\Controllers\CompanyController@listDomains');
+    Route::post('/companies/{company}/domains', 'App\Http\Controllers\CompanyController@addDomain');
+    Route::delete('/companies/{company}/domains/{domain}', 'App\Http\Controllers\CompanyController@removeDomain');
+    Route::post('/companies/{company}/plan', 'App\Http\Controllers\CompanyController@updatePlan');
+
+    Route::get('/plans', 'App\Http\Controllers\PlanController@index');
+    Route::post('/plans', 'App\Http\Controllers\PlanController@store');
+    Route::put('/plans/{plan}', 'App\Http\Controllers\PlanController@update');
+
+    Route::get('/subscriptions', 'App\Http\Controllers\SubscriptionController@index');
+    Route::post('/subscriptions', 'App\Http\Controllers\SubscriptionController@store');
+    Route::put('/subscriptions/{subscription}', 'App\Http\Controllers\SubscriptionController@update');
+
+    Route::get('/activity-logs', 'App\Http\Controllers\ActivityLogController@index');
+});
+
 // Protected Routes (require authentication)
-Route::middleware('check.api.token')->group(function () {
+Route::middleware(['check.api.token', 'tenant.domain', 'tenant', 'tenant.env'])->group(function () {
     Route::apiResource('departments', 'App\Http\Controllers\DepartmentController')->middleware('role:admin,hr');
     Route::get('/employees', 'App\Http\Controllers\EmployeeController@index')->middleware('role:admin,hr,finance,employee');
     Route::post('/employees', 'App\Http\Controllers\EmployeeController@store')->middleware('role:admin,hr');
@@ -50,7 +72,8 @@ Route::middleware('check.api.token')->group(function () {
     Route::put('/employees/{employee}', 'App\Http\Controllers\EmployeeController@update')->middleware('role:admin,hr,employee');
     Route::delete('/employees/{employee}', 'App\Http\Controllers\EmployeeController@destroy')->middleware('role:admin,hr');
     Route::get('/employees/email/{email}', 'App\Http\Controllers\EmployeeController@getEmployeeByEmail')->middleware('role:admin,hr,finance,employee');
-    Route::get('/employees/department/{departmentId}', 'App\Http\Controllers\EmployeeController@getEmployeesByDepartment')->middleware('role:admin,hr');
+    Route::get('/employees/department/{departmentId}', 'App\Http\Controllers\EmployeeController@getEmployeesByDepartment')->middleware('role:admin,hr,manager');
+    Route::get('/employees/my-department', 'App\Http\Controllers\EmployeeController@getMyDepartmentEmployees')->middleware('role:manager');
     
     Route::apiResource('payrolls', 'App\Http\Controllers\PayrollController')->middleware('role:admin,hr,finance');
     Route::get('/payslips/me', 'App\Http\Controllers\PayslipController@myPayslips')->middleware('role:admin,hr,finance,employee');
@@ -80,4 +103,10 @@ Route::middleware('check.api.token')->group(function () {
     Route::apiResource('users', 'App\Http\Controllers\UserController')->middleware('role:admin');
     Route::apiResource('tax-profiles', 'App\Http\Controllers\TaxProfileController')->middleware('role:admin,finance');
     Route::post('/roles/{role}/users/{user}', 'App\Http\Controllers\RoleController@assignUserByRoute')->middleware('role:admin');
+
+    Route::get('/company/admin/dashboard', 'App\Http\Controllers\CompanyAdminController@dashboard')->middleware('role:admin');
+    Route::get('/company/admin/settings', 'App\Http\Controllers\CompanyAdminController@settings')->middleware('role:admin');
+    Route::put('/company/admin/settings', 'App\Http\Controllers\CompanyAdminController@updateSettings')->middleware('role:admin');
+    Route::get('/company/admin/index-data', 'App\Http\Controllers\CompanyAdminController@indexData')->middleware('role:admin');
+    Route::get('/company/admin/subscription', 'App\Http\Controllers\CompanyAdminController@subscription')->middleware('role:admin');
 });
