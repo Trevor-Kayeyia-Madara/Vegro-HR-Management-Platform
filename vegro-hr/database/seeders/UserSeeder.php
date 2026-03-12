@@ -24,6 +24,17 @@ class UserSeeder extends Seeder
         );
 
         \App\Models\User::updateOrCreate(
+            ['email' => 'companyadmin@example.com'],
+            [
+                'name' => 'Company Admin',
+                'password' => bcrypt('CompanyAdmin123'),
+                'role_id' => \App\Models\Role::where('title', 'Company Admin')->first()?->id
+                    ?? \App\Models\Role::where('title', 'Admin')->first()->id,
+                'company_id' => $companyId,
+            ]
+        );
+
+        \App\Models\User::updateOrCreate(
             ['email' => 'hr@example.com'],
             [
                 'name' => 'HR Manager',

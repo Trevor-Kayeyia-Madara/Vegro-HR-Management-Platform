@@ -234,7 +234,7 @@ class UserController extends Controller
         if ($this->isProtectedAdmin($user)) {
             $payload = $request->only(['name', 'email', 'role_id']);
             if (!empty($payload)) {
-                return ApiResponse::forbidden('Protected admin user cannot be modified');
+                return ApiResponse::forbidden('Protected admin user can only update password');
             }
         }
 
@@ -255,6 +255,10 @@ class UserController extends Controller
                 Rule::exists('roles', 'id')->where('company_id', $companyId),
             ],
         ]);
+
+        if ($this->isProtectedAdmin($user)) {
+            $validated = array_intersect_key($validated, ['password' => true]);
+        }
 
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);

@@ -66,6 +66,72 @@ class PayrollController extends Controller
         return round($tax, 2);
     }
 
+    protected function resolveTaxProfile(?int $taxProfileId, ?Payroll $payroll = null): ?TaxProfile
+    {
+        if ($taxProfileId) {
+            return TaxProfile::find($taxProfileId);
+        }
+
+        if ($payroll && $payroll->taxProfile) {
+            return $payroll->taxProfile;
+        }
+
+        return TaxProfile::first();
+    }
+
+    protected function computePayrollFields(array $input, ?TaxProfile $profile, ?Payroll $existing = null): array
+    {
+        $basic = (float) ($input['basic_salary'] ?? $existing?->basic_salary ?? 0);
+        $allowances = (float) ($input['allowances'] ?? $existing?->allowances ?? 0);
+        $gross = $basic + $allowances;
+
+        $nssf = $this->calculateNssf($gross, $profile);
+        $shifRate = (float) ($profile?->shif_rate ?? 0.0275);
+        $shifMin = (float) ($profile?->shif_min ?? 300);
+        $housingRate = (float) ($profile?->housing_levy_rate ?? 0.015);
+        $shif = max(round($gross * $shifRate, 2), $shifMin);
+        $housingLevy = round($gross * $housingRate, 2);
+
+        $pensionCap = (float) ($profile?->pension_cap ?? 30000);
+        $mortgageCap = (float) ($profile?->mortgage_cap ?? 30000);
+        $pension = min((float) ($input['pension_contribution'] ?? $existing?->pension_contribution ?? 0), $pensionCap);
+        $mortgage = min((float) ($input['mortgage_interest'] ?? $existing?->mortgage_interest ?? 0), $mortgageCap);
+        $insurancePremium = (float) ($input['insurance_premium'] ?? $existing?->insurance_premium ?? 0);
+
+        $taxableIncome = max($gross - $nssf - $shif - $housingLevy - $pension - $mortgage, 0);
+        $taxBeforeRelief = $this->calculatePaye($taxableIncome, $profile);
+        $personalRelief = (float) ($profile?->personal_relief ?? 2400);
+        $insuranceReliefRate = (float) ($profile?->insurance_relief_rate ?? 0.15);
+        $insuranceReliefCap = (float) ($profile?->insurance_relief_cap ?? 5000);
+        $insuranceRelief = min(round($insurancePremium * $insuranceReliefRate, 2), $insuranceReliefCap);
+        $paye = max($taxBeforeRelief - $personalRelief - $insuranceRelief, 0);
+        $taxRate = $taxableIncome > 0 ? round(($paye / $taxableIncome) * 100, 2) : 0;
+
+        $otherDeductions = (float) ($input['deductions'] ?? $existing?->deductions ?? 0);
+        $netSalary = $gross - ($nssf + $shif + $housingLevy + $paye + $otherDeductions);
+
+        return [
+            'tax_profile_id' => $profile?->id,
+            'basic_salary' => $basic,
+            'allowances' => $allowances,
+            'gross_salary' => $gross,
+            'nssf' => $nssf,
+            'shif' => $shif,
+            'housing_levy' => $housingLevy,
+            'taxable_income' => $taxableIncome,
+            'paye' => $paye,
+            'tax_rate' => $taxRate,
+            'personal_relief' => $personalRelief,
+            'insurance_premium' => $insurancePremium,
+            'insurance_relief' => $insuranceRelief,
+            'pension_contribution' => $pension,
+            'mortgage_interest' => $mortgage,
+            'deductions' => $otherDeductions,
+            'tax' => $paye,
+            'net_salary' => $netSalary,
+        ];
+    }
+
     #[OA\Get(
         path: "/api/payrolls",
         operationId: "getPayrolls",
@@ -166,55 +232,16 @@ class PayrollController extends Controller
             'mortgage_interest' => 'numeric|nullable'
         ]);
 
-        $profile = isset($validated['tax_profile_id'])
-            ? TaxProfile::find($validated['tax_profile_id'])
-            : TaxProfile::first();
+        $profile = $this->resolveTaxProfile($validated['tax_profile_id'] ?? null);
+        $computed = $this->computePayrollFields($validated, $profile);
 
-        $basic = (float) $validated['basic_salary'];
-        $allowances = (float) ($validated['allowances'] ?? 0);
-        $gross = $basic + $allowances;
+        $payload = array_merge([
+            'employee_id' => $validated['employee_id'],
+            'month' => $validated['month'],
+            'year' => $validated['year'],
+        ], $computed);
 
-        $nssf = $this->calculateNssf($gross, $profile);
-        $shifRate = (float) ($profile?->shif_rate ?? 0.0275);
-        $shifMin = (float) ($profile?->shif_min ?? 300);
-        $housingRate = (float) ($profile?->housing_levy_rate ?? 0.015);
-        $shif = max(round($gross * $shifRate, 2), $shifMin);
-        $housingLevy = round($gross * $housingRate, 2);
-
-        $pensionCap = (float) ($profile?->pension_cap ?? 30000);
-        $mortgageCap = (float) ($profile?->mortgage_cap ?? 30000);
-        $pension = min((float) ($validated['pension_contribution'] ?? 0), $pensionCap);
-        $mortgage = min((float) ($validated['mortgage_interest'] ?? 0), $mortgageCap);
-        $insurancePremium = (float) ($validated['insurance_premium'] ?? 0);
-
-        $taxableIncome = max($gross - $nssf - $shif - $housingLevy - $pension - $mortgage, 0);
-        $taxBeforeRelief = $this->calculatePaye($taxableIncome, $profile);
-        $personalRelief = (float) ($profile?->personal_relief ?? 2400);
-        $insuranceReliefRate = (float) ($profile?->insurance_relief_rate ?? 0.15);
-        $insuranceReliefCap = (float) ($profile?->insurance_relief_cap ?? 5000);
-        $insuranceRelief = min(round($insurancePremium * $insuranceReliefRate, 2), $insuranceReliefCap);
-        $paye = max($taxBeforeRelief - $personalRelief - $insuranceRelief, 0);
-        $taxRate = $taxableIncome > 0 ? round(($paye / $taxableIncome) * 100, 2) : 0;
-
-        $otherDeductions = (float) ($validated['deductions'] ?? 0);
-        $netSalary = $gross - ($nssf + $shif + $housingLevy + $paye + $otherDeductions);
-
-        $validated['gross_salary'] = $gross;
-        $validated['nssf'] = $nssf;
-        $validated['shif'] = $shif;
-        $validated['housing_levy'] = $housingLevy;
-        $validated['taxable_income'] = $taxableIncome;
-        $validated['paye'] = $paye;
-        $validated['tax_rate'] = $taxRate;
-        $validated['personal_relief'] = $personalRelief;
-        $validated['insurance_premium'] = $insurancePremium;
-        $validated['insurance_relief'] = $insuranceRelief;
-        $validated['pension_contribution'] = $pension;
-        $validated['mortgage_interest'] = $mortgage;
-        $validated['tax'] = $paye;
-        $validated['net_salary'] = $netSalary;
-
-        $payroll = Payroll::create($validated);
+        $payroll = Payroll::create($payload);
         $this->payslipService->createPayslip(['payroll_id' => $payroll->id]);
 
         return ApiResponse::success(new PayrollResource($payroll), "Payroll created successfully", 201);
@@ -311,59 +338,10 @@ class PayrollController extends Controller
             'tax_profile_id' => 'nullable|exists:tax_profiles,id',
         ]);
 
-        $profile = isset($validated['tax_profile_id'])
-            ? TaxProfile::find($validated['tax_profile_id'])
-            : ($payroll->taxProfile ?: TaxProfile::first());
+        $profile = $this->resolveTaxProfile($validated['tax_profile_id'] ?? null, $payroll);
+        $computed = $this->computePayrollFields($validated, $profile, $payroll);
 
-        $basic = (float) ($validated['basic_salary'] ?? $payroll->basic_salary);
-        $allowances = (float) ($validated['allowances'] ?? $payroll->allowances);
-        $gross = $basic + $allowances;
-
-        $nssf = $this->calculateNssf($gross, $profile);
-        $shifRate = (float) ($profile?->shif_rate ?? 0.0275);
-        $shifMin = (float) ($profile?->shif_min ?? 300);
-        $housingRate = (float) ($profile?->housing_levy_rate ?? 0.015);
-        $shif = max(round($gross * $shifRate, 2), $shifMin);
-        $housingLevy = round($gross * $housingRate, 2);
-
-        $pensionCap = (float) ($profile?->pension_cap ?? 30000);
-        $mortgageCap = (float) ($profile?->mortgage_cap ?? 30000);
-        $pension = min((float) ($validated['pension_contribution'] ?? $payroll->pension_contribution), $pensionCap);
-        $mortgage = min((float) ($validated['mortgage_interest'] ?? $payroll->mortgage_interest), $mortgageCap);
-        $insurancePremium = (float) ($validated['insurance_premium'] ?? $payroll->insurance_premium);
-
-        $taxableIncome = max($gross - $nssf - $shif - $housingLevy - $pension - $mortgage, 0);
-        $taxBeforeRelief = $this->calculatePaye($taxableIncome, $profile);
-        $personalRelief = (float) ($profile?->personal_relief ?? 2400);
-        $insuranceReliefRate = (float) ($profile?->insurance_relief_rate ?? 0.15);
-        $insuranceReliefCap = (float) ($profile?->insurance_relief_cap ?? 5000);
-        $insuranceRelief = min(round($insurancePremium * $insuranceReliefRate, 2), $insuranceReliefCap);
-        $paye = max($taxBeforeRelief - $personalRelief - $insuranceRelief, 0);
-        $taxRate = $taxableIncome > 0 ? round(($paye / $taxableIncome) * 100, 2) : 0;
-
-        $otherDeductions = (float) ($validated['deductions'] ?? $payroll->deductions);
-        $netSalary = $gross - ($nssf + $shif + $housingLevy + $paye + $otherDeductions);
-
-        $payroll->update([
-            'tax_profile_id' => $profile?->id,
-            'basic_salary' => $basic,
-            'allowances' => $allowances,
-            'gross_salary' => $gross,
-            'nssf' => $nssf,
-            'shif' => $shif,
-            'housing_levy' => $housingLevy,
-            'taxable_income' => $taxableIncome,
-            'paye' => $paye,
-            'tax_rate' => $taxRate,
-            'personal_relief' => $personalRelief,
-            'insurance_premium' => $insurancePremium,
-            'insurance_relief' => $insuranceRelief,
-            'pension_contribution' => $pension,
-            'mortgage_interest' => $mortgage,
-            'deductions' => $otherDeductions,
-            'tax' => $paye,
-            'net_salary' => $netSalary
-        ]);
+        $payroll->update($computed);
 
         $this->payslipService->syncPayslipForPayroll($payroll->load('employee', 'payslip'));
 
@@ -404,6 +382,237 @@ class PayrollController extends Controller
     {
         $payroll->delete();
         return ApiResponse::success(null, "Payroll deleted successfully");
+    }
+
+    #[OA\Get(
+        path: "/api/payrolls/export/csv",
+        operationId: "exportPayrollsToCSV",
+        description: "Export payrolls to CSV",
+        summary: "Export payrolls to CSV",
+        tags: ["Payrolls"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Payrolls exported successfully",
+                content: new OA\MediaType(
+                    mediaType: "text/csv",
+                    schema: new OA\Schema(type: "string", format: "binary")
+                )
+            )
+        ]
+    )]
+    public function exportToCSV()
+    {
+        $payrolls = Payroll::with('employee')->get();
+        $header = [
+            'employee_id',
+            'employee_number',
+            'employee_name',
+            'employee_email',
+            'month',
+            'year',
+            'basic_salary',
+            'allowances',
+            'gross_salary',
+            'nssf',
+            'shif',
+            'housing_levy',
+            'taxable_income',
+            'paye',
+            'tax_rate',
+            'personal_relief',
+            'insurance_premium',
+            'insurance_relief',
+            'pension_contribution',
+            'mortgage_interest',
+            'deductions',
+            'tax',
+            'net_salary',
+            'tax_profile_id',
+        ];
+
+        $csv = \App\Helpers\CsvHelper::row($header);
+
+        foreach ($payrolls as $payroll) {
+            $employee = $payroll->employee;
+            $csv .= \App\Helpers\CsvHelper::row([
+                $payroll->employee_id,
+                $employee?->employee_number,
+                $employee?->name,
+                $employee?->email,
+                $payroll->month,
+                $payroll->year,
+                $payroll->basic_salary,
+                $payroll->allowances,
+                $payroll->gross_salary,
+                $payroll->nssf,
+                $payroll->shif,
+                $payroll->housing_levy,
+                $payroll->taxable_income,
+                $payroll->paye,
+                $payroll->tax_rate,
+                $payroll->personal_relief,
+                $payroll->insurance_premium,
+                $payroll->insurance_relief,
+                $payroll->pension_contribution,
+                $payroll->mortgage_interest,
+                $payroll->deductions,
+                $payroll->tax,
+                $payroll->net_salary,
+                $payroll->tax_profile_id,
+            ]);
+        }
+
+        return response($csv)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', 'attachment; filename="payrolls.csv"');
+    }
+
+    #[OA\Post(
+        path: "/api/payrolls/import/csv",
+        operationId: "importPayrollsFromCSV",
+        description: "Import payrolls from CSV",
+        summary: "Import payrolls from CSV",
+        tags: ["Payrolls"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Payrolls imported successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Import complete"),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Validation error")
+        ]
+    )]
+    public function importFromCSV(Request $request)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:csv,txt',
+            'mode' => 'nullable|in:upsert,skip',
+        ]);
+
+        $mode = $validated['mode'] ?? 'upsert';
+        $path = $request->file('file')->getRealPath();
+        $csv = new \SplFileObject($path);
+        $csv->setFlags(\SplFileObject::READ_CSV | \SplFileObject::SKIP_EMPTY | \SplFileObject::DROP_NEW_LINE);
+
+        $header = null;
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+        $failed = 0;
+        $errors = [];
+        $rowNumber = 0;
+
+        foreach ($csv as $row) {
+            $rowNumber++;
+            if ($row === [null] || $row === false) {
+                continue;
+            }
+
+            if ($header === null) {
+                $header = array_map(fn ($value) => \App\Helpers\CsvHelper::normalizeHeader((string) $value), $row);
+                continue;
+            }
+
+            $data = [];
+            foreach ($header as $index => $key) {
+                if ($key === '') {
+                    continue;
+                }
+                $data[$key] = isset($row[$index]) ? trim((string) $row[$index]) : null;
+            }
+
+            $hasContent = collect($data)->filter(fn ($value) => $value !== null && $value !== '')->isNotEmpty();
+            if (!$hasContent) {
+                continue;
+            }
+
+            try {
+                $employeeId = $data['employee_id'] ?? null;
+                if (!$employeeId && !empty($data['employee_email'])) {
+                    $employeeId = \App\Models\Employee::where('email', $data['employee_email'])->value('id');
+                }
+                if (!$employeeId && !empty($data['employee_number'])) {
+                    $employeeId = \App\Models\Employee::where('employee_number', $data['employee_number'])->value('id');
+                }
+
+                if (!$employeeId) {
+                    throw new \Exception('Employee not found');
+                }
+
+                $month = $data['month'] ?? null;
+                $year = $data['year'] ?? null;
+                $basicSalary = $data['basic_salary'] ?? null;
+
+                if (!$month || !$year || $basicSalary === null || $basicSalary === '') {
+                    throw new \Exception('Missing required fields (month, year, basic_salary)');
+                }
+
+                $input = [
+                    'employee_id' => (int) $employeeId,
+                    'month' => (int) $month,
+                    'year' => (int) $year,
+                    'basic_salary' => (float) $basicSalary,
+                    'allowances' => $data['allowances'] ?? null,
+                    'deductions' => $data['deductions'] ?? null,
+                    'tax_profile_id' => $data['tax_profile_id'] ?? null,
+                    'insurance_premium' => $data['insurance_premium'] ?? null,
+                    'pension_contribution' => $data['pension_contribution'] ?? null,
+                    'mortgage_interest' => $data['mortgage_interest'] ?? null,
+                ];
+
+                $existing = Payroll::where('employee_id', $input['employee_id'])
+                    ->where('month', $input['month'])
+                    ->where('year', $input['year'])
+                    ->first();
+
+                if ($existing) {
+                    if ($mode === 'skip') {
+                        $skipped++;
+                        continue;
+                    }
+                    $profile = $this->resolveTaxProfile(
+                        isset($input['tax_profile_id']) ? (int) $input['tax_profile_id'] : null,
+                        $existing
+                    );
+                    $computed = $this->computePayrollFields($input, $profile, $existing);
+                    $existing->update($computed);
+                    $this->payslipService->syncPayslipForPayroll($existing->load('employee', 'payslip'));
+                    $updated++;
+                } else {
+                    $profile = $this->resolveTaxProfile(isset($input['tax_profile_id']) ? (int) $input['tax_profile_id'] : null);
+                    $computed = $this->computePayrollFields($input, $profile);
+                    $payload = array_merge([
+                        'employee_id' => $input['employee_id'],
+                        'month' => $input['month'],
+                        'year' => $input['year'],
+                    ], $computed);
+                    $payroll = Payroll::create($payload);
+                    $this->payslipService->createPayslip(['payroll_id' => $payroll->id]);
+                    $created++;
+                }
+            } catch (\Throwable $e) {
+                $failed++;
+                $errors[] = [
+                    'row' => $rowNumber,
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return ApiResponse::success([
+            'created' => $created,
+            'updated' => $updated,
+            'skipped' => $skipped,
+            'failed' => $failed,
+            'errors' => $errors,
+        ], 'Import complete');
     }
 
 }

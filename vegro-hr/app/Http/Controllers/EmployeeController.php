@@ -371,4 +371,66 @@ class EmployeeController extends Controller
             EmployeeResource::collection($this->employeeService->getEmployeesByDepartment($managedDepartmentId))
         );
     }
+
+    #[OA\Get(
+        path: "/api/employees/export/csv",
+        operationId: "exportEmployeesToCSV",
+        description: "Export employees to CSV",
+        summary: "Export employees to CSV",
+        tags: ["Employees"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Employees exported successfully",
+                content: new OA\MediaType(
+                    mediaType: "text/csv",
+                    schema: new OA\Schema(type: "string", format: "binary")
+                )
+            )
+        ]
+    )]
+    public function exportToCSV()
+    {
+        $csv = $this->employeeService->exportEmployeesToCSV();
+
+        return response($csv)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', 'attachment; filename="employees.csv"');
+    }
+
+    #[OA\Post(
+        path: "/api/employees/import/csv",
+        operationId: "importEmployeesFromCSV",
+        description: "Import employees from CSV",
+        summary: "Import employees from CSV",
+        tags: ["Employees"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Employees imported successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Import complete"),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Validation error")
+        ]
+    )]
+    public function importFromCSV(Request $request)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:csv,txt',
+            'mode' => 'nullable|in:upsert,skip',
+        ]);
+
+        $result = $this->employeeService->importEmployeesFromCSV(
+            $request->file('file'),
+            $validated['mode'] ?? 'upsert'
+        );
+
+        return ApiResponse::success($result, 'Import complete');
+    }
 }

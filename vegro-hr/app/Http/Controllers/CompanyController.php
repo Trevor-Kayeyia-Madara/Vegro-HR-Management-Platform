@@ -56,6 +56,56 @@ class CompanyController extends Controller
         );
     }
 
+    #[OA\Put(
+        path: "/api/companies/{company}",
+        operationId: "updateCompany",
+        description: "Update company profile fields (super admin only)",
+        summary: "Update company",
+        tags: ["Companies"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "company",
+                description: "Company ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                type: "object",
+                properties: [
+                    new OA\Property(property: "name", type: "string", example: "Acme Ltd"),
+                    new OA\Property(property: "industry", type: "string", example: "Manufacturing"),
+                    new OA\Property(property: "country", type: "string", example: "KE"),
+                    new OA\Property(property: "environment", type: "string", example: "production"),
+                    new OA\Property(property: "status", type: "string", example: "active")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Company updated successfully"),
+            new OA\Response(response: 422, description: "Validation error")
+        ]
+    )]
+    public function update(Request $request, Company $company)
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'industry' => 'nullable|string|max:255',
+            'country' => 'nullable|string|max:2',
+            'environment' => ['nullable', Rule::in(['demo', 'staging', 'production'])],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
+        ]);
+
+        $company->update($validated);
+        $this->activity->log('company.updated', $company->id, Company::class, $company->id, $validated);
+
+        return ApiResponse::success(['company' => $company->fresh()], 'Company updated');
+    }
+
     #[OA\Post(
         path: "/api/companies",
         operationId: "createCompany",

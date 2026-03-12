@@ -238,4 +238,66 @@ class AttendanceController extends Controller
         }
         return ApiResponse::error("Failed to delete attendance", 400);
     }
+
+    #[OA\Get(
+        path: "/api/attendances/export/csv",
+        operationId: "exportAttendancesToCSV",
+        description: "Export attendances to CSV",
+        summary: "Export attendances to CSV",
+        tags: ["Attendance"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Attendances exported successfully",
+                content: new OA\MediaType(
+                    mediaType: "text/csv",
+                    schema: new OA\Schema(type: "string", format: "binary")
+                )
+            )
+        ]
+    )]
+    public function exportToCSV()
+    {
+        $csv = $this->attendanceService->exportAttendancesToCSV();
+
+        return response($csv)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', 'attachment; filename="attendances.csv"');
+    }
+
+    #[OA\Post(
+        path: "/api/attendances/import/csv",
+        operationId: "importAttendancesFromCSV",
+        description: "Import attendances from CSV",
+        summary: "Import attendances from CSV",
+        tags: ["Attendance"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Attendances imported successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Import complete"),
+                        new OA\Property(property: "data", type: "object")
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Validation error")
+        ]
+    )]
+    public function importFromCSV(\Illuminate\Http\Request $request)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:csv,txt',
+            'mode' => 'nullable|in:upsert,skip',
+        ]);
+
+        $result = $this->attendanceService->importAttendancesFromCSV(
+            $request->file('file'),
+            $validated['mode'] ?? 'upsert'
+        );
+
+        return ApiResponse::success($result, 'Import complete');
+    }
 }

@@ -340,6 +340,67 @@
                 }
             }
         },
+        "/api/attendances/export/csv": {
+            "get": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Export attendances to CSV",
+                "description": "Export attendances to CSV",
+                "operationId": "exportAttendancesToCSV",
+                "responses": {
+                    "200": {
+                        "description": "Attendances exported successfully",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/attendances/import/csv": {
+            "post": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Import attendances from CSV",
+                "description": "Import attendances from CSV",
+                "operationId": "importAttendancesFromCSV",
+                "responses": {
+                    "200": {
+                        "description": "Attendances imported successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Import complete"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
         "/api/auth/register": {
             "post": {
                 "tags": [
@@ -383,6 +444,16 @@
                                         "type": "string",
                                         "format": "password",
                                         "example": "password123"
+                                    },
+                                    "company_id": {
+                                        "description": "Company ID (optional)",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "company_domain": {
+                                        "description": "Company domain (optional)",
+                                        "type": "string",
+                                        "example": "acme.local"
                                     }
                                 },
                                 "type": "object"
@@ -459,6 +530,16 @@
                                         "type": "string",
                                         "format": "password",
                                         "example": "password123"
+                                    },
+                                    "company_id": {
+                                        "description": "Company ID (optional)",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "company_domain": {
+                                        "description": "Company domain (optional)",
+                                        "type": "string",
+                                        "example": "acme.local"
                                     }
                                 },
                                 "type": "object"
@@ -642,6 +723,362 @@
                         }
                     }
                 }
+            }
+        },
+        "/api/company/admin/dashboard": {
+            "get": {
+                "tags": [
+                    "Company Admin"
+                ],
+                "summary": "Company admin dashboard",
+                "description": "Company admin dashboard summary",
+                "operationId": "companyAdminDashboard",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Dashboard retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/company/admin/settings": {
+            "get": {
+                "tags": [
+                    "Company Admin"
+                ],
+                "summary": "Get company settings",
+                "description": "Get company settings",
+                "operationId": "companyAdminSettings",
+                "responses": {
+                    "200": {
+                        "description": "Settings retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Settings retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Company Admin"
+                ],
+                "summary": "Update company settings",
+                "description": "Update company settings",
+                "operationId": "companyAdminUpdateSettings",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Acme Ltd"
+                                    },
+                                    "domain": {
+                                        "type": "string",
+                                        "example": "acme.local"
+                                    },
+                                    "plan": {
+                                        "type": "string",
+                                        "example": "starter"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "active"
+                                    },
+                                    "environment": {
+                                        "type": "string",
+                                        "example": "production"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Settings updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Settings updated successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/company/admin/index-data": {
+            "get": {
+                "tags": [
+                    "Company Admin"
+                ],
+                "summary": "Company admin index data",
+                "description": "Get users, roles, and permissions for company admin screens",
+                "operationId": "companyAdminIndexData",
+                "responses": {
+                    "200": {
+                        "description": "Index data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Index data retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/companies": {
+            "get": {
+                "tags": [
+                    "Companies"
+                ],
+                "summary": "List companies",
+                "description": "Get all companies (super admin only)",
+                "operationId": "listCompanies",
+                "responses": {
+                    "200": {
+                        "description": "Companies retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Companies retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Companies"
+                ],
+                "summary": "Create company",
+                "description": "Create a company and optional demo data (super admin only)",
+                "operationId": "createCompany",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "admin_name",
+                                    "admin_email",
+                                    "admin_password"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Acme Ltd"
+                                    },
+                                    "domain": {
+                                        "type": "string",
+                                        "example": "acme.local",
+                                        "nullable": true
+                                    },
+                                    "plan": {
+                                        "type": "string",
+                                        "example": "starter"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "active"
+                                    },
+                                    "environment": {
+                                        "type": "string",
+                                        "example": "demo"
+                                    },
+                                    "seed_demo": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "admin_name": {
+                                        "type": "string",
+                                        "example": "Company Admin"
+                                    },
+                                    "admin_email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "admin@acme.local"
+                                    },
+                                    "admin_password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Company created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Company created successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/departments": {
@@ -1435,6 +1872,67 @@
                     },
                     "404": {
                         "description": "Department not found"
+                    }
+                }
+            }
+        },
+        "/api/employees/export/csv": {
+            "get": {
+                "tags": [
+                    "Employees"
+                ],
+                "summary": "Export employees to CSV",
+                "description": "Export employees to CSV",
+                "operationId": "exportEmployeesToCSV",
+                "responses": {
+                    "200": {
+                        "description": "Employees exported successfully",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/employees/import/csv": {
+            "post": {
+                "tags": [
+                    "Employees"
+                ],
+                "summary": "Import employees from CSV",
+                "description": "Import employees from CSV",
+                "operationId": "importEmployeesFromCSV",
+                "responses": {
+                    "200": {
+                        "description": "Employees imported successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Import complete"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
                     }
                 }
             }
@@ -2450,6 +2948,67 @@
                 }
             }
         },
+        "/api/payrolls/export/csv": {
+            "get": {
+                "tags": [
+                    "Payrolls"
+                ],
+                "summary": "Export payrolls to CSV",
+                "description": "Export payrolls to CSV",
+                "operationId": "exportPayrollsToCSV",
+                "responses": {
+                    "200": {
+                        "description": "Payrolls exported successfully",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/payrolls/import/csv": {
+            "post": {
+                "tags": [
+                    "Payrolls"
+                ],
+                "summary": "Import payrolls from CSV",
+                "description": "Import payrolls from CSV",
+                "operationId": "importPayrollsFromCSV",
+                "responses": {
+                    "200": {
+                        "description": "Payrolls imported successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Import complete"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
         "/api/payslips": {
             "get": {
                 "tags": [
@@ -3285,6 +3844,52 @@
                 }
             }
         },
+        "/api/super/dashboard": {
+            "get": {
+                "tags": [
+                    "Super Admin"
+                ],
+                "summary": "Super admin dashboard",
+                "description": "Super admin dashboard summary",
+                "operationId": "superAdminDashboard",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Dashboard retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/tax-profiles": {
             "get": {
                 "tags": [
@@ -3786,6 +4391,14 @@
             "description": "Authentication"
         },
         {
+            "name": "Company Admin",
+            "description": "Company Admin"
+        },
+        {
+            "name": "Companies",
+            "description": "Companies"
+        },
+        {
             "name": "Departments",
             "description": "Departments"
         },
@@ -3812,6 +4425,10 @@
         {
             "name": "Permissions",
             "description": "Permissions"
+        },
+        {
+            "name": "Super Admin",
+            "description": "Super Admin"
         },
         {
             "name": "Tax Profiles",

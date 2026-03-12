@@ -4,6 +4,10 @@ namespace App\Services;
 
 use App\Repositories\EmployeeRepository;
 use App\Models\Employee;
+use App\Models\Department;
+use App\Models\Role;
+use App\Helpers\CsvHelper;
+use Illuminate\Http\UploadedFile;
 
 class EmployeeService
 {
@@ -117,5 +121,176 @@ class EmployeeService
     public function getEmployeesByDepartment($departmentId)
     {
         return $this->employeeRepository->findByDepartment($departmentId);
+    }
+
+    public function exportEmployeesToCSV(): string
+    {
+        $employees = $this->employeeRepository->getAll();
+        $header = [
+            'employee_number',
+            'name',
+            'email',
+            'phone',
+            'department_id',
+            'department_name',
+            'position',
+            'salary',
+            'hire_date',
+            'status',
+            'role_ids',
+            'role_titles',
+        ];
+
+        $csv = CsvHelper::row($header);
+
+        foreach ($employees as $employee) {
+            $departmentName = $employee->department?->name;
+            $roleIds = $employee->roles->pluck('id')->implode('|');
+            $roleTitles = $employee->roles->pluck('title')->implode('|');
+
+            $csv .= CsvHelper::row([
+                $employee->employee_number,
+                $employee->name,
+                $employee->email,
+                $employee->phone,
+                $employee->department_id,
+                $departmentName,
+                $employee->position,
+                $employee->salary,
+                $employee->hire_date,
+                $employee->status,
+                $roleIds,
+                $roleTitles,
+            ]);
+        }
+
+        return $csv;
+    }
+
+    public function importEmployeesFromCSV(UploadedFile $file, string $mode = 'upsert'): array
+    {
+        $path = $file->getRealPath();
+        $csv = new \SplFileObject($path);
+        $csv->setFlags(\SplFileObject::READ_CSV | \SplFileObject::SKIP_EMPTY | \SplFileObject::DROP_NEW_LINE);
+
+        $header = null;
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+        $failed = 0;
+        $errors = [];
+        $rowNumber = 0;
+
+        foreach ($csv as $row) {
+            $rowNumber++;
+            if ($row === [null] || $row === false) {
+                continue;
+            }
+
+            if ($header === null) {
+                $header = array_map(fn ($value) => CsvHelper::normalizeHeader((string) $value), $row);
+                continue;
+            }
+
+            $data = [];
+            foreach ($header as $index => $key) {
+                if ($key === '') {
+                    continue;
+                }
+                $data[$key] = isset($row[$index]) ? trim((string) $row[$index]) : null;
+            }
+
+            $hasContent = collect($data)->filter(fn ($value) => $value !== null && $value !== '')->isNotEmpty();
+            if (!$hasContent) {
+                continue;
+            }
+
+            try {
+                $employeeData = [];
+                $employeeData['employee_number'] = $data['employee_number'] ?? null;
+                $employeeData['name'] = $data['name'] ?? null;
+                $employeeData['email'] = $data['email'] ?? null;
+                $employeeData['phone'] = $data['phone'] ?? null;
+                $employeeData['position'] = $data['position'] ?? null;
+                $employeeData['salary'] = $data['salary'] !== null && $data['salary'] !== '' ? (float) $data['salary'] : null;
+                $employeeData['hire_date'] = $data['hire_date'] ?? null;
+                $employeeData['status'] = $data['status'] ?? null;
+
+                if (!$employeeData['name']) {
+                    $firstName = $data['first_name'] ?? null;
+                    $lastName = $data['last_name'] ?? null;
+                    if ($firstName || $lastName) {
+                        $employeeData['name'] = trim(($firstName ?? '') . ' ' . ($lastName ?? ''));
+                    }
+                }
+
+                if (empty($employeeData['email'])) {
+                    throw new \Exception('Missing email');
+                }
+
+                if (empty($employeeData['name'])) {
+                    throw new \Exception('Missing name or first_name/last_name');
+                }
+
+                $departmentId = $data['department_id'] ?? null;
+                if (!$departmentId && !empty($data['department_name'])) {
+                    $departmentId = Department::where('name', $data['department_name'])->value('id');
+                }
+
+                if ($departmentId) {
+                    $departmentId = (int) $departmentId;
+                    if (!Department::where('id', $departmentId)->exists()) {
+                        throw new \Exception('Department not found');
+                    }
+                    $employeeData['department_id'] = $departmentId;
+                }
+
+                $roleIds = CsvHelper::splitList($data['role_ids'] ?? null);
+                $roleTitles = CsvHelper::splitList($data['role_titles'] ?? null);
+
+                if (!empty($roleTitles)) {
+                    $roleIds = Role::whereIn('title', $roleTitles)->pluck('id')->all();
+                }
+
+                if (!empty($roleIds)) {
+                    $employeeData['role_ids'] = array_values(array_filter(array_map('intval', $roleIds)));
+                }
+
+                $existing = null;
+                if (!empty($employeeData['employee_number'])) {
+                    $existing = $this->employeeRepository->getByEmployeeNumber($employeeData['employee_number']);
+                }
+
+                if (!$existing && !empty($employeeData['email'])) {
+                    $existing = $this->employeeRepository->findByEmail($employeeData['email']);
+                }
+
+                if ($existing) {
+                    if ($mode === 'skip') {
+                        $skipped++;
+                        continue;
+                    }
+                    $this->updateEmployee($existing, $employeeData);
+                    $updated++;
+                } else {
+                    $this->createEmployee($employeeData);
+                    $created++;
+                }
+            } catch (\Throwable $e) {
+                $failed++;
+                $errors[] = [
+                    'row' => $rowNumber,
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return [
+            'created' => $created,
+            'updated' => $updated,
+            'skipped' => $skipped,
+            'failed' => $failed,
+            'errors' => $errors,
+        ];
     }
 }
