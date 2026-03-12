@@ -43,7 +43,7 @@ Route::get('/auth/check', 'App\Http\Controllers\AuthController@authCheck');
 
 // Super Admin only routes (no tenant scoping)
 Route::middleware(['check.api.token', 'superadmin'])->group(function () {
-    Route::apiResource('companies', 'App\Http\Controllers\CompanyController')->only(['index', 'store']);
+    Route::apiResource('companies', 'App\Http\Controllers\CompanyController')->only(['index', 'store', 'update']);
     Route::get('/super/dashboard', 'App\Http\Controllers\SuperAdminController@dashboard');
     Route::post('/companies/{company}/suspend', 'App\Http\Controllers\CompanyController@suspend');
     Route::post('/companies/{company}/resume', 'App\Http\Controllers\CompanyController@resume');
@@ -68,6 +68,8 @@ Route::middleware(['check.api.token', 'tenant.domain', 'tenant', 'tenant.env'])-
     Route::apiResource('departments', 'App\Http\Controllers\DepartmentController')->middleware('role:admin,hr');
     Route::get('/employees', 'App\Http\Controllers\EmployeeController@index')->middleware('role:admin,hr,finance,employee');
     Route::post('/employees', 'App\Http\Controllers\EmployeeController@store')->middleware('role:admin,hr');
+    Route::get('/employees/export/csv', 'App\Http\Controllers\EmployeeController@exportToCSV')->middleware('role:admin,hr');
+    Route::post('/employees/import/csv', 'App\Http\Controllers\EmployeeController@importFromCSV')->middleware('role:admin,hr');
     Route::get('/employees/{employee}', 'App\Http\Controllers\EmployeeController@show')->middleware('role:admin,hr,finance,employee');
     Route::put('/employees/{employee}', 'App\Http\Controllers\EmployeeController@update')->middleware('role:admin,hr,employee');
     Route::delete('/employees/{employee}', 'App\Http\Controllers\EmployeeController@destroy')->middleware('role:admin,hr');
@@ -76,6 +78,8 @@ Route::middleware(['check.api.token', 'tenant.domain', 'tenant', 'tenant.env'])-
     Route::get('/employees/my-department', 'App\Http\Controllers\EmployeeController@getMyDepartmentEmployees')->middleware('role:manager');
     
     Route::apiResource('payrolls', 'App\Http\Controllers\PayrollController')->middleware('role:admin,hr,finance');
+    Route::get('/payrolls/export/csv', 'App\Http\Controllers\PayrollController@exportToCSV')->middleware('role:admin,hr,finance');
+    Route::post('/payrolls/import/csv', 'App\Http\Controllers\PayrollController@importFromCSV')->middleware('role:admin,hr,finance');
     Route::get('/payslips/me', 'App\Http\Controllers\PayslipController@myPayslips')->middleware('role:admin,hr,finance,employee');
     Route::apiResource('payslips', 'App\Http\Controllers\PayslipController')->middleware('role:admin,hr,finance');
     Route::get('/payslips/export/csv', 'App\Http\Controllers\PayslipController@exportToCSV')->middleware('role:admin,hr,finance');
@@ -83,6 +87,8 @@ Route::middleware(['check.api.token', 'tenant.domain', 'tenant', 'tenant.env'])-
     Route::post('/payslips/{id}/issue', 'App\Http\Controllers\PayslipController@issue')->middleware('role:admin,hr,finance');
     
     Route::apiResource('attendances', 'App\Http\Controllers\AttendanceController')->middleware('role:admin,hr,manager');
+    Route::get('/attendances/export/csv', 'App\Http\Controllers\AttendanceController@exportToCSV')->middleware('role:admin,hr,manager');
+    Route::post('/attendances/import/csv', 'App\Http\Controllers\AttendanceController@importFromCSV')->middleware('role:admin,hr,manager');
     
     Route::get('/leave-requests/pending', 'App\Http\Controllers\LeaveRequestController@getPendingLeaves')->middleware('role:admin,hr,manager,director,md');
     Route::get('/leave-requests/approved', 'App\Http\Controllers\LeaveRequestController@getApprovedLeaves')->middleware('role:admin,hr,manager,director,md');
@@ -109,4 +115,19 @@ Route::middleware(['check.api.token', 'tenant.domain', 'tenant', 'tenant.env'])-
     Route::put('/company/admin/settings', 'App\Http\Controllers\CompanyAdminController@updateSettings')->middleware('role:admin');
     Route::get('/company/admin/index-data', 'App\Http\Controllers\CompanyAdminController@indexData')->middleware('role:admin');
     Route::get('/company/admin/subscription', 'App\Http\Controllers\CompanyAdminController@subscription')->middleware('role:admin');
+
+    Route::get('/reports/metadata', 'App\Http\Controllers\ReportController@metadata')->middleware('role:admin,hr,finance');
+    Route::post('/reports/run', 'App\Http\Controllers\ReportController@run')->middleware('role:admin,hr,finance');
+    Route::post('/reports/{report}/run', 'App\Http\Controllers\ReportController@runSaved')->middleware('role:admin,hr,finance');
+    Route::apiResource('reports', 'App\Http\Controllers\ReportController')->middleware('role:admin,hr,finance');
+
+    Route::get('/dashboards', 'App\Http\Controllers\DashboardBuilderController@index')->middleware('role:admin,hr,finance');
+    Route::post('/dashboards', 'App\Http\Controllers\DashboardBuilderController@store')->middleware('role:admin,hr,finance');
+    Route::get('/dashboards/{dashboard}', 'App\Http\Controllers\DashboardBuilderController@show')->middleware('role:admin,hr,finance');
+    Route::put('/dashboards/{dashboard}', 'App\Http\Controllers\DashboardBuilderController@update')->middleware('role:admin,hr,finance');
+    Route::delete('/dashboards/{dashboard}', 'App\Http\Controllers\DashboardBuilderController@destroy')->middleware('role:admin,hr,finance');
+    Route::post('/dashboards/{dashboard}/run', 'App\Http\Controllers\DashboardBuilderController@run')->middleware('role:admin,hr,finance');
+    Route::post('/dashboards/{dashboard}/widgets', 'App\Http\Controllers\DashboardBuilderController@addWidget')->middleware('role:admin,hr,finance');
+    Route::put('/dashboards/{dashboard}/widgets/{widget}', 'App\Http\Controllers\DashboardBuilderController@updateWidget')->middleware('role:admin,hr,finance');
+    Route::delete('/dashboards/{dashboard}/widgets/{widget}', 'App\Http\Controllers\DashboardBuilderController@deleteWidget')->middleware('role:admin,hr,finance');
 });

@@ -8,8 +8,9 @@ use Illuminate\Http\Request;
 
 class ActivityLogController extends Controller
 {
-    public function index(Request $request)
+    public function index(?Request $request = null)
     {
+        $request ??= request();
         $query = ActivityLog::with(['company', 'actor'])->orderBy('created_at', 'desc');
 
         if ($request->filled('company_id')) {
