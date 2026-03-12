@@ -2,7 +2,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import authService from '../../services/authService';
+import AuthService from '../../services/AuthService';
 import useAuth from '../../hooks/useAuth';
 
 defineOptions({ name: 'LoginPage' });
@@ -20,7 +20,7 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
 
   try {
-    await authService.login({
+    await AuthService.login({
       email: email.value,
       password: password.value,
     });
