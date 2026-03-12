@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import apiClient from '../../api/apiClient';
-import employeeService from '../../services/employeeService';
+import EmployeeService from '../../services/EmployeeService';
 import CreateEmployeeModal from '../../components/CreateEmployeeModal.vue';
 import EditEmployeeModal from '../../components/EditEmployeeModal.vue';
 import useAuth from '../../hooks/useAuth';
@@ -80,7 +80,7 @@ const loadEmployees = async () => {
 
   try {
     const [employeesResponse, departmentsResponse, rolesResponse] = await Promise.all([
-      employeeService.getEmployees({ page: currentPage.value, per_page: pageSize.value }),
+      EmployeeService.getEmployees({ page: currentPage.value, per_page: pageSize.value }),
       apiClient.get('/api/departments', { params: { per_page: 500 } }),
       apiClient.get('/api/roles/assignable'),
     ]);
@@ -140,7 +140,7 @@ const deleteEmployee = async (employee) => {
   if (!confirmed) return;
 
   try {
-    await employeeService.deleteEmployee(employee.id);
+    await EmployeeService.deleteEmployee(employee.id);
     await loadEmployees();
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || 'Unable to delete employee.';
