@@ -3,10 +3,18 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\BelongsToCompany;
 
 class Role extends Model
 {
-    protected $fillable = ['title', 'description'];
+    use BelongsToCompany;
+
+    protected $fillable = ['title', 'description', 'company_id'];
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
     
 
     public function employees() { return $this->belongsToMany(Employee::class); }

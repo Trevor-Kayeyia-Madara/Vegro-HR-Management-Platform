@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\ApiResponse;
 use App\Models\Department;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
 class DepartmentController extends Controller
@@ -85,8 +86,12 @@ class DepartmentController extends Controller
     )]
     public function store(Request $request)
     {
+        $companyId = $request->attributes->get('company_id') ?? auth()->user()?->company_id;
         $validated = $request->validate([
-            'name' => 'required|unique:departments',
+            'name' => [
+                'required',
+                Rule::unique('departments', 'name')->where('company_id', $companyId),
+            ],
             'description' => 'nullable|string',
         ]);
         return Department::create($validated);
@@ -179,8 +184,14 @@ class DepartmentController extends Controller
     )]
     public function update(Request $request, Department $department)
     {
+        $companyId = $request->attributes->get('company_id') ?? auth()->user()?->company_id;
         $validated = $request->validate([
-            'name' => 'required|unique:departments,name,'.$department->id,
+            'name' => [
+                'required',
+                Rule::unique('departments', 'name')
+                    ->where('company_id', $companyId)
+                    ->ignore($department->id),
+            ],
             'description' => 'nullable|string',
         ]);
         $department->update($validated);

@@ -3,10 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\BelongsToCompany;
 
 class TaxProfile extends Model
 {
+    use BelongsToCompany;
+
     protected $fillable = [
+        'company_id',
         'name',
         'country_code',
         'currency',
@@ -28,4 +32,9 @@ class TaxProfile extends Model
     protected $casts = [
         'paye_bands' => 'array',
     ];
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
 }

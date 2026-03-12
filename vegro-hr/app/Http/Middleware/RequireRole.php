@@ -43,13 +43,24 @@ class RequireRole
         }
         $userRole = $this->normalize($userRoleTitle ?? '');
 
-        if ($this->isAdmin($userRole)) {
-            return $next($request);
-        }
-
         $allowed = array_map(function ($role) {
             return $this->normalize($role);
         }, $roles);
+
+        if (in_array('superadmin', $allowed, true)) {
+            if ($userRole === 'superadmin') {
+                return $next($request);
+            }
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden',
+                'data' => null,
+            ], 403);
+        }
+
+        if ($this->isAdmin($userRole)) {
+            return $next($request);
+        }
 
         if (in_array($userRole, $allowed, true)) {
             return $next($request);

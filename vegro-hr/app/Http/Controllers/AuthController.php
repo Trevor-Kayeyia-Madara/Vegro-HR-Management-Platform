@@ -31,7 +31,9 @@ class AuthController extends Controller
                     new OA\Property(property: "name", type: "string", description: "Full name", example: "John Doe"),
                     new OA\Property(property: "email", type: "string", format: "email", description: "Email address", example: "john.doe@example.com"),
                     new OA\Property(property: "password", type: "string", format: "password", description: "Password (min 8 chars)", example: "password123"),
-                    new OA\Property(property: "password_confirmation", type: "string", format: "password", description: "Password confirmation", example: "password123")
+                    new OA\Property(property: "password_confirmation", type: "string", format: "password", description: "Password confirmation", example: "password123"),
+                    new OA\Property(property: "company_id", type: "integer", description: "Company ID (optional)", example: 1),
+                    new OA\Property(property: "company_domain", type: "string", description: "Company domain (optional)", example: "acme.local")
                 ]
             )
         ),
@@ -76,7 +78,9 @@ class AuthController extends Controller
                 required: ["email", "password"],
                 properties: [
                     new OA\Property(property: "email", type: "string", format: "email", description: "Email address", example: "john.doe@example.com"),
-                    new OA\Property(property: "password", type: "string", format: "password", description: "Password", example: "password123")
+                    new OA\Property(property: "password", type: "string", format: "password", description: "Password", example: "password123"),
+                    new OA\Property(property: "company_id", type: "integer", description: "Company ID (optional)", example: 1),
+                    new OA\Property(property: "company_domain", type: "string", description: "Company domain (optional)", example: "acme.local")
                 ]
             )
         ),
@@ -103,7 +107,7 @@ class AuthController extends Controller
     )]
     public function login()
     {
-        $credentials = request(['email', 'password']);
+        $credentials = request(['email', 'password', 'company_id', 'company_domain']);
         $result = $this->authService->login($credentials);
         
         if (!$result) {
@@ -182,7 +186,7 @@ class AuthController extends Controller
     {
         $user = auth()->user();
         if ($user) {
-            $user->load('role.permissions');
+            $user->load('role.permissions', 'employee.department');
         }
         return ApiResponse::success(['user' => $user]);
     }   

@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'check.api.token' => \App\Http\Middleware\CheckApiToken::class,
+            'superadmin' => \App\Http\Middleware\RequireSuperAdmin::class,
+            'tenant' => \App\Http\Middleware\EnsureCompanyContext::class,
+            'tenant.env' => \App\Http\Middleware\EnsureCompanyEnvironment::class,
+            'tenant.domain' => \App\Http\Middleware\ResolveCompanyFromDomain::class,
             'role' => \App\Http\Middleware\RequireRole::class,
         ]);
     })

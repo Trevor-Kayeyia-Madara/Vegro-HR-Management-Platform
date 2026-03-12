@@ -4,16 +4,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Company;
+use App\Models\Concerns\BelongsToCompany;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
+    use BelongsToCompany;
 
     protected $fillable = [
         'name',
         'email',
         'password',
         'role_id',
+        'company_id',
     ];
 
     protected $hidden = [
@@ -26,6 +30,8 @@ class User extends Authenticatable
     ];
 
     public function role() { return $this->belongsTo(Role::class); }    
+    public function employee() { return $this->hasOne(Employee::class); }
+    public function company() { return $this->belongsTo(Company::class); }
 
     public function roleTitle(): ?string
     {

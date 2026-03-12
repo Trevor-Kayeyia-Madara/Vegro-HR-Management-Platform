@@ -14,8 +14,15 @@ const displayRole = computed(() => {
   if (user.value?.role?.name) return user.value.role.name;
   return user.value?.role_name || 'Unassigned';
 });
-const displayDepartment = computed(() => user.value?.department || user.value?.department_name || 'Not set');
-const displayPhone = computed(() => user.value?.phone || 'Not provided');
+const displayDepartment = computed(() => {
+  return (
+    user.value?.department ||
+    user.value?.department_name ||
+    user.value?.employee?.department?.name ||
+    'Not set'
+  );
+});
+const displayPhone = computed(() => user.value?.employee?.phone || user.value?.phone || 'Not provided');
 const displayJoined = computed(() => user.value?.created_at || user.value?.createdAt || '—');
 
 const authStatus = computed(() => {

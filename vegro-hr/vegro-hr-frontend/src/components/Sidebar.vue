@@ -46,6 +46,7 @@ const standardNavItems = [
   { label: 'Dashboard', to: '/dashboard/employee', icon: LayoutDashboard, roles: ['employee'], permissions: 'dashboard.view' },
   { label: 'Dashboard', to: '/dashboard/manager', icon: LayoutDashboard, roles: ['manager'], permissions: 'dashboard.view' },
   { label: 'Dashboard', to: '/dashboard/director', icon: LayoutDashboard, roles: ['director', 'md'], permissions: 'dashboard.view' },
+  { label: 'My Team', to: '/dashboard/my-team', icon: Users, roles: ['manager'], permissions: 'employees.view' },
   { label: 'Employees', to: '/dashboard/employees', icon: Users, roles: ['admin', 'hr'], permissions: 'employees.view' },
   { label: 'Departments', to: '/dashboard/departments', icon: Building2, roles: ['admin', 'hr'], permissions: 'departments.view' },
   { label: 'Payroll', to: '/dashboard/payroll', icon: Wallet, roles: ['admin', 'hr', 'finance'], permissions: 'payroll.view' },

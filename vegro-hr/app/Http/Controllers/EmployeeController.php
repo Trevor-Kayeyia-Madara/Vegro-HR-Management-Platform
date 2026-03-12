@@ -342,6 +342,33 @@ class EmployeeController extends Controller
         if ($user && $user->hasRole('employee')) {
             return ApiResponse::forbidden('Employees cannot view department rosters');
         }
+        if ($user && $user->hasRole('manager')) {
+            $managedDepartmentId = \App\Models\Department::where('manager_id', $user->id)->value('id');
+            if (!$managedDepartmentId || (int) $managedDepartmentId !== (int) $departmentId) {
+                return ApiResponse::forbidden('You can only view your own department roster');
+            }
+        }
         return ApiResponse::success(EmployeeResource::collection($this->employeeService->getEmployeesByDepartment($departmentId)));
+    }
+
+    public function getMyDepartmentEmployees()
+    {
+        $user = auth()->user();
+        if (!$user || !$user->hasRole(['manager', 'admin', 'hr'])) {
+            return ApiResponse::forbidden('Forbidden');
+        }
+
+        if ($user->hasRole(['admin', 'hr'])) {
+            return ApiResponse::error('Provide a department ID.', 422);
+        }
+
+        $managedDepartmentId = \App\Models\Department::where('manager_id', $user->id)->value('id');
+        if (!$managedDepartmentId) {
+            return ApiResponse::success(EmployeeResource::collection(collect([])));
+        }
+
+        return ApiResponse::success(
+            EmployeeResource::collection($this->employeeService->getEmployeesByDepartment($managedDepartmentId))
+        );
     }
 }

@@ -6,6 +6,7 @@ use App\Helpers\ApiResponse;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
 class UserController extends Controller
@@ -97,11 +98,19 @@ class UserController extends Controller
     )]
     public function store(Request $request)
     {
+        $companyId = $request->attributes->get('company_id') ?? auth()->user()?->company_id;
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('users', 'email')->where('company_id', $companyId),
+            ],
             'password' => 'required|string|min:8',
-            'role_id' => 'required|exists:roles,id',
+            'role_id' => [
+                'required',
+                Rule::exists('roles', 'id')->where('company_id', $companyId),
+            ],
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -220,6 +229,7 @@ class UserController extends Controller
     )]
     public function update(Request $request, User $user)
     {
+        $companyId = $request->attributes->get('company_id') ?? auth()->user()?->company_id;
         $user->loadMissing('role');
         if ($this->isProtectedAdmin($user)) {
             $payload = $request->only(['name', 'email', 'role_id']);
@@ -230,9 +240,20 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
+            'email' => [
+                'sometimes',
+                'required',
+                'email',
+                Rule::unique('users', 'email')
+                    ->where('company_id', $companyId)
+                    ->ignore($user->id),
+            ],
             'password' => 'nullable|string|min:8',
-            'role_id' => 'sometimes|required|exists:roles,id',
+            'role_id' => [
+                'sometimes',
+                'required',
+                Rule::exists('roles', 'id')->where('company_id', $companyId),
+            ],
         ]);
 
         if (!empty($validated['password'])) {
