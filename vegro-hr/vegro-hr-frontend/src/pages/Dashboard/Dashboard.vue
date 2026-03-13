@@ -404,12 +404,12 @@ onMounted(loadDashboard);
               <span class="text-sky-200">{{ employees.length.toLocaleString() }}</span>
             </div>
           </div>
-          <button
+          <RouterLink
+            to="/dashboard/reports"
             class="mt-6 inline-flex h-10 items-center justify-center rounded-xl border border-emerald-300/40 bg-emerald-300/10 px-4 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20"
-            type="button"
           >
             View reports
-          </button>
+          </RouterLink>
         </div>
       </section>
 

@@ -7,7 +7,7 @@ defineOptions({ name: 'ProtectedRoute' });
 
 const router = useRouter();
 const route = useRoute();
-const { user, isLoading, checkAuth, hasRole, hasPermission, isAdmin } = useAuth();
+const { user, isLoading, checkAuth, hasRole, hasPermission, isAdmin, isSuperAdmin } = useAuth();
 
 const requiredRoles = computed(() => {
   const matched = route.matched;
@@ -35,6 +35,7 @@ const isAllowed = computed(() => {
 });
 
 const getFallbackRoute = () => {
+  if (isSuperAdmin.value) return '/dashboard/super';
   if (isAdmin.value) return '/dashboard/home';
   if (hasRole(['hr'])) return '/dashboard/hr';
   if (hasRole(['finance'])) return '/dashboard/finance';

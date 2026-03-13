@@ -1,14 +1,49 @@
-<script setup>
+﻿<script setup>
+import { ref } from 'vue';
+import apiClient from '../../api/apiClient';
+
 defineOptions({ name: 'LandingPage' });
+
+const formState = ref({
+  name: '',
+  email: '',
+  company: '',
+  message: '',
+});
+const isSubmitting = ref(false);
+const successMessage = ref('');
+const errorMessage = ref('');
+
+const submitLead = async () => {
+  if (isSubmitting.value) return;
+  successMessage.value = '';
+  errorMessage.value = '';
+  isSubmitting.value = true;
+  try {
+    await apiClient.post('/api/lead-capture', {
+      name: formState.value.name,
+      email: formState.value.email,
+      company: formState.value.company,
+      message: formState.value.message,
+      source: 'landing-page',
+    });
+    successMessage.value = 'Thanks. We will contact you at ' + formState.value.email + '.';
+    formState.value = { name: '', email: '', company: '', message: '' };
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.message || 'Unable to submit. Please try again.';
+  } finally {
+    isSubmitting.value = false;
+  }
+};
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-950 text-white">
+  <div class="landing-root min-h-screen bg-slate-950 text-white">
     <div class="relative overflow-hidden">
       <div
-        class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(20,184,166,0.2),_transparent_50%),radial-gradient(circle_at_bottom,_rgba(59,130,246,0.2),_transparent_45%)]"
+        class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.2),_transparent_50%),radial-gradient(circle_at_bottom,_rgba(59,130,246,0.18),_transparent_55%)]"
       ></div>
-      <div class="absolute -left-16 top-20 h-72 w-72 rounded-full bg-emerald-400/20 blur-[120px]"></div>
+      <div class="absolute -left-24 top-12 h-72 w-72 rounded-full bg-emerald-400/20 blur-[120px]"></div>
       <div class="absolute -right-24 bottom-10 h-80 w-80 rounded-full bg-blue-500/20 blur-[140px]"></div>
 
       <header class="relative mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
@@ -18,131 +53,151 @@ defineOptions({ name: 'LandingPage' });
           </div>
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-200/80">
-              Vegro
+              Vegro HR
             </p>
-            <p class="text-sm text-slate-400">Workforce cloud platform</p>
+            <p class="text-sm text-slate-400">Workforce operations suite</p>
           </div>
         </div>
+        <nav class="hidden items-center gap-6 text-xs uppercase tracking-[0.24em] text-slate-300/80 md:flex">
+          <a href="#features" class="transition hover:text-emerald-200">Features</a>
+          <a href="#pricing" class="transition hover:text-emerald-200">Pricing</a>
+          <a href="#demo" class="transition hover:text-emerald-200">Demo</a>
+          <a href="#contact" class="transition hover:text-emerald-200">Contact</a>
+        </nav>
         <div class="flex items-center gap-3">
-          <RouterLink
-            to="/contact"
+          <a
+            href="#contact"
             class="rounded-full border border-white/10 px-5 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 transition hover:bg-white/10"
           >
-            Book a demo
-          </RouterLink>
-          <RouterLink
-            to="/pricing"
+            Join the demo waitlist
+          </a>
+          <a
+            href="#pricing"
             class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-5 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20"
           >
             See plans
-          </RouterLink>
+          </a>
         </div>
       </header>
 
       <section class="relative mx-auto flex w-full max-w-6xl flex-col gap-12 px-6 pb-12 pt-6 lg:flex-row lg:items-center lg:gap-16">
         <div class="flex flex-1 flex-col gap-6">
           <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">
-            Built for enterprise teams
+            Built for modern HR teams
           </p>
-          <h1 class="text-4xl font-semibold leading-tight sm:text-5xl">
-            Run every HR workflow from one executive command center.
+          <h1 class="hero-title text-4xl font-semibold leading-tight sm:text-5xl">
+            HR operations that feel premium, fast, and fully under control.
           </h1>
           <p class="max-w-xl text-base text-slate-200/80 sm:text-lg">
-            Vegro centralizes payroll, attendance, leave, and employee operations while giving leadership
-            instant insight through dynamic, customized reporting.
+            Vegro HR brings payroll, attendance, leave, and employee records into one streamlined platform.
+            Automate the busywork, keep data accurate, and give leadership real-time visibility.
           </p>
           <div class="flex flex-wrap gap-3 text-xs font-medium uppercase tracking-[0.24em] text-slate-300/70">
-            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Enterprise ready</span>
-            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Custom reporting</span>
-            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Enterprise-grade</span>
+            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Payroll automation</span>
+            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Dynamic reporting</span>
+            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Audit-ready controls</span>
+          </div>
+          <div class="flex flex-wrap gap-4">
+            <a
+              href="#contact"
+              class="rounded-full bg-emerald-400 px-6 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-950 transition hover:bg-emerald-300"
+            >
+              Join the demo waitlist
+            </a>
+            <a
+              href="#pricing"
+              class="rounded-full border border-white/10 px-6 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 transition hover:bg-white/10"
+            >
+              View pricing
+            </a>
           </div>
         </div>
 
         <div class="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.65)] backdrop-blur">
-          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Executive view</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Live demo preview</p>
           <div class="mt-4 grid gap-4">
             <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-              <p class="text-sm font-semibold">Operations pulse</p>
-              <p class="mt-2 text-xs text-slate-400">Live staffing, payroll, and attendance signals.</p>
+              <p class="text-sm font-semibold">Payroll command</p>
+              <p class="mt-2 text-xs text-slate-400">Automated deductions, approvals, and audit trail.</p>
             </div>
             <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-              <p class="text-sm font-semibold">Custom analytics</p>
-              <p class="mt-2 text-xs text-slate-400">Report views per company, region, or team.</p>
+              <p class="text-sm font-semibold">Attendance intelligence</p>
+              <p class="mt-2 text-xs text-slate-400">Exceptions, overtime, and compliance visibility.</p>
             </div>
             <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-              <p class="text-sm font-semibold">Employee experience</p>
-              <p class="mt-2 text-xs text-slate-400">Self-service payslips, leave, and profiles.</p>
+              <p class="text-sm font-semibold">Dynamic reporting</p>
+              <p class="mt-2 text-xs text-slate-400">Build dashboards by company, team, or cycle.</p>
             </div>
           </div>
         </div>
       </section>
     </div>
 
-    <section class="mx-auto w-full max-w-6xl px-6 pb-16">
+    <section id="features" class="mx-auto w-full max-w-6xl px-6 pb-16">
       <div class="grid gap-6 lg:grid-cols-3">
         <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Unified stack</p>
-          <h2 class="mt-3 text-xl font-semibold">All core HR modules, connected.</h2>
+          <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Core HR</p>
+          <h2 class="mt-3 text-xl font-semibold">Employee and department control.</h2>
           <p class="mt-2 text-sm text-slate-300/80">
-            Employees, payroll, attendance, leave, and departments in one cohesive system.
+            Centralize people data, roles, and department hierarchies in one interface.
           </p>
         </div>
         <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Dynamic analytics</p>
-          <h2 class="mt-3 text-xl font-semibold">Reports built around your reality.</h2>
+          <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Payroll</p>
+          <h2 class="mt-3 text-xl font-semibold">Tax-aware payroll automation.</h2>
           <p class="mt-2 text-sm text-slate-300/80">
-            Build reports by company, department, location, or payroll cycle ? no rigid templates.
+            Recurring cycles, tax profiles, and approvals with audit visibility.
           </p>
         </div>
         <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Leadership clarity</p>
-          <h2 class="mt-3 text-xl font-semibold">Decisions backed by live data.</h2>
+          <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Attendance</p>
+          <h2 class="mt-3 text-xl font-semibold">Attendance and leave in sync.</h2>
           <p class="mt-2 text-sm text-slate-300/80">
-            Real-time dashboards surface trends, spend, and workforce health.
+            Track attendance, leave, and overtime with export-ready reports.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-8 grid gap-6 lg:grid-cols-3">
+        <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
+          <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Reporting</p>
+          <h2 class="mt-3 text-xl font-semibold">Dashboards your teams actually use.</h2>
+          <p class="mt-2 text-sm text-slate-300/80">
+            Build custom views with filters, exports, and live workforce metrics.
+          </p>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
+          <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Operations</p>
+          <h2 class="mt-3 text-xl font-semibold">One flow from hiring to payroll.</h2>
+          <p class="mt-2 text-sm text-slate-300/80">
+            Connect employee data, attendance, leave, and payroll without spreadsheets.
+          </p>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
+          <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Security</p>
+          <h2 class="mt-3 text-xl font-semibold">Audit-ready operations.</h2>
+          <p class="mt-2 text-sm text-slate-300/80">
+            Audit logs, role governance, and policy-driven access for teams.
           </p>
         </div>
       </div>
     </section>
 
-    <section class="mx-auto w-full max-w-6xl px-6 pb-16">
+    <section id="demo" class="mx-auto w-full max-w-6xl px-6 pb-16">
       <div class="rounded-3xl border border-white/10 bg-white/5 p-8">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200/80">Reporting</p>
-            <h2 class="mt-2 text-3xl font-semibold">Dynamic reports your teams actually use.</h2>
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200/80">Demo environment</p>
+            <h2 class="mt-2 text-3xl font-semibold">See Vegro HR in action.</h2>
             <p class="mt-3 max-w-2xl text-sm text-slate-300/80">
-              Build reports by company, business unit, region, or payroll cycle ? then slice deeper with
-              custom filters. Every chart updates in real time.
+              Walk through payroll, attendance, and reporting workflows with realistic sample data.
+              We will tailor the demo to your team and goals.
             </p>
           </div>
           <div class="flex flex-wrap gap-3 text-xs font-medium uppercase tracking-[0.24em] text-slate-300/70">
-            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Custom Filters</span>
-            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Export-ready</span>
-            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Live Trends</span>
-          </div>
-        </div>
-
-        <div class="mt-8 grid gap-6 lg:grid-cols-3">
-          <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-5">
-            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Workforce cost</p>
-            <div class="mt-4 h-28 rounded-xl bg-gradient-to-r from-emerald-400/30 via-transparent to-blue-500/30"></div>
-            <p class="mt-4 text-sm text-slate-300/80">
-              Monitor payroll expense variance by department and payroll cycle.
-            </p>
-          </div>
-          <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-5">
-            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Attendance pulse</p>
-            <div class="mt-4 h-28 rounded-xl bg-gradient-to-r from-blue-500/30 via-transparent to-emerald-400/30"></div>
-            <p class="mt-4 text-sm text-slate-300/80">
-              Spot attendance anomalies and overtime hotspots instantly.
-            </p>
-          </div>
-          <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-5">
-            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Leave forecast</p>
-            <div class="mt-4 h-28 rounded-xl bg-gradient-to-r from-emerald-400/30 via-transparent to-blue-500/30"></div>
-            <p class="mt-4 text-sm text-slate-300/80">
-              Predict coverage gaps by combining leave trends and staffing ratios.
-            </p>
+            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Guided tour</span>
+            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Sample data</span>
+            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Team-ready</span>
           </div>
         </div>
       </div>
@@ -150,81 +205,156 @@ defineOptions({ name: 'LandingPage' });
 
     <section class="mx-auto w-full max-w-6xl px-6 pb-16">
       <div class="rounded-3xl border border-white/10 bg-white/5 p-8">
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200/80">
-              Why Vegro
-            </p>
-            <h2 class="mt-2 text-3xl font-semibold">What legacy HR platforms still miss.</h2>
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200/80">Data protection</p>
+            <h2 class="mt-2 text-3xl font-semibold">Global IT protocols for cloud security.</h2>
             <p class="mt-3 max-w-2xl text-sm text-slate-300/80">
-              Most HR systems lock you into static reports and rigid workflows. Vegro is built as a
-              enterprise SaaS with dynamic reporting, configurable workflows, and executive visibility
-              from day one.
+              Vegro HR is built with enterprise-grade protection for cloud hosting, ensuring data
+              confidentiality, integrity, and availability across every workflow.
             </p>
           </div>
           <div class="flex flex-wrap gap-3 text-xs font-medium uppercase tracking-[0.24em] text-slate-300/70">
-            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Dynamic reports</span>
-            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">SaaS first</span>
-            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Custom workflows</span>
+            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Encryption in transit</span>
+            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Encryption at rest</span>
+            <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2">Role-based access</span>
           </div>
         </div>
-
-        <div class="mt-8 grid gap-4 lg:grid-cols-3">
+        <div class="mt-6 grid gap-4 lg:grid-cols-3">
           <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-5">
-            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Legacy HR</p>
-            <ul class="mt-3 space-y-2 text-sm text-slate-300/80">
-              <li>Static, prebuilt reports</li>
-              <li>Limited enterprise scaling</li>
-              <li>Slow customization cycles</li>
-            </ul>
-          </div>
-          <div class="rounded-2xl border border-emerald-400/40 bg-emerald-400/10 p-5">
-            <p class="text-xs uppercase tracking-[0.24em] text-emerald-200/80">Vegro</p>
-            <ul class="mt-3 space-y-2 text-sm text-emerald-50/90">
-              <li>Dynamic, custom reporting</li>
-              <li>Enterprise SaaS foundation</li>
-              <li>Configurable workflows & fields</li>
-            </ul>
+            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Access governance</p>
+            <p class="mt-3 text-sm text-slate-300/80">
+              Least-privilege roles, audit logs, and controlled admin access to safeguard HR data.
+            </p>
           </div>
           <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-5">
-            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Impact</p>
-            <ul class="mt-3 space-y-2 text-sm text-slate-300/80">
-              <li>Faster leadership decisions</li>
-              <li>Scales with multiple companies</li>
-              <li>Better employee experience</li>
-            </ul>
+            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Data resilience</p>
+            <p class="mt-3 text-sm text-slate-300/80">
+              Automated backups, monitoring, and recovery workflows to maintain uptime and trust.
+            </p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-5">
+            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Cloud security</p>
+            <p class="mt-3 text-sm text-slate-300/80">
+              Secure infrastructure practices aligned with modern cloud hosting requirements.
+            </p>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="mx-auto w-full max-w-6xl px-6 pb-20">
+    <section id="pricing" class="mx-auto w-full max-w-6xl px-6 pb-16">
+      <div class="flex flex-col gap-6">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200/80">Pricing</p>
+          <h2 class="mt-2 text-3xl font-semibold">Plans for every growth stage.</h2>
+          <p class="mt-3 max-w-2xl text-sm text-slate-300/80">
+            Transparent tiers for HR operations teams, with upgrade paths to full enterprise scale.
+          </p>
+        </div>
+        <div class="grid gap-6 lg:grid-cols-3">
+          <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
+            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Starter</p>
+            <h3 class="mt-3 text-2xl font-semibold">$49 / month</h3>
+            <p class="mt-2 text-sm text-slate-300/80">Single company, core HR + attendance.</p>
+            <ul class="mt-4 space-y-2 text-sm text-slate-300/80">
+              <li>Employee + department management</li>
+              <li>Attendance tracking</li>
+              <li>Basic reporting</li>
+            </ul>
+            <a
+              href="#contact"
+              class="mt-6 inline-flex rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 transition hover:bg-white/10"
+            >
+              Join the waitlist
+            </a>
+          </div>
+          <div class="rounded-3xl border border-emerald-400/40 bg-emerald-400/10 p-6">
+            <p class="text-xs uppercase tracking-[0.24em] text-emerald-200/80">Business</p>
+            <h3 class="mt-3 text-2xl font-semibold text-emerald-50">$129 / month</h3>
+            <p class="mt-2 text-sm text-emerald-50/80">Payroll automation + analytics.</p>
+            <ul class="mt-4 space-y-2 text-sm text-emerald-50/80">
+              <li>Payroll cycles + tax profiles</li>
+              <li>Dynamic reports and exports</li>
+              <li>Email support</li>
+            </ul>
+            <a
+              href="#contact"
+              class="mt-6 inline-flex rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-950"
+            >
+              Join the waitlist
+            </a>
+          </div>
+          <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
+            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Enterprise</p>
+            <h3 class="mt-3 text-2xl font-semibold">Custom</h3>
+            <p class="mt-2 text-sm text-slate-300/80">Advanced workflows, integrations, SLAs.</p>
+            <ul class="mt-4 space-y-2 text-sm text-slate-300/80">
+              <li>Executive reporting packs</li>
+              <li>Custom integrations</li>
+              <li>Dedicated success lead</li>
+            </ul>
+            <a
+              href="#contact"
+              class="mt-6 inline-flex rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 transition hover:bg-white/10"
+            >
+              Join the waitlist
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="mx-auto w-full max-w-6xl px-6 pb-20">
       <div class="rounded-3xl border border-white/10 bg-gradient-to-br from-emerald-400/10 via-slate-950/80 to-blue-500/10 p-10">
-        <div class="grid gap-8 lg:grid-cols-[1.4fr_0.6fr] lg:items-center">
+        <div class="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-200/80">
-              Ready to scale
+              Demo waitlist
             </p>
-            <h2 class="mt-3 text-3xl font-semibold">Launch Vegro in your organization.</h2>
+            <h2 class="mt-3 text-3xl font-semibold">Join the demo waitlist.</h2>
             <p class="mt-3 text-sm text-slate-200/80">
-              Deploy a modern HR suite with executive visibility, scalable operations, and a premium
-              employee experience. Pricing plans and billing automation are coming next.
+              Share your details and we will reach out with access and a guided walkthrough.
             </p>
           </div>
-          <div class="flex flex-col gap-3">
-            <RouterLink
-              to="/contact"
-              class="rounded-full bg-emerald-400 px-6 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-950 transition hover:bg-emerald-300"
-            >
-              Request a private demo
-            </RouterLink>
+          <form class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-950/60 p-6" @submit.prevent="submitLead">
+            <input
+              v-model="formState.name"
+              class="h-10 rounded-xl border border-white/10 bg-slate-950/40 px-3 text-sm outline-none"
+              placeholder="Full name"
+              required
+            />
+            <input
+              v-model="formState.email"
+              class="h-10 rounded-xl border border-white/10 bg-slate-950/40 px-3 text-sm outline-none"
+              placeholder="Work email"
+              type="email"
+              required
+            />
+            <input
+              v-model="formState.company"
+              class="h-10 rounded-xl border border-white/10 bg-slate-950/40 px-3 text-sm outline-none"
+              placeholder="Company name"
+            />
+            <textarea
+              rows="3"
+              class="rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm outline-none"
+              placeholder="What would you like to see in the demo?"
+              v-model="formState.message"
+            ></textarea>
             <button
-              class="rounded-full border border-white/10 px-6 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 transition hover:bg-white/10"
-              type="button"
+              class="rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+              type="submit"
+              :disabled="isSubmitting"
             >
-              Get pricing updates
+              {{ isSubmitting ? 'Submitting...' : 'Join waitlist' }}
             </button>
-          </div>
+            <p v-if="successMessage" class="text-xs text-emerald-200">{{ successMessage }}</p>
+            <p v-else-if="errorMessage" class="text-xs text-rose-200">{{ errorMessage }}</p>
+            <p v-else class="text-xs text-slate-400">
+              We will contact you by email with demo access details.
+            </p>
+          </form>
         </div>
       </div>
     </section>
@@ -232,26 +362,39 @@ defineOptions({ name: 'LandingPage' });
     <footer class="border-t border-white/10 bg-slate-950/80">
       <div class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-200/80">Vegro</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-200/80">Vegro HR</p>
           <p class="mt-2 text-sm text-slate-400">
-            Executive workforce platform for enterprise teams.
+            Executive workforce platform for modern teams.
           </p>
-              <a
-          href="https://www.invodtechltd.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20"
-        >
-          Built by Invodtech Ltd
-        </a>
-</div>
+          <p class="mt-3 text-xs text-slate-500">Support: support@vegrohr.com</p>
+          <a
+            href="https://www.invodtechltd.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20"
+          >
+            Built by Invodtech Ltd
+          </a>
+        </div>
         <div class="flex flex-wrap gap-4 text-xs uppercase tracking-[0.24em] text-slate-400">
-          <RouterLink to="/pricing" class="transition hover:text-emerald-200">Pricing</RouterLink>
-          <button class="transition hover:text-emerald-200" type="button">Security</button>
-          <button class="transition hover:text-emerald-200" type="button">Docs</button>
+          <a href="#pricing" class="transition hover:text-emerald-200">Pricing</a>
+          <a href="#features" class="transition hover:text-emerald-200">Features</a>
           <RouterLink to="/contact" class="transition hover:text-emerald-200">Contact</RouterLink>
         </div>
       </div>
     </footer>
   </div>
 </template>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+.landing-root {
+  font-family: 'Space Grotesk', 'Manrope', 'Segoe UI', sans-serif;
+}
+
+.hero-title {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+}
+</style>
+

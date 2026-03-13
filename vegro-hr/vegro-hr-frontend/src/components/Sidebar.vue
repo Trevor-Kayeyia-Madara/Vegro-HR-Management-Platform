@@ -30,12 +30,23 @@ const emit = defineEmits(['close']);
 
 const route = useRoute();
 const router = useRouter();
-const { hasRole, hasPermission, logout: authLogout } = useAuth();
+const { hasRole, hasPermission, logout: authLogout, isSuperAdmin } = useAuth();
+
+const superAdminNavItems = [
+  { label: 'Super Admin', to: '/dashboard/super', icon: ShieldCheck, roles: ['superadmin'], permissions: 'dashboard.view' },
+  { label: 'Companies', to: '/dashboard/super/companies', icon: Building2, roles: ['superadmin'], permissions: 'dashboard.view' },
+  { label: 'Roles', to: '/dashboard/super/roles', icon: ShieldCheck, roles: ['superadmin'], permissions: 'dashboard.view' },
+  { label: 'System Users', to: '/dashboard/super/users', icon: Users, roles: ['superadmin'], permissions: 'dashboard.view' },
+  { label: 'Billing', to: '/dashboard/super/billing', icon: Wallet, roles: ['superadmin'], permissions: 'dashboard.view' },
+];
 
 const adminNavItems = [
   { label: 'Dashboard', to: '/dashboard/home', icon: LayoutDashboard, roles: ['admin'], permissions: 'dashboard.view' },
+  { label: 'Super Admin', to: '/dashboard/super', icon: ShieldCheck, roles: ['superadmin'], permissions: 'dashboard.view' },
   { label: 'Users', to: '/dashboard/users', icon: UserRound, roles: ['admin'], permissions: 'users.manage' },
   { label: 'RBAC Roles', to: '/dashboard/roles', icon: ShieldCheck, roles: ['admin'], permissions: 'roles.manage' },
+  { label: 'Reports', to: '/dashboard/reports', icon: FileText, roles: ['admin'], permissions: null },
+  { label: 'Dashboards', to: '/dashboard/dashboards', icon: Grid2x2, roles: ['admin'], permissions: null },
   { label: 'Profile', to: '/dashboard/profile', icon: FileText, roles: ['admin', 'hr', 'finance', 'manager', 'employee'], permissions: 'profile.view' },
   { label: 'Settings', to: '/dashboard/settings', icon: Settings, roles: ['admin'], permissions: 'settings.manage' },
 ];
@@ -50,6 +61,8 @@ const standardNavItems = [
   { label: 'Employees', to: '/dashboard/employees', icon: Users, roles: ['admin', 'hr'], permissions: 'employees.view' },
   { label: 'Departments', to: '/dashboard/departments', icon: Building2, roles: ['admin', 'hr'], permissions: 'departments.view' },
   { label: 'Payroll', to: '/dashboard/payroll', icon: Wallet, roles: ['admin', 'hr', 'finance'], permissions: 'payroll.view' },
+  { label: 'Reports', to: '/dashboard/reports', icon: FileText, roles: ['admin', 'hr', 'finance'], permissions: null },
+  { label: 'Dashboards', to: '/dashboard/dashboards', icon: Grid2x2, roles: ['admin', 'hr', 'finance'], permissions: null },
   { label: 'Attendance', to: '/dashboard/attendance', icon: ClipboardCheck, roles: ['admin', 'hr'], permissions: 'attendance.view' },
   { label: 'Leaves', to: '/dashboard/leaves', icon: CalendarDays, roles: ['admin', 'hr', 'manager', 'employee'], permissions: 'leaves.view' },
   { label: 'Payslips', to: '/dashboard/payslips', icon: FileText, roles: ['admin', 'hr', 'finance'], permissions: 'payslips.view' },
@@ -62,6 +75,9 @@ const isActive = (path) => route.path === path;
 const isAdmin = computed(() => hasRole(['admin']));
 
 const visibleNavItems = computed(() => {
+  if (isSuperAdmin.value) {
+    return superAdminNavItems;
+  }
   const items = isAdmin.value ? adminNavItems : standardNavItems;
   return items.filter((item) => {
     const roleAllowed = !item.roles || hasRole(item.roles);
