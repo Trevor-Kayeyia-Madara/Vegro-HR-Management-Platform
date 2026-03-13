@@ -41,6 +41,9 @@ Route::post('/auth/logout', 'App\Http\Controllers\AuthController@logout')->middl
 Route::get('/auth/me', 'App\Http\Controllers\AuthController@me')->middleware('check.api.token');
 Route::get('/auth/check', 'App\Http\Controllers\AuthController@authCheck');
 
+// Public lead capture (email waitlist)
+Route::post('/lead-capture', 'App\Http\Controllers\LeadCaptureController@store');
+
 // Super Admin only routes (no tenant scoping)
 Route::middleware(['check.api.token', 'superadmin'])->group(function () {
     Route::apiResource('companies', 'App\Http\Controllers\CompanyController')->only(['index', 'store', 'update']);

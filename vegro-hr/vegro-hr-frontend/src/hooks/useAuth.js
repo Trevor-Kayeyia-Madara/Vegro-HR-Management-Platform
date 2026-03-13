@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import authService from '../services/AuthService';
+import authService from '../services/authService';
 
 const user = ref(null);
 const isLoading = ref(false);
@@ -20,20 +20,23 @@ const roleTitle = computed(() =>
   normalizeRole(user.value?.role?.title || user.value?.role?.name || user.value?.role),
 );
 
+const isSuperAdmin = computed(() => roleTitle.value === 'superadmin');
 const isAdmin = computed(() =>
-  ['admin', 'administrator', 'superadmin', 'companyadmin', 'companyadministrator'].includes(roleTitle.value),
+  ['admin', 'administrator', 'companyadmin', 'companyadministrator'].includes(roleTitle.value),
 );
 
 const permissions = computed(() => user.value?.role?.permissions || []);
 
 const hasRole = (roles = []) => {
-  if (isAdmin.value) return true;
   const list = Array.isArray(roles) ? roles : [roles];
   const normalized = list.map((role) => normalizeRole(role));
+  if (isSuperAdmin.value) return normalized.includes('superadmin');
+  if (isAdmin.value) return true;
   return normalized.includes(roleTitle.value);
 };
 
 const hasPermission = (permissionKey) => {
+  if (isSuperAdmin.value) return true;
   if (isAdmin.value) return true;
   if (!permissionKey) return true;
   const keys = Array.isArray(permissionKey) ? permissionKey : [permissionKey];
@@ -82,6 +85,7 @@ export default function useAuth() {
     isLoading,
     error,
     roleTitle,
+    isSuperAdmin,
     isAdmin,
     permissions,
     hasRole,

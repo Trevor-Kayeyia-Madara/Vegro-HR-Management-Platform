@@ -19,7 +19,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173'],
+    'allowed_origins' => [
+        'http://localhost:5173',
+        'https://vegrohr.invodtech.ltd',
+        'https://demo.vegrohr.invodtechltd.com',
+    ],
 
     'allowed_origins_patterns' => [],
 

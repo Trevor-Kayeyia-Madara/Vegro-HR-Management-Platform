@@ -18,6 +18,9 @@ const activePayroll = ref(null);
 const isSubmitting = ref(false);
 const { hasPermission } = useAuth();
 const canManagePayroll = computed(() => hasPermission('payroll.manage'));
+const payrollCsvInput = ref(null);
+const csvMode = ref('upsert');
+const isCsvBusy = ref(false);
 
 const searchQuery = ref('');
 const pageSize = ref(8);
@@ -302,6 +305,53 @@ const goToPage = (page) => {
   loadPayrolls();
 };
 
+const downloadCsv = async () => {
+  isCsvBusy.value = true;
+  errorMessage.value = '';
+  try {
+    const response = await apiClient.get('/api/payrolls/export/csv', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'payrolls.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.message || 'Unable to export payrolls.';
+  } finally {
+    isCsvBusy.value = false;
+  }
+};
+
+const triggerCsvUpload = () => {
+  if (payrollCsvInput.value) {
+    payrollCsvInput.value.value = '';
+    payrollCsvInput.value.click();
+  }
+};
+
+const handleCsvSelected = async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  isCsvBusy.value = true;
+  errorMessage.value = '';
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mode', csvMode.value);
+    await apiClient.post('/api/payrolls/import/csv', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    await loadPayrolls();
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.message || 'Unable to import payrolls.';
+  } finally {
+    isCsvBusy.value = false;
+  }
+};
+
 onMounted(loadPayrolls);
 </script>
 
@@ -323,6 +373,38 @@ onMounted(loadPayrolls);
             placeholder="Search payroll..."
             class="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-xs text-slate-200 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
           />
+          <div v-if="canManagePayroll" class="flex items-center gap-2">
+            <select
+              v-model="csvMode"
+              class="h-10 rounded-full border border-white/10 bg-white/5 px-3 text-xs text-slate-200 outline-none"
+            >
+              <option value="upsert">Upsert</option>
+              <option value="skip">Skip existing</option>
+            </select>
+            <input
+              ref="payrollCsvInput"
+              type="file"
+              accept=".csv,text/csv"
+              class="hidden"
+              @change="handleCsvSelected"
+            />
+            <button
+              class="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 transition hover:bg-white/10 disabled:opacity-60"
+              type="button"
+              :disabled="isCsvBusy"
+              @click="downloadCsv"
+            >
+              Export CSV
+            </button>
+            <button
+              class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20 disabled:opacity-60"
+              type="button"
+              :disabled="isCsvBusy"
+              @click="triggerCsvUpload"
+            >
+              Import CSV
+            </button>
+          </div>
           <button
             v-if="canManagePayroll"
             class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20"

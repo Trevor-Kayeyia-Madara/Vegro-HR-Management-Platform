@@ -6,6 +6,11 @@ import Pricing from "../pages/Pricing/Pricing.vue"
 import Login from "../pages/Login/Login.vue"
 import DashboardLayout from "../layouts/DashboardLayout.vue"
 import DashboardHome from "../pages/Dashboard/Dashboard.vue"
+import SuperAdminDashboard from "../pages/SuperAdmin/Dashboard.vue"
+import SuperAdminRoles from "../pages/SuperAdmin/Roles.vue"
+import SuperAdminCompanies from "../pages/SuperAdmin/Companies.vue"
+import SuperAdminUsers from "../pages/SuperAdmin/Users.vue"
+import SuperAdminBilling from "../pages/SuperAdmin/Billing.vue"
 import HrDashboard from "../pages/HR/Dashboard.vue"
 import FinanceDashboard from "../pages/Finance/Dashboard.vue"
 import EmployeeDashboard from "../pages/Employee/Dashboard.vue"
@@ -25,6 +30,8 @@ import TaxProfiles from "../pages/TaxProfiles/TaxProfiles.vue"
 import Settings from "../pages/Settings/Settings.vue"
 import Roles from "../pages/Roles/Roles.vue"
 import RoleMatrix from "../pages/Roles/RoleMatrix.vue"
+import Reports from "../pages/Reports/Reports.vue"
+import Dashboards from "../pages/Dashboards/Dashboards.vue"
 
 
 const routes = [
@@ -62,6 +69,36 @@ const routes = [
             name: "DashboardHome",
             component: DashboardHome,
             meta: { roles: ['admin'], permissions: 'dashboard.view' }
+          },
+          {
+            path: "super",
+            name: "SuperAdminDashboard",
+            component: SuperAdminDashboard,
+            meta: { roles: ['superadmin'], permissions: 'dashboard.view' }
+          },
+          {
+            path: "super/roles",
+            name: "SuperAdminRoles",
+            component: SuperAdminRoles,
+            meta: { roles: ['superadmin'], permissions: 'dashboard.view' }
+          },
+          {
+            path: "super/companies",
+            name: "SuperAdminCompanies",
+            component: SuperAdminCompanies,
+            meta: { roles: ['superadmin'], permissions: 'dashboard.view' }
+          },
+          {
+            path: "super/users",
+            name: "SuperAdminUsers",
+            component: SuperAdminUsers,
+            meta: { roles: ['superadmin'], permissions: 'dashboard.view' }
+          },
+          {
+            path: "super/billing",
+            name: "SuperAdminBilling",
+            component: SuperAdminBilling,
+            meta: { roles: ['superadmin'], permissions: 'dashboard.view' }
           },
           {
             path: "hr",
@@ -170,6 +207,18 @@ const routes = [
             name: "RoleMatrix",
             component: RoleMatrix,
             meta: { roles: ['admin'], permissions: 'roles.manage' }
+          },
+          {
+            path: "reports",
+            name: "Reports",
+            component: Reports,
+            meta: { roles: ['admin', 'hr', 'finance'] }
+          },
+          {
+            path: "dashboards",
+            name: "Dashboards",
+            component: Dashboards,
+            meta: { roles: ['admin', 'hr', 'finance'] }
           }
         ]
       }
