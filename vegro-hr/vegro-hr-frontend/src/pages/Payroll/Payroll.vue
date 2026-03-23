@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import apiClient from '../../api/apiClient';
 import ApexCharts from 'vue3-apexcharts';
 import useAuth from '../../hooks/useAuth';
@@ -13,14 +13,20 @@ const taxProfiles = ref([]);
 const isLoading = ref(true);
 const errorMessage = ref('');
 const isModalOpen = ref(false);
+const isApproveModalOpen = ref(false);
 const modalMode = ref('create');
 const activePayroll = ref(null);
 const isSubmitting = ref(false);
+const isApproving = ref(false);
 const { hasPermission } = useAuth();
 const canManagePayroll = computed(() => hasPermission('payroll.manage'));
+const canApprovePayroll = computed(() => hasPermission('payroll.approve'));
 const payrollCsvInput = ref(null);
 const csvMode = ref('upsert');
 const isCsvBusy = ref(false);
+const successMessage = ref('');
+const approveTargetPayroll = ref(null);
+const approveSignatureName = ref('');
 
 const searchQuery = ref('');
 const pageSize = ref(8);
@@ -45,6 +51,35 @@ const form = ref({
   pension_contribution: '',
   mortgage_interest: '',
 });
+
+const employeeById = computed(() => {
+  const map = new Map();
+  employees.value.forEach((employee) => {
+    map.set(Number(employee?.id), employee);
+  });
+  return map;
+});
+
+const autoPopulateFromEmployee = () => {
+  const selectedId = Number(form.value.employee_id || 0);
+  if (!selectedId) return;
+  const selectedEmployee = employeeById.value.get(selectedId);
+  if (!selectedEmployee) return;
+  const sourceSalary =
+    selectedEmployee?.salary ??
+    selectedEmployee?.basic_salary ??
+    selectedEmployee?.gross_salary ??
+    '';
+  const salary = Number(sourceSalary);
+  form.value.basic_salary = Number.isFinite(salary) ? String(salary) : '';
+};
+
+watch(
+  () => form.value.employee_id,
+  () => {
+    autoPopulateFromEmployee();
+  },
+);
 
 const monthLabel = (value) => {
   const months = [
@@ -114,6 +149,7 @@ const parsePaginated = (response) => {
 const loadPayrolls = async () => {
   isLoading.value = true;
   errorMessage.value = '';
+  successMessage.value = '';
 
   try {
     const [payrollResponse, employeeResponse, profileResponse, chartResponse] = await Promise.all([
@@ -180,9 +216,22 @@ const closeModal = () => {
   isModalOpen.value = false;
 };
 
+const openApproveModal = (payroll) => {
+  approveTargetPayroll.value = payroll;
+  approveSignatureName.value = '';
+  isApproveModalOpen.value = true;
+};
+
+const closeApproveModal = () => {
+  isApproveModalOpen.value = false;
+  approveTargetPayroll.value = null;
+  approveSignatureName.value = '';
+};
+
 const submitForm = async () => {
   isSubmitting.value = true;
   errorMessage.value = '';
+  successMessage.value = '';
 
   try {
     const payload = {
@@ -207,6 +256,9 @@ const submitForm = async () => {
 
     await loadPayrolls();
     closeModal();
+    successMessage.value = modalMode.value === 'create'
+      ? 'Payroll created in draft state.'
+      : 'Payroll updated and reset to draft for re-approval.';
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || 'Unable to save payroll.';
   } finally {
@@ -223,6 +275,33 @@ const deletePayroll = async (payroll) => {
     await loadPayrolls();
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || 'Unable to delete payroll.';
+  }
+};
+
+const approvePayroll = async (payroll) => {
+  if (!payroll?.id) {
+    return;
+  }
+  const signatureName = String(approveSignatureName.value || '').trim();
+  if (!signatureName) {
+    errorMessage.value = 'Signature name is required for payroll approval.';
+    return;
+  }
+
+  isApproving.value = true;
+  errorMessage.value = '';
+  successMessage.value = '';
+  try {
+    await apiClient.post(`/api/payrolls/${payroll.id}/approve`, {
+      signature_name: signatureName,
+    });
+    await loadPayrolls();
+    successMessage.value = 'Payroll approved, signed, and converted to payslip.';
+    closeApproveModal();
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.message || 'Unable to approve payroll.';
+  } finally {
+    isApproving.value = false;
   }
 };
 
@@ -423,6 +502,13 @@ onMounted(loadPayrolls);
         {{ errorMessage }}
       </p>
 
+      <p
+        v-if="successMessage"
+        class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100"
+      >
+        {{ successMessage }}
+      </p>
+
       <section class="rounded-3xl border border-white/10 bg-white/5 p-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -448,9 +534,9 @@ onMounted(loadPayrolls);
       </section>
 
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="max-h-130 overflow-auto">
+        <div class="max-h-[72vh] overflow-auto">
           <div class="overflow-x-auto">
-            <table class="min-w-275 w-full text-left text-xs sm:text-sm">
+            <table class="min-w-[760px] w-full text-left text-xs sm:text-sm">
             <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
               <tr>
                 <th class="px-6 py-4 font-medium">Employee</th>
@@ -463,13 +549,14 @@ onMounted(loadPayrolls);
                 <th class="px-6 py-4 font-medium hidden lg:table-cell">Deductions</th>
                 <th class="px-6 py-4 font-medium hidden lg:table-cell">PAYE</th>
                 <th class="px-6 py-4 font-medium hidden lg:table-cell">Tax Rate</th>
+                <th class="px-6 py-4 font-medium">Status</th>
                 <th class="px-6 py-4 font-medium">Net</th>
                 <th class="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
               <tr v-if="isLoading">
-                <td class="px-6 py-6 text-center text-slate-400" colspan="12">
+                <td class="px-6 py-6 text-center text-slate-400" colspan="13">
                   Loading payrolls...
                 </td>
               </tr>
@@ -508,11 +595,27 @@ onMounted(loadPayrolls);
                 <td class="px-6 py-4 text-slate-300/70 hidden lg:table-cell">
                   {{ payroll.tax_rate ? `${Number(payroll.tax_rate).toFixed(2)}%` : '—' }}
                 </td>
+                <td class="px-6 py-4 text-slate-300/80">
+                  <div class="flex flex-col gap-1">
+                    <span class="capitalize">{{ payroll.status || 'draft' }}</span>
+                    <span v-if="payroll.approver_signature_name" class="text-[10px] text-slate-400">
+                      Sign: {{ payroll.approver_signature_name }}
+                    </span>
+                  </div>
+                </td>
                 <td class="px-6 py-4 text-emerald-200">
                   {{ payroll.net_salary ? Number(payroll.net_salary).toLocaleString() : '—' }}
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex items-center justify-end gap-2">
+                    <button
+                      v-if="canApprovePayroll && payroll.status !== 'approved'"
+                      class="rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs text-sky-200 transition hover:bg-sky-400/20"
+                      type="button"
+                      @click="openApproveModal(payroll)"
+                    >
+                      Approve + Sign
+                    </button>
                     <button
                       v-if="canManagePayroll"
                       class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200 transition hover:bg-white/10"
@@ -533,7 +636,7 @@ onMounted(loadPayrolls);
                 </td>
               </tr>
               <tr v-if="!isLoading && !filteredPayrolls.length">
-                <td class="px-6 py-6 text-center text-slate-400" colspan="12">
+                <td class="px-6 py-6 text-center text-slate-400" colspan="13">
                   No payroll records found yet.
                 </td>
               </tr>
@@ -575,9 +678,9 @@ onMounted(loadPayrolls);
 
     <transition name="fade">
       <div
-        v-if="isModalOpen"
+        v-if="isModalOpen || isApproveModalOpen"
         class="vegro-modal-overlay"
-        @click="closeModal"
+        @click="isApproveModalOpen ? closeApproveModal() : closeModal()"
       ></div>
     </transition>
 
@@ -614,6 +717,7 @@ onMounted(loadPayrolls);
                   v-model="form.employee_id"
                   required
                   class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                  @change="autoPopulateFromEmployee"
                 >
                   <option value="" disabled>Select employee</option>
                   <option v-for="employee in employees" :key="employee.id" :value="employee.id">
@@ -745,6 +849,64 @@ onMounted(loadPayrolls);
               </div>
             </div>
           </form>
+        </div>
+      </div>
+    </transition>
+
+    <transition name="slide-up">
+      <div v-if="isApproveModalOpen" class="vegro-modal-wrap">
+        <div class="vegro-modal max-w-lg">
+          <div class="vegro-modal-header">
+            <div>
+              <p class="vegro-modal-title">Payroll Approval</p>
+              <h2 class="vegro-modal-subtitle">Digital Signature</h2>
+            </div>
+            <button class="vegro-modal-close" type="button" @click="closeApproveModal">Close</button>
+          </div>
+
+          <div class="vegro-modal-body space-y-4">
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
+              <p class="font-semibold text-slate-100">
+                {{ approveTargetPayroll?.employee?.name || `Employee #${approveTargetPayroll?.employee_id || ''}` }}
+              </p>
+              <p class="mt-1 text-xs text-slate-400">
+                Period: {{ monthLabel(approveTargetPayroll?.month) }} {{ approveTargetPayroll?.year }}
+              </p>
+              <p class="mt-1 text-xs text-emerald-200">
+                Net Salary: {{ approveTargetPayroll?.net_salary ? Number(approveTargetPayroll.net_salary).toLocaleString() : '—' }}
+              </p>
+            </div>
+
+            <label class="block text-xs text-slate-300/80">
+              <span class="mb-2 block text-[11px] uppercase tracking-[0.2em] text-slate-400">Approver signature (full name)</span>
+              <input
+                v-model="approveSignatureName"
+                type="text"
+                class="h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-slate-100 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                placeholder="e.g. Jane Doe"
+              />
+            </label>
+          </div>
+
+          <div class="vegro-modal-footer">
+            <div class="flex justify-end gap-2">
+              <button
+                class="rounded-full border border-white/10 px-4 py-2 text-xs text-slate-200 transition hover:bg-white/10"
+                type="button"
+                @click="closeApproveModal"
+              >
+                Cancel
+              </button>
+              <button
+                class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20 disabled:opacity-60"
+                type="button"
+                :disabled="isApproving"
+                @click="approvePayroll(approveTargetPayroll)"
+              >
+                {{ isApproving ? 'Approving...' : 'Approve Payroll' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </transition>

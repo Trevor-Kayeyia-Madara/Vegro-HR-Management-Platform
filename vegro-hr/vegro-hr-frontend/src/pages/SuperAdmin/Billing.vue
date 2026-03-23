@@ -1,6 +1,7 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue';
 import apiClient from '../../api/apiClient';
+import { formatDate } from '../../utils/dateFormat';
 
 defineOptions({ name: 'SuperAdminBillingPage' });
 
@@ -103,7 +104,7 @@ onMounted(loadBilling);
           </button>
         </div>
         <div class="mt-5 overflow-x-auto">
-          <table class="min-w-full text-left text-xs text-slate-200">
+          <table class="min-w-[760px] text-left text-xs text-slate-200">
             <thead class="text-[11px] uppercase text-slate-400">
               <tr>
                 <th class="px-3 py-2">Company</th>
@@ -127,7 +128,7 @@ onMounted(loadBilling);
                   }}
                 </td>
                 <td class="px-3 py-2">{{ subscription.status }}</td>
-                <td class="px-3 py-2">{{ subscription.starts_at || '-' }}</td>
+                <td class="px-3 py-2">{{ formatDate(subscription.starts_at) }}</td>
               </tr>
               <tr v-if="!isLoading && !subscriptions.length">
                 <td class="px-3 py-4 text-sm text-slate-400" colspan="5">
@@ -146,3 +147,5 @@ onMounted(loadBilling);
     </div>
   </div>
 </template>
+
+

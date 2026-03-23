@@ -247,24 +247,58 @@ class CompanyController extends Controller
     {
         $validated = $request->validate([
             'plan_id' => 'required|integer|exists:plans,id',
+            'billing_cycle' => ['nullable', Rule::in(['monthly', 'annual'])],
+            'status' => ['nullable', Rule::in(['active', 'trial', 'cancelled', 'trialing', 'canceled'])],
         ]);
 
-        $plan = Plan::find($validated['plan_id']);
+        $plan = Plan::findOrFail($validated['plan_id']);
         $company->update(['plan' => $plan->name]);
+        $billingCycle = $validated['billing_cycle'] ?? 'monthly';
+        $status = $validated['status'] ?? 'active';
+        if ($status === 'trial') {
+            $status = 'trialing';
+        }
+        if ($status === 'cancelled') {
+            $status = 'canceled';
+        }
 
-        $subscription = $company->subscriptions()->create([
-            'plan_id' => $plan->id,
-            'status' => 'active',
-            'starts_at' => now(),
-        ]);
+        $subscription = $company->subscriptions()
+            ->whereIn('status', ['trialing', 'active', 'past_due', 'paused'])
+            ->latest('id')
+            ->first();
+
+        if ($subscription) {
+            $subscription->update([
+                'plan_id' => $plan->id,
+                'billing_cycle' => $billingCycle,
+                'status' => $status,
+                'starts_at' => $subscription->starts_at ?? now(),
+                'ends_at' => null,
+                'cancel_at' => null,
+            ]);
+        } else {
+            $subscription = $company->subscriptions()->create([
+                'plan_id' => $plan->id,
+                'billing_cycle' => $billingCycle,
+                'status' => $status,
+                'starts_at' => now(),
+            ]);
+        }
 
         $this->activity->log('company.plan.updated', $company->id, Plan::class, $plan->id, [
             'subscription_id' => $subscription->id,
+            'billing_cycle' => $billingCycle,
+            'status' => $status,
         ]);
 
         return ApiResponse::success([
             'company' => $company->fresh(),
             'subscription' => $subscription,
         ], 'Plan updated');
+    }
+
+    public function assignPlan(Request $request, Company $company)
+    {
+        return $this->updatePlan($request, $company);
     }
 }

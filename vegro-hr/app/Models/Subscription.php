@@ -9,6 +9,7 @@ class Subscription extends Model
     protected $fillable = [
         'company_id',
         'plan_id',
+        'billing_cycle',
         'status',
         'starts_at',
         'ends_at',
@@ -18,6 +19,7 @@ class Subscription extends Model
     ];
 
     protected $casts = [
+        'billing_cycle' => 'string',
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'trial_ends_at' => 'datetime',

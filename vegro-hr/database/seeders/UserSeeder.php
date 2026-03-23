@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Admin User',
                 'password' => bcrypt('password'),
-                'role_id' => \App\Models\Role::where('title', 'Super Admin')->first()?->id
+                'role_id' => \App\Models\Role::where('title', 'superadmin')->first()?->id
                     ?? \App\Models\Role::where('title', 'Admin')->first()->id,
                 'company_id' => $companyId,
             ]
@@ -28,7 +28,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Company Admin',
                 'password' => bcrypt('CompanyAdmin123'),
-                'role_id' => \App\Models\Role::where('title', 'Company Admin')->first()?->id
+                'role_id' => \App\Models\Role::where('title', 'companyadmin')->first()?->id
                     ?? \App\Models\Role::where('title', 'Admin')->first()->id,
                 'company_id' => $companyId,
             ]
@@ -110,6 +110,15 @@ class UserSeeder extends Seeder
             [
                 'name' => 'IT Manager',
                 'password' => bcrypt('itmanager123'),
+                'role_id' => $managerRoleId,
+                'company_id' => $companyId,
+            ]
+        );
+         \App\Models\User::updateOrCreate(
+            ['email' => 'director@example.com'],
+            [
+                'name' => 'MD',
+                'password' => bcrypt('CEO1234'),
                 'role_id' => $managerRoleId,
                 'company_id' => $companyId,
             ]

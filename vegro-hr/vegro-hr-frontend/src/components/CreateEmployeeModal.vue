@@ -23,6 +23,7 @@ const form = ref({
   department_id: '',
   role_ids: [],
   salary: '',
+  annual_leave_days: 21,
   status: 'active',
 });
 
@@ -35,6 +36,7 @@ const resetForm = () => {
     department_id: '',
     role_ids: [],
     salary: '',
+    annual_leave_days: 21,
     status: 'active',
   };
   errorMessage.value = '';
@@ -54,6 +56,7 @@ const submitForm = async () => {
       department_id: Number(form.value.department_id),
       role_ids: form.value.role_ids.map((id) => Number(id)),
       salary: Number(form.value.salary),
+      annual_leave_days: Number(form.value.annual_leave_days),
       status: form.value.status,
     });
     emit('created');
@@ -137,6 +140,17 @@ watch(
               type="number"
               min="0"
               step="0.01"
+              required
+              class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+            />
+          </label>
+          <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+            <span>Annual leave days</span>
+            <input
+              v-model="form.annual_leave_days"
+              type="number"
+              min="0"
+              step="1"
               required
               class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
             />

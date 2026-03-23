@@ -1,5 +1,5 @@
 ﻿<script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import apiClient from '../../api/apiClient';
 
 defineOptions({ name: 'LandingPage' });
@@ -13,6 +13,98 @@ const formState = ref({
 const isSubmitting = ref(false);
 const successMessage = ref('');
 const errorMessage = ref('');
+const pricingPlans = ref([
+  {
+    name: 'Starter',
+    slug: 'starter',
+    monthly_display: '$2 / employee',
+    monthly_note: 'Monthly, min $20',
+    annual_note: 'Annual: $19 / employee, min $200',
+    tagline: 'HR Essentials · up to 30 employees.',
+    cta: 'Join the waitlist',
+    features: [
+      'Core HR, payroll basic, leave, attendance',
+      'Employee self-service + basic dashboards',
+      'CSV import/export',
+    ],
+  },
+  {
+    name: 'Growth',
+    slug: 'growth',
+    monthly_display: '$4 / employee',
+    monthly_note: 'Monthly, min $80',
+    annual_note: 'Annual: $38 / employee, min $800',
+    tagline: 'Operational Control · up to 150 employees.',
+    cta: 'Join the waitlist',
+    features: [
+      'ATS + document signing + compliance alerts',
+      'Advanced audit logs + multi-manager org',
+      'Limited report builder (3 saved reports)',
+    ],
+  },
+  {
+    name: 'Pro',
+    slug: 'pro',
+    monthly_display: '$7 / employee',
+    monthly_note: 'Monthly, min $200',
+    annual_note: 'Annual: $70 / employee, min $2000',
+    tagline: 'Data & Intelligence · up to 500 employees.',
+    cta: 'Join the waitlist',
+    features: [
+      'Full report builder + analytics dashboards',
+      'Advanced payroll rules + custom fields',
+      'API access + priority support',
+    ],
+  },
+  {
+    name: 'Enterprise',
+    slug: 'enterprise',
+    monthly_display: 'Custom',
+    monthly_note: '$1000+/month typical',
+    annual_note: '',
+    tagline: 'Scale & Integration · unlimited employees.',
+    cta: 'Request pricing',
+    features: [
+      'Webhooks + external integrations',
+      'Dedicated infrastructure + white-labeling',
+      'SLA support + multi-environment control',
+    ],
+  },
+]);
+
+const loadPublicPlans = async () => {
+  try {
+    const response = await apiClient.get('/api/public/plans');
+    const rows = response?.data?.data || [];
+    if (!Array.isArray(rows) || !rows.length) return;
+
+    pricingPlans.value = pricingPlans.value.map((plan) => {
+      const live = rows.find((item) => String(item?.slug || '').toLowerCase() === plan.slug);
+      if (!live) return plan;
+
+      const monthlyValue = live?.price_monthly !== null && live?.price_monthly !== undefined
+        ? `$${Number(live.price_monthly)} / employee`
+        : plan.monthly_display;
+      const annualValue = live?.price_annual !== null && live?.price_annual !== undefined
+        ? `Annual: $${Number(live.price_annual)} / employee`
+        : plan.annual_note;
+      const limitLabel = live?.employee_limit
+        ? `up to ${Number(live.employee_limit).toLocaleString()} employees.`
+        : 'unlimited employees.';
+      const taglinePrefix = String(plan.tagline).split('·')[0].trim();
+
+      return {
+        ...plan,
+        name: live?.name || plan.name,
+        monthly_display: monthlyValue,
+        annual_note: annualValue,
+        tagline: `${taglinePrefix} · ${limitLabel}`,
+      };
+    });
+  } catch {
+    // Keep fallback pricing content when API is unavailable.
+  }
+};
 
 const submitLead = async () => {
   if (isSubmitting.value) return;
@@ -35,6 +127,10 @@ const submitLead = async () => {
     isSubmitting.value = false;
   }
 };
+
+onMounted(() => {
+  loadPublicPlans();
+});
 </script>
 
 <template>
@@ -243,62 +339,60 @@ const submitLead = async () => {
       </div>
     </section>
 
-    <section id="pricing" class="mx-auto w-full max-w-6xl px-6 pb-16">
+        <section id="pricing" class="mx-auto w-full max-w-6xl px-6 pb-16">
       <div class="flex flex-col gap-6">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200/80">Pricing</p>
           <h2 class="mt-2 text-3xl font-semibold">Plans for every growth stage.</h2>
           <p class="mt-3 max-w-2xl text-sm text-slate-300/80">
-            Transparent tiers for HR operations teams, with upgrade paths to full enterprise scale.
+            Transparent employee-based pricing with clear limits and upgrade paths.
           </p>
         </div>
-        <div class="grid gap-6 lg:grid-cols-3">
-          <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
-            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Starter</p>
-            <h3 class="mt-3 text-2xl font-semibold">$49 / month</h3>
-            <p class="mt-2 text-sm text-slate-300/80">Single company, core HR + attendance.</p>
-            <ul class="mt-4 space-y-2 text-sm text-slate-300/80">
-              <li>Employee + department management</li>
-              <li>Attendance tracking</li>
-              <li>Basic reporting</li>
+        <div class="grid gap-6 lg:grid-cols-4">
+          <div
+            v-for="plan in pricingPlans"
+            :key="plan.slug"
+            class="rounded-3xl border p-6"
+            :class="plan.slug === 'growth'
+              ? 'border-emerald-400/40 bg-emerald-400/10'
+              : 'border-white/10 bg-white/5'"
+          >
+            <p
+              class="text-xs uppercase tracking-[0.24em]"
+              :class="plan.slug === 'growth' ? 'text-emerald-200/80' : 'text-slate-400'"
+            >
+              {{ plan.name }}
+            </p>
+            <h3
+              class="mt-3 text-2xl font-semibold"
+              :class="plan.slug === 'growth' ? 'text-emerald-50' : ''"
+            >
+              {{ plan.monthly_display }}
+            </h3>
+            <p class="mt-1 text-xs" :class="plan.slug === 'growth' ? 'text-emerald-100/80' : 'text-slate-400'">
+              {{ plan.monthly_note }}
+            </p>
+            <p
+              v-if="plan.annual_note"
+              class="mt-1 text-xs"
+              :class="plan.slug === 'growth' ? 'text-emerald-100/80' : 'text-slate-400'"
+            >
+              {{ plan.annual_note }}
+            </p>
+            <p class="mt-2 text-sm" :class="plan.slug === 'growth' ? 'text-emerald-50/80' : 'text-slate-300/80'">
+              {{ plan.tagline }}
+            </p>
+            <ul class="mt-4 space-y-2 text-sm" :class="plan.slug === 'growth' ? 'text-emerald-50/80' : 'text-slate-300/80'">
+              <li v-for="item in plan.features" :key="`${plan.slug}-${item}`">{{ item }}</li>
             </ul>
             <a
               href="#contact"
-              class="mt-6 inline-flex rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 transition hover:bg-white/10"
+              class="mt-6 inline-flex rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em]"
+              :class="plan.slug === 'growth'
+                ? 'bg-emerald-400 text-slate-950'
+                : 'border border-white/10 text-slate-200 transition hover:bg-white/10'"
             >
-              Join the waitlist
-            </a>
-          </div>
-          <div class="rounded-3xl border border-emerald-400/40 bg-emerald-400/10 p-6">
-            <p class="text-xs uppercase tracking-[0.24em] text-emerald-200/80">Business</p>
-            <h3 class="mt-3 text-2xl font-semibold text-emerald-50">$129 / month</h3>
-            <p class="mt-2 text-sm text-emerald-50/80">Payroll automation + analytics.</p>
-            <ul class="mt-4 space-y-2 text-sm text-emerald-50/80">
-              <li>Payroll cycles + tax profiles</li>
-              <li>Dynamic reports and exports</li>
-              <li>Email support</li>
-            </ul>
-            <a
-              href="#contact"
-              class="mt-6 inline-flex rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-950"
-            >
-              Join the waitlist
-            </a>
-          </div>
-          <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
-            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Enterprise</p>
-            <h3 class="mt-3 text-2xl font-semibold">Custom</h3>
-            <p class="mt-2 text-sm text-slate-300/80">Advanced workflows, integrations, SLAs.</p>
-            <ul class="mt-4 space-y-2 text-sm text-slate-300/80">
-              <li>Executive reporting packs</li>
-              <li>Custom integrations</li>
-              <li>Dedicated success lead</li>
-            </ul>
-            <a
-              href="#contact"
-              class="mt-6 inline-flex rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 transition hover:bg-white/10"
-            >
-              Join the waitlist
+              {{ plan.cta }}
             </a>
           </div>
         </div>
@@ -397,4 +491,14 @@ const submitLead = async () => {
   font-family: 'Fraunces', 'Space Grotesk', serif;
 }
 </style>
+
+
+
+
+
+
+
+
+
+
 

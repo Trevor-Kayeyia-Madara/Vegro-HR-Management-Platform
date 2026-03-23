@@ -15,8 +15,8 @@ return new class extends Migration
         $now = now();
 
         $roles = [
-            ['title' => 'Super Admin', 'description' => 'Global administrator with full access'],
-            ['title' => 'Company Admin', 'description' => 'Company-level administrator with full access'],
+            ['title' => 'superadmin', 'description' => 'Global administrator with full access'],
+            ['title' => 'companyadmin', 'description' => 'Company-level administrator with full access'],
             ['title' => 'HR', 'description' => 'Human resources management'],
             ['title' => 'Finance', 'description' => 'Payroll and finance operations'],
             ['title' => 'Manager', 'description' => 'Department manager'],
@@ -43,7 +43,7 @@ return new class extends Migration
         }
 
         if (Schema::hasTable('users')) {
-            $adminRoleId = DB::table('roles')->where('title', 'Super Admin')->value('id');
+            $adminRoleId = DB::table('roles')->where('title', 'superadmin')->value('id');
             if ($adminRoleId) {
                 DB::table('users')
                     ->where(function ($query) {

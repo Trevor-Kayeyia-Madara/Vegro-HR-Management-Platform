@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Helpers\ApiResponse;
 use App\Models\LeadCapture;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use OpenApi\Attributes as OA;
 
 class LeadCaptureController extends Controller
@@ -63,6 +65,42 @@ class LeadCaptureController extends Controller
             'source' => $validated['source'] ?? 'landing-page',
         ]);
 
+        $this->notifyLeadRecipients($lead);
+
         return ApiResponse::success($lead, 'Lead captured successfully', 201);
+    }
+
+    protected function notifyLeadRecipients(LeadCapture $lead): void
+    {
+        $recipients = collect(explode(',', (string) env('LEAD_CAPTURE_RECIPIENTS', 'invodtech@gmail.com,info@invodtechltd.com')))
+            ->map(fn ($email) => trim((string) $email))
+            ->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($recipients)) {
+            return;
+        }
+
+        $subject = 'Vegro HR Demo Request - ' . ($lead->company ?: $lead->name);
+        $body = "New demo request received.\n\n"
+            . "Name: {$lead->name}\n"
+            . "Email: {$lead->email}\n"
+            . "Company: " . ($lead->company ?: '-') . "\n"
+            . "Source: " . ($lead->source ?: '-') . "\n"
+            . "Message:\n" . ($lead->message ?: '-') . "\n\n"
+            . "Submitted at: " . optional($lead->created_at)->toDateTimeString();
+
+        try {
+            Mail::raw($body, function ($message) use ($recipients, $subject) {
+                $message->to($recipients)->subject($subject);
+            });
+        } catch (\Throwable $exception) {
+            Log::warning('Lead capture email notification failed', [
+                'lead_id' => $lead->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }

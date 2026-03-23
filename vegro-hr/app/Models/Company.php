@@ -38,4 +38,9 @@ class Company extends Model
     {
         return $this->hasOne(Subscription::class)->whereIn('status', ['trialing', 'active', 'past_due']);
     }
+
+    public function currentPlan(): ?Plan
+    {
+        return $this->activeSubscription?->plan;
+    }
 }

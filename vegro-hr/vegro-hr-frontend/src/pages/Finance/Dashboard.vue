@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import ApexCharts from 'vue3-apexcharts';
@@ -51,6 +51,26 @@ const netPayrollTotal = computed(() =>
   payrolls.value.reduce((sum, payroll) => sum + Number(payroll?.net_salary ?? 0), 0),
 );
 
+const dashboardCurrency = computed(() => {
+  const byId = new Map(
+    taxProfiles.value
+      .filter((profile) => profile?.id && profile?.currency)
+      .map((profile) => [Number(profile.id), String(profile.currency).toUpperCase()]),
+  );
+
+  const payrollCurrency = payrolls.value
+    .map((payroll) => byId.get(Number(payroll?.tax_profile_id)))
+    .find((currency) => /^[A-Z]{3}$/.test(currency || ''));
+
+  if (payrollCurrency) return payrollCurrency;
+
+  const profileCurrency = taxProfiles.value
+    .map((profile) => String(profile?.currency || '').toUpperCase())
+    .find((currency) => /^[A-Z]{3}$/.test(currency));
+
+  return profileCurrency || 'USD';
+});
+
 const payrollStatusSeries = computed(() => {
   const statuses = ['draft', 'processed', 'paid'];
   return statuses.map(
@@ -78,7 +98,7 @@ const stats = computed(() => [
     label: 'Net Payroll',
     value: netPayrollTotal.value.toLocaleString('en-US', {
       style: 'currency',
-      currency: 'KES',
+      currency: dashboardCurrency.value,
       maximumFractionDigits: 0,
     }),
     change: 'Current month total',
@@ -215,3 +235,4 @@ onMounted(loadDashboard);
     </div>
   </div>
 </template>
+

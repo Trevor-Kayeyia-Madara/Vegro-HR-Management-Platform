@@ -51,4 +51,60 @@ class CsvHelper
         $parts = preg_split('/[,\|]+/', $value);
         return array_values(array_filter(array_map('trim', $parts), fn ($item) => $item !== ''));
     }
+
+    public static function formatDate($value, string $fallback = ''): string
+    {
+        if ($value === null || $value === '') {
+            return $fallback;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($value)->format('d-m-Y');
+        } catch (\Throwable $exception) {
+            return (string) $value;
+        }
+    }
+
+    public static function formatDateTime($value, string $fallback = ''): string
+    {
+        if ($value === null || $value === '') {
+            return $fallback;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($value)->format('d-m-Y H:i');
+        } catch (\Throwable $exception) {
+            return (string) $value;
+        }
+    }
+
+    public static function parseDateForStorage($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return null;
+        }
+
+        $formats = ['Y-m-d', 'd-m-Y', 'd/m/Y', 'Y/m/d', 'd.m.Y', 'Y.m.d'];
+        foreach ($formats as $format) {
+            try {
+                $date = \Carbon\Carbon::createFromFormat($format, $raw);
+                if ($date && $date->format($format) === $raw) {
+                    return $date->format('Y-m-d');
+                }
+            } catch (\Throwable $exception) {
+                // try next format
+            }
+        }
+
+        try {
+            return \Carbon\Carbon::parse($raw)->format('Y-m-d');
+        } catch (\Throwable $exception) {
+            return null;
+        }
+    }
 }

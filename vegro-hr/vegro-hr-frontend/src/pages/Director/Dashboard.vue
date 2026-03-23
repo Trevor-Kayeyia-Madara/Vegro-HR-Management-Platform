@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import ApexCharts from 'vue3-apexcharts';
@@ -16,6 +16,7 @@ const errorMessage = ref('');
 const payrolls = ref([]);
 const payslips = ref([]);
 const leaveRequests = ref([]);
+const taxProfiles = ref([]);
 
 const unwrapList = (response) => {
   const data = response?.data?.data;
@@ -29,15 +30,17 @@ const loadDashboard = async () => {
   errorMessage.value = '';
 
   try {
-    const [payrollResponse, payslipResponse, leaveResponse] = await Promise.all([
+    const [payrollResponse, payslipResponse, leaveResponse, taxProfileResponse] = await Promise.all([
       apiClient.get('/api/payrolls', { params: { per_page: 1000 } }),
       apiClient.get('/api/payslips', { params: { per_page: 1000 } }),
       apiClient.get('/api/leave-requests/all', { params: { per_page: 1000 } }),
+      apiClient.get('/api/tax-profiles', { params: { per_page: 500 } }),
     ]);
 
     payrolls.value = unwrapList(payrollResponse);
     payslips.value = unwrapList(payslipResponse);
     leaveRequests.value = unwrapList(leaveResponse);
+    taxProfiles.value = unwrapList(taxProfileResponse);
   } catch (error) {
     errorMessage.value =
       error?.response?.data?.message ||
@@ -50,6 +53,26 @@ const loadDashboard = async () => {
 const payrollTotal = computed(() =>
   payrolls.value.reduce((sum, payroll) => sum + Number(payroll?.net_salary ?? 0), 0),
 );
+
+const dashboardCurrency = computed(() => {
+  const byId = new Map(
+    taxProfiles.value
+      .filter((profile) => profile?.id && profile?.currency)
+      .map((profile) => [Number(profile.id), String(profile.currency).toUpperCase()]),
+  );
+
+  const payrollCurrency = payrolls.value
+    .map((payroll) => byId.get(Number(payroll?.tax_profile_id)))
+    .find((currency) => /^[A-Z]{3}$/.test(currency || ''));
+
+  if (payrollCurrency) return payrollCurrency;
+
+  const profileCurrency = taxProfiles.value
+    .map((profile) => String(profile?.currency || '').toUpperCase())
+    .find((currency) => /^[A-Z]{3}$/.test(currency));
+
+  return profileCurrency || 'USD';
+});
 
 const leaveStatusSeries = computed(() => {
   const statuses = ['pending', 'approved', 'rejected'];
@@ -78,7 +101,7 @@ const stats = computed(() => [
     label: 'Net payroll',
     value: payrollTotal.value.toLocaleString('en-US', {
       style: 'currency',
-      currency: 'KES',
+      currency: dashboardCurrency.value,
       maximumFractionDigits: 0,
     }),
     change: 'Current period total',
@@ -210,3 +233,4 @@ onMounted(loadDashboard);
     </div>
   </div>
 </template>
+

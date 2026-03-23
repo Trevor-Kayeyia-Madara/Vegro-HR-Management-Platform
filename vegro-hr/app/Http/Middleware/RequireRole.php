@@ -62,6 +62,16 @@ class RequireRole
             return $next($request);
         }
 
+        if ($userRole === 'financemanager') {
+            if (
+                in_array('financemanager', $allowed, true) ||
+                in_array('finance', $allowed, true) ||
+                in_array('manager', $allowed, true)
+            ) {
+                return $next($request);
+            }
+        }
+
         if (in_array($userRole, $allowed, true)) {
             return $next($request);
         }

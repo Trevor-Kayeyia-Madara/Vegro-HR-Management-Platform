@@ -4,6 +4,8 @@ import Landing from "../pages/Landing/Landing.vue"
 import Contact from "../pages/Contact/Contact.vue"
 import Pricing from "../pages/Pricing/Pricing.vue"
 import Login from "../pages/Login/Login.vue"
+import ForgotPassword from "../pages/Auth/ForgotPassword.vue"
+import ResetPassword from "../pages/Auth/ResetPassword.vue"
 import DashboardLayout from "../layouts/DashboardLayout.vue"
 import DashboardHome from "../pages/Dashboard/Dashboard.vue"
 import SuperAdminDashboard from "../pages/SuperAdmin/Dashboard.vue"
@@ -13,13 +15,15 @@ import SuperAdminUsers from "../pages/SuperAdmin/Users.vue"
 import SuperAdminBilling from "../pages/SuperAdmin/Billing.vue"
 import HrDashboard from "../pages/HR/Dashboard.vue"
 import FinanceDashboard from "../pages/Finance/Dashboard.vue"
+import FinanceManagerDashboard from "../pages/FinanceManager/Dashboard.vue"
 import EmployeeDashboard from "../pages/Employee/Dashboard.vue"
 import ManagerDashboard from "../pages/Manager/Dashboard.vue"
 import DirectorDashboard from "../pages/Director/Dashboard.vue"
 import ManagerTeam from "../pages/Manager/Team.vue"
 import ProtectedRoute from "../components/ProtectedRoute.vue"
 import Employees from "../pages/Employees/Employees.vue"
-import Departments from "../pages/Departments/Departments.vue"
+import OrgChart from "../pages/OrgChart/OrgChart.vue"
+import Projects from "../pages/Projects/Projects.vue"
 import Payroll from "../pages/Payroll/Payroll.vue"
 import Attendance from "../pages/Attendance/Attendance.vue"
 import Leaves from "../pages/Leaves/Leaves.vue"
@@ -32,6 +36,11 @@ import Roles from "../pages/Roles/Roles.vue"
 import RoleMatrix from "../pages/Roles/RoleMatrix.vue"
 import Reports from "../pages/Reports/Reports.vue"
 import Dashboards from "../pages/Dashboards/Dashboards.vue"
+import Recruitment from "../pages/Ats/Recruitment.vue"
+import Feedback from "../pages/Feedback/Feedback.vue"
+import Onboarding from "../pages/Onboarding/Onboarding.vue"
+import Compliance from "../pages/Compliance/Compliance.vue"
+import Audits from "../pages/Audits/Audits.vue"
 
 
 const routes = [
@@ -54,6 +63,16 @@ const routes = [
     path: "/login",
     name: "Login",
     component: Login
+  },
+  {
+    path: "/forgot-password",
+    name: "ForgotPassword",
+    component: ForgotPassword
+  },
+  {
+    path: "/reset-password",
+    name: "ResetPassword",
+    component: ResetPassword
   },
   {
     path: "/dashboard",
@@ -113,6 +132,12 @@ const routes = [
             meta: { roles: ['finance'], permissions: 'dashboard.view' }
           },
           {
+            path: "finance-manager",
+            name: "FinanceManagerDashboard",
+            component: FinanceManagerDashboard,
+            meta: { roles: ['financemanager'], permissions: 'dashboard.view' }
+          },
+          {
             path: "employee",
             name: "EmployeeDashboard",
             component: EmployeeDashboard,
@@ -144,9 +169,19 @@ const routes = [
           },
           {
             path: "departments",
-            name: "Departments",
-            component: Departments,
-            meta: { roles: ['admin', 'hr'], permissions: 'departments.view' }
+            redirect: "/dashboard/org-chart",
+          },
+          {
+            path: "org-chart",
+            name: "OrgChart",
+            component: OrgChart,
+            meta: { roles: ['hr'] }
+          },
+          {
+            path: "projects",
+            name: "Projects",
+            component: Projects,
+            meta: { roles: ['admin', 'hr', 'manager', 'employee', 'director', 'md'], permissions: 'projects.view' }
           },
           {
             path: "tax-profiles",
@@ -212,13 +247,49 @@ const routes = [
             path: "reports",
             name: "Reports",
             component: Reports,
-            meta: { roles: ['admin', 'hr', 'finance'] }
+            meta: { roles: ['admin', 'hr', 'finance', 'director', 'md'] }
           },
           {
             path: "dashboards",
             name: "Dashboards",
             component: Dashboards,
-            meta: { roles: ['admin', 'hr', 'finance'] }
+            meta: { roles: ['admin', 'hr', 'finance', 'director', 'md'] }
+          },
+          {
+            path: "dashboards/:dashboardId",
+            name: "DashboardView",
+            component: Dashboards,
+            meta: { roles: ['admin', 'hr', 'finance', 'director', 'md'] }
+          },
+          {
+            path: "recruitment",
+            name: "Recruitment",
+            component: Recruitment,
+            meta: { roles: ['admin', 'hr', 'manager', 'director', 'md'], permissions: 'recruitment.view' }
+          },
+          {
+            path: "feedback",
+            name: "Feedback",
+            component: Feedback,
+            meta: { roles: ['admin', 'hr', 'finance', 'manager', 'employee', 'director', 'md'], permissions: 'feedback.submit' }
+          },
+          {
+            path: "onboarding",
+            name: "Onboarding",
+            component: Onboarding,
+            meta: { roles: ['admin', 'hr', 'finance', 'manager', 'employee', 'director', 'md'], permissions: 'onboarding.view' }
+          },
+          {
+            path: "compliance",
+            name: "Compliance",
+            component: Compliance,
+            meta: { roles: ['admin', 'hr', 'finance', 'manager', 'director', 'md'], permissions: 'compliance.view' }
+          },
+          {
+            path: "audits",
+            name: "Audits",
+            component: Audits,
+            meta: { roles: ['admin', 'hr', 'finance', 'director', 'md'], permissions: 'audits.view' }
           }
         ]
       }

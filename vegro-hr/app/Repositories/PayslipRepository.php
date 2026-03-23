@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 use App\Models\Payslip;
+use App\Helpers\CsvHelper;
 
 class PayslipRepository
 {
@@ -71,18 +72,36 @@ class PayslipRepository
     public function exportPayslipsToCSV()
     {
         $payslips = Payslip::with(['payroll.employee', 'employee'])->get();
-        $csvData = "Employee Name,Employee Number,Period Start,Period End,Gross Pay,Total Deductions,Net Pay,Status\n";
+        $csvData = CsvHelper::row([
+            'employee_name',
+            'employee_number',
+            'period_start',
+            'period_end',
+            'gross_pay',
+            'total_deductions',
+            'net_pay',
+            'status',
+        ]);
 
         foreach ($payslips as $payslip) {
             $employeeName = $payslip->employee_name ?? $payslip->payroll?->employee?->name ?? '';
             $employeeNumber = $payslip->employee_number ?? $payslip->payroll?->employee?->employee_number ?? '';
-            $periodStart = $payslip->pay_period_start ?? '';
-            $periodEnd = $payslip->pay_period_end ?? '';
+            $periodStart = CsvHelper::formatDate($payslip->pay_period_start);
+            $periodEnd = CsvHelper::formatDate($payslip->pay_period_end);
             $grossPay = $payslip->gross_pay ?? '';
             $totalDeductions = $payslip->total_deductions ?? '';
             $netPay = $payslip->net_pay ?? $payslip->payroll?->net_salary ?? '';
             $status = $payslip->status ?? '';
-            $csvData .= "{$employeeName},{$employeeNumber},{$periodStart},{$periodEnd},{$grossPay},{$totalDeductions},{$netPay},{$status}\n";
+            $csvData .= CsvHelper::row([
+                $employeeName,
+                $employeeNumber,
+                $periodStart,
+                $periodEnd,
+                $grossPay,
+                $totalDeductions,
+                $netPay,
+                $status,
+            ]);
         }
 
         return $csvData;

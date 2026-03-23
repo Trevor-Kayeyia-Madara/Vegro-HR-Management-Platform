@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import apiClient from '../../api/apiClient';
+import { formatDate } from '../../utils/dateFormat';
 
 defineOptions({ name: 'SuperAdminUsersPage' });
 
@@ -23,12 +24,6 @@ const normalizeRole = (title) =>
 const systemAdmins = computed(() =>
   users.value.filter((user) => normalizeRole(user.role?.title) === 'superadmin'),
 );
-
-const formatDate = (value) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString();
-};
 
 const loadUsers = async () => {
   isLoading.value = true;
@@ -91,7 +86,7 @@ onMounted(loadUsers);
           </div>
         </div>
         <div class="mt-5 overflow-x-auto">
-          <table class="min-w-full text-left text-xs text-slate-200">
+          <table class="min-w-[760px] text-left text-xs text-slate-200">
             <thead class="text-[11px] uppercase text-slate-400">
               <tr>
                 <th class="px-3 py-2">Name</th>
@@ -106,7 +101,7 @@ onMounted(loadUsers);
                 <td class="px-3 py-3">{{ user.email }}</td>
                 <td class="px-3 py-3">
                   <span class="rounded-full bg-emerald-400/10 px-2 py-1 text-[10px] text-emerald-200">
-                    {{ user.role?.title || 'Super Admin' }}
+                    {{ user.role?.title || 'superadmin' }}
                   </span>
                 </td>
                 <td class="px-3 py-3">{{ formatDate(user.created_at) }}</td>
@@ -162,3 +157,5 @@ onMounted(loadUsers);
     </div>
   </div>
 </template>
+
+

@@ -37,6 +37,8 @@ class AuthRepository
 
     public function login(array $credentials)
     {
+        $emailVerificationRequired = !app()->environment('local');
+
         $query = User::where('email', $credentials['email']);
         if (!empty($credentials['company_id'])) {
             $query->where('company_id', $credentials['company_id']);
@@ -54,6 +56,14 @@ class AuthRepository
         $user = $users->first();
 
         if ($user && Hash::check($credentials['password'], $user->password)) {
+            $roleTitle = strtolower(trim((string) ($user->role?->title ?? '')));
+            $roleTitle = str_replace([' ', '-', '_'], '', $roleTitle);
+            $verificationExempt = in_array($roleTitle, ['superadmin', 'companyadmin', 'admin', 'companyadministrator'], true);
+
+            if ($emailVerificationRequired && !$verificationExempt && is_null($user->email_verified_at)) {
+                return ['error' => 'Please verify your email before logging in.'];
+            }
+
             // Generate a simple token
             $token = hash_hmac('sha256', Str::random(32) . $user->id, config('app.key'));
             

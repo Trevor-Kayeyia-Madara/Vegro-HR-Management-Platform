@@ -99,7 +99,7 @@ class AttendanceService
                 $employee?->employee_number,
                 $employee?->name,
                 $employee?->email,
-                $attendance->date,
+                CsvHelper::formatDate($attendance->date),
                 $attendance->status,
                 $attendance->clock_in,
                 $attendance->clock_out,
@@ -160,9 +160,10 @@ class AttendanceService
                     throw new \Exception('Employee not found');
                 }
 
-                $date = $data['date'] ?? null;
+                $rawDate = $data['date'] ?? null;
+                $date = CsvHelper::parseDateForStorage($rawDate);
                 if (!$date) {
-                    throw new \Exception('Missing date');
+                    throw new \Exception('Invalid or missing date. Use DD-MM-YYYY or YYYY-MM-DD');
                 }
 
                 $payload = [

@@ -48,6 +48,7 @@ class EnsureCompanyContext
         }
 
         app()->instance('company_id', $companyId);
+        app()->instance('currentCompany', $company);
         $request->attributes->set('company', $company);
         $request->attributes->set('company_id', $companyId);
 

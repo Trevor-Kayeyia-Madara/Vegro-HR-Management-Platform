@@ -1,9 +1,10 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import ApexCharts from 'vue3-apexcharts';
 import apiClient from '../../api/apiClient';
 import useAuth from '../../hooks/useAuth';
+import { formatDateRange } from '../../utils/dateFormat';
 
 defineOptions({ name: 'ManagerDashboardPage' });
 
@@ -233,7 +234,7 @@ onMounted(loadDashboard);
                 {{ leave.employee?.name || `Employee #${leave.employee_id}` }}
               </p>
               <p class="text-xs text-slate-400">
-                {{ leave.start_date }} → {{ leave.end_date }} · {{ leave.type || 'annual' }}
+                {{ formatDateRange(leave.start_date, leave.end_date) }} · {{ leave.type || 'annual' }}
               </p>
             </div>
             <div class="flex items-center gap-2">
@@ -263,3 +264,7 @@ onMounted(loadDashboard);
     </div>
   </div>
 </template>
+
+
+
+

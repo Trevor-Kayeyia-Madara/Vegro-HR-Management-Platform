@@ -8,14 +8,17 @@ use App\Models\Department;
 use App\Models\Role;
 use App\Helpers\CsvHelper;
 use Illuminate\Http\UploadedFile;
+use App\Services\LeaveService;
 
 class EmployeeService
 {
     protected $employeeRepository;
+    protected LeaveService $leaveService;
 
-    public function __construct(EmployeeRepository $employeeRepository)
+    public function __construct(EmployeeRepository $employeeRepository, LeaveService $leaveService)
     {
         $this->employeeRepository = $employeeRepository;
+        $this->leaveService = $leaveService;
     }
 
     public function getAllEmployees()
@@ -58,11 +61,18 @@ class EmployeeService
             $data['salary'] = 0;
         }
 
+        $annualDays = isset($data['annual_leave_days']) ? (int) $data['annual_leave_days'] : 21;
+        $data['annual_leave_days'] = max($annualDays, 0);
+        $data['annual_leave_used'] = isset($data['annual_leave_used']) ? max((int) $data['annual_leave_used'], 0) : 0;
+        $data['annual_leave_balance'] = max($data['annual_leave_days'] - $data['annual_leave_used'], 0);
+
         $employee = $this->employeeRepository->create($data);
 
         if (!empty($roleIds)) {
             $employee->roles()->sync($roleIds);
         }
+
+        $this->leaveService->initializeLeaveBalancesForEmployee($employee, true);
 
         return $employee->load(['department', 'roles']);
     }
@@ -92,6 +102,8 @@ class EmployeeService
             $updated->roles()->sync($roleIds);
         }
 
+        $this->leaveService->initializeLeaveBalancesForEmployee($updated, true);
+
         return $updated->load(['department', 'roles']);
     }
 
@@ -110,12 +122,19 @@ class EmployeeService
 
     public function getEmployeeById($id)
     {
-        return $this->employeeRepository->findById($id);
+        $employee = $this->employeeRepository->findById($id);
+        $this->leaveService->initializeLeaveBalancesForEmployee($employee);
+        return $employee->fresh(['department', 'roles', 'leaveBalances']);
     }
 
     public function getEmployeeByEmail($email)
     {
-        return $this->employeeRepository->findByEmail($email);
+        $employee = $this->employeeRepository->findByEmail($email);
+        if ($employee) {
+            $this->leaveService->initializeLeaveBalancesForEmployee($employee);
+            return $employee->fresh(['department', 'roles', 'leaveBalances']);
+        }
+        return $employee;
     }
 
     public function getEmployeesByDepartment($departmentId)
@@ -157,7 +176,7 @@ class EmployeeService
                 $departmentName,
                 $employee->position,
                 $employee->salary,
-                $employee->hire_date,
+                CsvHelper::formatDate($employee->hire_date),
                 $employee->status,
                 $roleIds,
                 $roleTitles,
@@ -213,7 +232,7 @@ class EmployeeService
                 $employeeData['phone'] = $data['phone'] ?? null;
                 $employeeData['position'] = $data['position'] ?? null;
                 $employeeData['salary'] = $data['salary'] !== null && $data['salary'] !== '' ? (float) $data['salary'] : null;
-                $employeeData['hire_date'] = $data['hire_date'] ?? null;
+                $employeeData['hire_date'] = CsvHelper::parseDateForStorage($data['hire_date'] ?? null);
                 $employeeData['status'] = $data['status'] ?? null;
 
                 if (!$employeeData['name']) {
@@ -230,6 +249,10 @@ class EmployeeService
 
                 if (empty($employeeData['name'])) {
                     throw new \Exception('Missing name or first_name/last_name');
+                }
+
+                if (!empty($data['hire_date']) && !$employeeData['hire_date']) {
+                    throw new \Exception('Invalid hire_date. Use DD-MM-YYYY or YYYY-MM-DD');
                 }
 
                 $departmentId = $data['department_id'] ?? null;

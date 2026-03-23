@@ -33,6 +33,11 @@ class PayrollResource extends JsonResource
             'deductions' => $this->deductions,
             'tax' => $this->tax,
             'net_salary' => $this->net_salary,
+            'status' => $this->status,
+            'approved_by' => $this->approved_by,
+            'approved_at' => $this->approved_at,
+            'approver_signature_name' => $this->approver_signature_name,
+            'approver_signature_at' => $this->approver_signature_at,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
         ];

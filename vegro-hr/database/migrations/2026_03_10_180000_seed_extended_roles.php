@@ -15,8 +15,8 @@ return new class extends Migration
         $now = now();
 
         $roles = [
-            ['title' => 'Super Admin', 'description' => 'Global administrator with full access'],
-            ['title' => 'Company Admin', 'description' => 'Company-level administrator with full access'],
+            ['title' => 'superadmin', 'description' => 'Global administrator with full access'],
+            ['title' => 'companyadmin', 'description' => 'Company-level administrator with full access'],
         ];
 
         foreach ($roles as $role) {
