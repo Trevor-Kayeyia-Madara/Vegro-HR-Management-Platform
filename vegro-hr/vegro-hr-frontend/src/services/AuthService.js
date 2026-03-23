@@ -21,6 +21,10 @@ const login = async (credentials) => {
   return response;
 };
 
+const forgotPassword = (payload) => apiClient.post('/api/auth/forgot-password', payload);
+
+const resetPassword = (payload) => apiClient.post('/api/auth/reset-password', payload);
+
 const logout = async () => {
   try {
     await apiClient.post('/api/auth/logout');
@@ -30,14 +34,18 @@ const logout = async () => {
 };
 
 const getCurrentUser = () => apiClient.get('/api/auth/me');
+const updateCurrentUser = (payload) => apiClient.patch('/api/auth/me', payload);
 
 const authCheck = () => apiClient.get('/api/auth/check');
 
 const authService = {
   initCsrf,
   login,
+  forgotPassword,
+  resetPassword,
   logout,
   getCurrentUser,
+  updateCurrentUser,
   authCheck,
   setToken,
   getToken,

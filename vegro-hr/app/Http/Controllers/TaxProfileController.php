@@ -59,6 +59,8 @@ class TaxProfileController extends Controller
             'name' => 'required|string|max:255',
             'country_code' => 'required|string|size:2',
             'currency' => 'required|string|size:3',
+            'base_currency' => 'nullable|string|size:3',
+            'exchange_rate_to_base' => 'nullable|numeric|min:0.000001',
             'paye_bands' => 'required|array',
             'personal_relief' => 'numeric|nullable',
             'insurance_relief_rate' => 'numeric|nullable',
@@ -73,6 +75,12 @@ class TaxProfileController extends Controller
             'shif_min' => 'numeric|nullable',
             'housing_levy_rate' => 'numeric|nullable',
         ]);
+
+        $validated['currency'] = strtoupper($validated['currency']);
+        $validated['country_code'] = strtoupper($validated['country_code']);
+        $validated['base_currency'] = !empty($validated['base_currency'])
+            ? strtoupper($validated['base_currency'])
+            : null;
 
         $profile = TaxProfile::create($validated);
 
@@ -127,6 +135,8 @@ class TaxProfileController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'country_code' => 'sometimes|required|string|size:2',
             'currency' => 'sometimes|required|string|size:3',
+            'base_currency' => 'nullable|string|size:3',
+            'exchange_rate_to_base' => 'nullable|numeric|min:0.000001',
             'paye_bands' => 'sometimes|required|array',
             'personal_relief' => 'numeric|nullable',
             'insurance_relief_rate' => 'numeric|nullable',
@@ -141,6 +151,18 @@ class TaxProfileController extends Controller
             'shif_min' => 'numeric|nullable',
             'housing_levy_rate' => 'numeric|nullable',
         ]);
+
+        if (array_key_exists('currency', $validated)) {
+            $validated['currency'] = strtoupper($validated['currency']);
+        }
+        if (array_key_exists('country_code', $validated)) {
+            $validated['country_code'] = strtoupper($validated['country_code']);
+        }
+        if (array_key_exists('base_currency', $validated)) {
+            $validated['base_currency'] = !empty($validated['base_currency'])
+                ? strtoupper($validated['base_currency'])
+                : null;
+        }
 
         $taxProfile->update($validated);
 

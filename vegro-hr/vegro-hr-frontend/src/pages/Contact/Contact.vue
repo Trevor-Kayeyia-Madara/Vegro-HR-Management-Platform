@@ -1,5 +1,56 @@
-<script setup>
+﻿<script setup>
+import { ref } from 'vue';
+import apiClient from '../../api/apiClient';
+
 defineOptions({ name: 'ContactPage' });
+
+const formState = ref({
+  name: '',
+  email: '',
+  company: '',
+  team_size: '',
+  message: '',
+});
+const isSubmitting = ref(false);
+const successMessage = ref('');
+const errorMessage = ref('');
+
+const submitDemoRequest = async () => {
+  if (isSubmitting.value) return;
+  successMessage.value = '';
+  errorMessage.value = '';
+  isSubmitting.value = true;
+
+  const message = [
+    formState.value.team_size ? `Team size: ${formState.value.team_size}` : null,
+    formState.value.message || null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  try {
+    await apiClient.post('/api/lead-capture', {
+      name: formState.value.name,
+      email: formState.value.email,
+      company: formState.value.company,
+      message,
+      source: 'contact-page',
+    });
+
+    successMessage.value = 'Request received. We will contact you shortly.';
+    formState.value = {
+      name: '',
+      email: '',
+      company: '',
+      team_size: '',
+      message: '',
+    };
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.message || 'Unable to submit request. Please try again.';
+  } finally {
+    isSubmitting.value = false;
+  }
+};
 </script>
 
 <template>
@@ -33,10 +84,10 @@ defineOptions({ name: 'ContactPage' });
         <div class="flex flex-1 flex-col gap-6">
           <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">Book a demo</p>
           <h1 class="text-4xl font-semibold leading-tight sm:text-5xl">
-            Let’s talk about your enterprise HR goals.
+            Let's talk about your enterprise HR goals.
           </h1>
           <p class="max-w-xl text-base text-slate-200/80 sm:text-lg">
-            Share your team size, rollout timeline, and reporting requirements. We’ll tailor a Vegro HR
+            Share your team size, rollout timeline, and reporting requirements. We'll tailor a Vegro HR
             plan to your organization.
           </p>
 
@@ -52,16 +103,17 @@ defineOptions({ name: 'ContactPage' });
           </div>
         </div>
 
-        <form class="w-full max-w-md rounded-3xl border border-white/10 bg-white/10 p-8 shadow-[0_25px_80px_rgba(15,23,42,0.55)] backdrop-blur">
+        <form class="w-full max-w-md rounded-3xl border border-white/10 bg-white/10 p-8 shadow-[0_25px_80px_rgba(15,23,42,0.55)] backdrop-blur" @submit.prevent="submitDemoRequest">
           <div class="flex flex-col gap-2">
             <h2 class="text-2xl font-semibold">Request a demo</h2>
-            <p class="text-sm text-slate-200/70">Tell us about your team and we’ll follow up.</p>
+            <p class="text-sm text-slate-200/70">Tell us about your team and we'll follow up.</p>
           </div>
 
           <div class="mt-6 flex flex-col gap-4 text-sm text-slate-200/80">
             <label class="flex flex-col gap-2">
               <span>Name</span>
               <input
+                v-model="formState.name"
                 type="text"
                 required
                 placeholder="Full name"
@@ -71,6 +123,7 @@ defineOptions({ name: 'ContactPage' });
             <label class="flex flex-col gap-2">
               <span>Work email</span>
               <input
+                v-model="formState.email"
                 type="email"
                 required
                 placeholder="you@company.com"
@@ -80,6 +133,7 @@ defineOptions({ name: 'ContactPage' });
             <label class="flex flex-col gap-2">
               <span>Company</span>
               <input
+                v-model="formState.company"
                 type="text"
                 required
                 placeholder="Company name"
@@ -89,6 +143,7 @@ defineOptions({ name: 'ContactPage' });
             <label class="flex flex-col gap-2">
               <span>Team size</span>
               <input
+                v-model="formState.team_size"
                 type="text"
                 placeholder="e.g. 100-250"
                 class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
@@ -97,6 +152,7 @@ defineOptions({ name: 'ContactPage' });
             <label class="flex flex-col gap-2">
               <span>Notes</span>
               <textarea
+                v-model="formState.message"
                 rows="4"
                 placeholder="Tell us about your HR goals"
                 class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
@@ -105,11 +161,14 @@ defineOptions({ name: 'ContactPage' });
           </div>
 
           <button
-            class="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-400 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
+            class="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-400 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
             type="submit"
+            :disabled="isSubmitting"
           >
-            Submit request
+            {{ isSubmitting ? 'Submitting...' : 'Submit request' }}
           </button>
+          <p v-if="successMessage" class="mt-3 text-xs text-emerald-200">{{ successMessage }}</p>
+          <p v-else-if="errorMessage" class="mt-3 text-xs text-rose-200">{{ errorMessage }}</p>
         </form>
       </section>
     </div>

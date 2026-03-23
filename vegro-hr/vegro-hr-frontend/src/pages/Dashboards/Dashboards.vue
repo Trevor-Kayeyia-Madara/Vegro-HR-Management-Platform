@@ -1,7 +1,9 @@
-<script setup>
-import { computed, onMounted, ref } from 'vue';
+﻿<script setup>
+import { computed, onMounted, ref, watch } from 'vue';
 import ApexCharts from 'vue3-apexcharts';
+import { useRoute, useRouter } from 'vue-router';
 import apiClient from '../../api/apiClient';
+import useAuth from '../../hooks/useAuth';
 
 defineOptions({ name: 'DashboardsPage' });
 
@@ -12,6 +14,13 @@ const widgets = ref([]);
 const sources = ref([]);
 const errorMessage = ref('');
 const isLoading = ref(false);
+const isCreatingPreset = ref(false);
+const route = useRoute();
+const router = useRouter();
+
+const { hasRole } = useAuth();
+const canManageDashboards = computed(() => hasRole(['admin', 'hr', 'finance', 'director', 'md']));
+const isDetailsOnlyView = computed(() => Boolean(route.params.dashboardId));
 
 const dashboardForm = ref({
   name: '',
@@ -47,6 +56,13 @@ const loadMetadata = async () => {
 const loadDashboards = async () => {
   const response = await apiClient.get('/api/dashboards');
   dashboards.value = response?.data?.data || [];
+
+  const routeDashboardId = route.params.dashboardId ? Number(route.params.dashboardId) : null;
+  if (routeDashboardId && dashboards.value.some((item) => Number(item.id) === routeDashboardId)) {
+    activeDashboardId.value = routeDashboardId;
+    return;
+  }
+
   if (!activeDashboardId.value && dashboards.value.length) {
     activeDashboardId.value = dashboards.value[0].id;
   }
@@ -61,10 +77,95 @@ const loadDashboard = async () => {
 
 const createDashboard = async () => {
   if (!dashboardForm.value.name) return;
-  await apiClient.post('/api/dashboards', dashboardForm.value);
+  const response = await apiClient.post('/api/dashboards', dashboardForm.value);
+  const createdId = response?.data?.data?.id ?? null;
   dashboardForm.value = { name: '', description: '' };
   await loadDashboards();
+  if (createdId) {
+    activeDashboardId.value = createdId;
+  }
   await loadDashboard();
+  window.dispatchEvent(new CustomEvent('vegro:dashboards:updated'));
+};
+const executivePresetWidgets = [
+  {
+    title: 'Headcount by Status',
+    source: 'employees',
+    chart_type: 'donut',
+    x_field: 'status',
+    aggregate: 'count',
+    limit: 50,
+  },
+  {
+    title: 'Employees by Department',
+    source: 'employees',
+    chart_type: 'bar',
+    x_field: 'department_id',
+    aggregate: 'count',
+    limit: 50,
+  },
+  {
+    title: 'Payroll by Month',
+    source: 'payrolls',
+    chart_type: 'bar',
+    x_field: 'month',
+    y_field: 'net_salary',
+    aggregate: 'sum',
+    limit: 12,
+  },
+  {
+    title: 'Leave Requests by Status',
+    source: 'leave_requests',
+    chart_type: 'donut',
+    x_field: 'status',
+    aggregate: 'count',
+    limit: 10,
+  },
+  {
+    title: 'Attendance Status',
+    source: 'attendances',
+    chart_type: 'donut',
+    x_field: 'status',
+    aggregate: 'count',
+    limit: 10,
+  },
+];
+
+const createExecutiveDashboard = async () => {
+  if (!canManageDashboards.value) return;
+  if (isCreatingPreset.value) return;
+  isCreatingPreset.value = true;
+  errorMessage.value = '';
+  try {
+    const response = await apiClient.post('/api/dashboards', {
+      name: 'Executive KPI Dashboard',
+      description: 'Headcount, payroll, leave, and attendance overview',
+    });
+    const dashboardId = response?.data?.data?.id;
+    if (!dashboardId) {
+      throw new Error('Dashboard creation failed');
+    }
+    for (const widget of executivePresetWidgets) {
+      await apiClient.post(`/api/dashboards/${dashboardId}/widgets`, {
+        title: widget.title,
+        source: widget.source,
+        chart_type: widget.chart_type,
+        x_field: widget.x_field,
+        y_field: widget.y_field,
+        aggregate: widget.aggregate,
+        limit: widget.limit,
+      });
+    }
+    await loadDashboards();
+    activeDashboardId.value = dashboardId;
+    await loadDashboard();
+    window.dispatchEvent(new CustomEvent('vegro:dashboards:updated'));
+  } catch (error) {
+    errorMessage.value =
+      error?.response?.data?.message || 'Unable to create executive dashboard preset.';
+  } finally {
+    isCreatingPreset.value = false;
+  }
 };
 
 const addFilter = () => {
@@ -97,7 +198,6 @@ const addWidget = async () => {
   widgetForm.value.columns = [];
   await loadDashboard();
 };
-
 const chartOptions = (widget) => ({
   chart: {
     type: widget.chart_type,
@@ -138,6 +238,25 @@ onMounted(async () => {
     isLoading.value = false;
   }
 });
+watch(
+  () => route.params.dashboardId,
+  async (value) => {
+    if (!value) return;
+    const dashboardId = Number(value);
+    if (!Number.isFinite(dashboardId)) return;
+    if (dashboardId === Number(activeDashboardId.value)) return;
+    activeDashboardId.value = dashboardId;
+    await loadDashboard();
+  },
+);
+
+watch(activeDashboardId, (value) => {
+  if (!value) return;
+  if (!isDetailsOnlyView.value) return;
+  const current = route.params.dashboardId ? Number(route.params.dashboardId) : null;
+  if (current === Number(value)) return;
+  router.replace({ name: 'DashboardView', params: { dashboardId: String(value) } });
+});
 </script>
 
 <template>
@@ -145,11 +264,35 @@ onMounted(async () => {
     <div class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
       <header class="flex flex-col gap-2">
         <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">Dashboards</p>
-        <h1 class="text-3xl font-semibold">User-defined chartboards</h1>
+        <h1 class="text-3xl font-semibold">{{ isDetailsOnlyView ? (activeDashboard?.name || "Dashboard details") : "User-defined chartboards" }}</h1>
         <p class="max-w-2xl text-sm text-slate-300/70">
-          Build custom dashboards with tables and charts. Each board is private to your user.
+          {{ isDetailsOnlyView ? "Viewing a saved dashboard in details mode." : "Build custom dashboards with tables and charts. Each board is private to your user." }}
         </p>
+      
       </header>
+
+      <section v-if="!isDetailsOnlyView" class="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Executive preset</p>
+            <h2 class="mt-2 text-lg font-semibold">Director and MD KPI dashboard</h2>
+            <p class="mt-2 text-sm text-slate-300/70">
+              One-click setup for headcount, payroll, leave, and attendance visibility.
+            </p>
+          </div>
+          <button
+            class="rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+            type="button"
+            :disabled="!canManageDashboards || isCreatingPreset"
+            @click="createExecutiveDashboard"
+          >
+            {{ isCreatingPreset ? 'Creating...' : 'Create preset dashboard' }}
+          </button>
+        </div>
+        <p v-if="!canManageDashboards" class="mt-3 text-xs text-slate-400">
+          Only admin, HR, or finance can create dashboards. Directors and MDs can view assigned boards.
+        </p>
+      </section>
 
       <p
         v-if="errorMessage"
@@ -158,7 +301,7 @@ onMounted(async () => {
         {{ errorMessage }}
       </p>
 
-      <section class="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+      <section v-if="!isDetailsOnlyView" class="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
           <h2 class="text-lg font-semibold">Your dashboards</h2>
           <div class="mt-4 space-y-3">
@@ -193,6 +336,7 @@ onMounted(async () => {
             <button
               class="mt-4 rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-950"
               type="button"
+              :disabled="!canManageDashboards"
               @click="createDashboard"
             >
               Create
@@ -360,6 +504,7 @@ onMounted(async () => {
           <button
             class="mt-6 rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-950"
             type="button"
+            :disabled="!canManageDashboards"
             @click="addWidget"
           >
             Add widget
@@ -367,9 +512,11 @@ onMounted(async () => {
         </div>
       </section>
 
+      
+
       <section class="rounded-3xl border border-white/10 bg-white/5 p-6">
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Dashboard view</h2>
+          <h2 class="text-lg font-semibold">{{ isDetailsOnlyView ? "Dashboard details" : "Dashboard view" }}</h2>
           <span class="text-xs text-slate-400">{{ widgets.length }} widgets</span>
         </div>
         <div class="mt-6 grid gap-4 md:grid-cols-2">
@@ -379,10 +526,10 @@ onMounted(async () => {
             class="rounded-2xl border border-white/10 bg-slate-950/40 p-4"
           >
             <p class="text-sm font-semibold">{{ widget.title }}</p>
-            <p class="text-xs text-slate-400">{{ widget.source }} · {{ widget.chart_type }}</p>
+            <p class="text-xs text-slate-400">{{ widget.source }} - {{ widget.chart_type }}</p>
 
             <div v-if="widget.chart_type === 'table'" class="mt-4 overflow-x-auto">
-              <table class="min-w-full text-left text-xs text-slate-200">
+              <table class="min-w-[760px] text-left text-xs text-slate-200">
                 <thead class="text-[11px] uppercase text-slate-400">
                   <tr>
                     <th v-for="column in widget.data?.columns || []" :key="column" class="px-2 py-2">
@@ -411,9 +558,28 @@ onMounted(async () => {
           </div>
         </div>
         <p v-if="!widgets.length" class="mt-4 text-sm text-slate-400">
-          Add widgets to see your dashboard here.
+          {{ isDetailsOnlyView ? "No widgets found for this dashboard." : "Add widgets to see your dashboard here." }}
         </p>
       </section>
     </div>
   </div>
 </template>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

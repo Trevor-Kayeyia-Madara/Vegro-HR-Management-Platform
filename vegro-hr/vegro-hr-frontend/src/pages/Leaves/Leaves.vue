@@ -1,611 +1,245 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue';
-import apiClient from '../../api/apiClient';
+import LeaveService from '../../services/LeaveService';
 import useAuth from '../../hooks/useAuth';
+import { formatDateRange } from '../../utils/dateFormat';
 
 defineOptions({ name: 'LeaveRequestsPage' });
 
-const requests = ref([]);
-const employees = ref([]);
-const approvers = ref({
-  manager: null,
-  hr: [],
-  directors: [],
-});
-const isLoading = ref(true);
-const errorMessage = ref('');
-const isModalOpen = ref(false);
-const modalMode = ref('create');
-const activeRequest = ref(null);
-const isSubmitting = ref(false);
+const { hasRole, hasPermission } = useAuth();
+const canConfigure = computed(() => hasRole(['admin', 'hr']));
+const canManage = computed(() => hasPermission('leaves.manage'));
+const canApprove = computed(() => hasPermission('leaves.approve'));
+const canRequestLeave = computed(() => hasRole(['admin', 'hr', 'manager', 'employee', 'director', 'md']));
 
-const searchQuery = ref('');
-const statusFilter = ref('all');
-const pageSize = ref(8);
-const currentPage = ref(1);
-const pagination = ref({
-  current_page: 1,
-  last_page: 1,
-  per_page: pageSize.value,
-  total: 0,
-});
-
-const form = ref({
-  employee_id: '',
+const loading = ref(false);
+const error = ref('');
+const items = ref([]);
+const leaveTypes = ref([]);
+const isRequestSubmitting = ref(false);
+const requestSuccess = ref('');
+const requestForm = ref({
+  type: 'annual',
   start_date: '',
   end_date: '',
   reason: '',
 });
-
-const { user, roleTitle, isAdmin, checkAuth, hasPermission } = useAuth();
-const isEmployee = computed(() => roleTitle.value === 'employee');
-const canApprove = computed(() => hasPermission('leaves.approve'));
-const canManageRequests = computed(() => hasPermission('leaves.manage'));
-const currentEmployeeId = ref(null);
-const currentEmployee = computed(() =>
-  employees.value.find((employee) => employee.id === currentEmployeeId.value),
-);
-
-const resolveCurrentEmployee = async () => {
-  if (!user.value?.email) return null;
-  try {
-    const response = await apiClient.get(`/api/employees/email/${user.value.email}`);
-    const employee = response?.data?.data || response?.data;
-    currentEmployeeId.value = employee?.id || null;
-    return currentEmployeeId.value;
-  } catch (error) {
-    return null;
+const defaultLeaveTypeOptions = [
+  { type: 'annual', label: 'Annual Leave' },
+  { type: 'maternity', label: 'Maternity Leave' },
+  { type: 'paternity', label: 'Paternity Leave' },
+  { type: 'sick', label: 'Sick Leave' },
+  { type: 'adoptive', label: 'Adoptive Leave' },
+  { type: 'compassionate', label: 'Compassionate Leave' },
+  { type: 'emergency', label: 'Emergency Leave' },
+];
+const requestLeaveOptions = computed(() => {
+  if (leaveTypes.value.length) {
+    return leaveTypes.value.map((type) => ({
+      type: type.type,
+      label: type.label,
+    }));
   }
-};
 
-const unwrapList = (response) => {
-  if (Array.isArray(response?.data)) return response.data;
-  const data = response?.data?.data;
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.data)) return data.data;
-  return [];
-};
-
-const parsePaginated = (response) => {
-  const payload = response?.data?.data ?? response?.data;
-  if (payload && Array.isArray(payload.data)) {
-    const metaSource = payload.meta ?? payload;
-    return {
-      items: payload.data,
-      meta: {
-        current_page: metaSource.current_page ?? 1,
-        last_page: metaSource.last_page ?? 1,
-        per_page: metaSource.per_page ?? pageSize.value,
-        total: metaSource.total ?? payload.data.length,
-      },
-    };
-  }
-  if (Array.isArray(payload)) {
-    return {
-      items: payload,
-      meta: {
-        current_page: 1,
-        last_page: 1,
-        per_page: payload.length || pageSize.value,
-        total: payload.length,
-      },
-    };
-  }
-  return {
-    items: [],
-    meta: {
-      current_page: 1,
-      last_page: 1,
-      per_page: pageSize.value,
-      total: 0,
-    },
-  };
-};
-
-const loadRequests = async () => {
-  isLoading.value = true;
-  errorMessage.value = '';
-
-  try {
-    if (!user.value) {
-      await checkAuth();
-    }
-
-    if (isEmployee.value && !currentEmployeeId.value) {
-      await resolveCurrentEmployee();
-    }
-
-    const endpoint = isEmployee.value && currentEmployeeId.value
-      ? `/api/leave-requests/employee/${currentEmployeeId.value}`
-      : '/api/leave-requests/all';
-
-    const employeeResponsePromise = canManageRequests.value
-      ? apiClient.get('/api/employees', { params: { per_page: 1000 } })
-      : Promise.resolve({ data: { data: [] } });
-    const requestsResponsePromise = apiClient.get(endpoint, {
-      params: { page: currentPage.value, per_page: pageSize.value },
-    });
-    const approverResponsePromise = apiClient.get('/api/leave-requests/approvers');
-
-    const [requestsResponse, employeeResponse, approverResponse] = await Promise.all([
-      requestsResponsePromise,
-      employeeResponsePromise,
-      approverResponsePromise,
-    ]);
-    const parsed = parsePaginated(requestsResponse);
-    requests.value = parsed.items;
-    pagination.value = parsed.meta;
-    currentPage.value = parsed.meta.current_page;
-    employees.value = unwrapList(employeeResponse);
-    approvers.value = approverResponse?.data?.data || approvers.value;
-  } catch (error) {
-    errorMessage.value = error?.response?.data?.message || 'Unable to load leave requests.';
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const openCreate = () => {
-  modalMode.value = 'create';
-  activeRequest.value = null;
-  form.value = {
-    employee_id: isEmployee.value ? currentEmployeeId.value || '' : '',
-    start_date: '',
-    end_date: '',
-    reason: '',
-  };
-  isModalOpen.value = true;
-};
-
-const openEdit = (request) => {
-  modalMode.value = 'edit';
-  activeRequest.value = request;
-  form.value = {
-    employee_id: isEmployee.value ? currentEmployeeId.value || '' : request?.employee_id || '',
-    start_date: request?.start_date || '',
-    end_date: request?.end_date || '',
-    reason: request?.reason || '',
-  };
-  isModalOpen.value = true;
-};
-
-const closeModal = () => {
-  isModalOpen.value = false;
-};
-
-const submitForm = async () => {
-  isSubmitting.value = true;
-  errorMessage.value = '';
-
-  try {
-    const payload = {
-      employee_id: Number(form.value.employee_id),
-      start_date: form.value.start_date,
-      end_date: form.value.end_date,
-      reason: form.value.reason,
-    };
-
-    if (modalMode.value === 'create') {
-      await apiClient.post('/api/leave-requests', payload);
-    } else if (activeRequest.value?.id) {
-      await apiClient.put(`/api/leave-requests/${activeRequest.value.id}`, payload);
-    }
-
-    await loadRequests();
-    closeModal();
-  } catch (error) {
-    errorMessage.value = error?.response?.data?.message || 'Unable to save leave request.';
-  } finally {
-    isSubmitting.value = false;
-  }
-};
-
-const deleteRequest = async (request) => {
-  const confirmed = window.confirm('Delete this leave request?');
-  if (!confirmed) return;
-
-  try {
-    await apiClient.delete(`/api/leave-requests/${request.id}`);
-    await loadRequests();
-  } catch (error) {
-    errorMessage.value = error?.response?.data?.message || 'Unable to delete leave request.';
-  }
-};
-
-const updateStatus = async (request, status) => {
-  try {
-    if (status === 'approved') {
-      await apiClient.post(`/api/leave-requests/${request.id}/approve`);
-    } else if (status === 'rejected') {
-      await apiClient.post(`/api/leave-requests/${request.id}/reject`);
-    }
-    await loadRequests();
-  } catch (error) {
-    errorMessage.value = error?.response?.data?.message || 'Unable to update leave status.';
-  }
-};
-
-const filteredRequests = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase();
-  return requests.value.filter((request) => {
-    const employeeName = request?.employee?.name?.toLowerCase() || '';
-    const status = request?.status?.toLowerCase() || '';
-    const matchesQuery = !query || employeeName.includes(query) || status.includes(query);
-    const matchesStatus = statusFilter.value === 'all' || status === statusFilter.value;
-    return matchesQuery && matchesStatus;
-  });
+  return defaultLeaveTypeOptions;
 });
 
-const totalPages = computed(() => pagination.value.last_page || 1);
+const load = async () => {
+  loading.value = true;
+  error.value = '';
+  try {
+    const data = await LeaveService.getRequests('/api/leave-requests', { per_page: 50 });
+    items.value = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
 
-const goToPage = (page) => {
-  const nextPage = Math.min(Math.max(page, 1), totalPages.value);
-  if (nextPage === currentPage.value) return;
-  currentPage.value = nextPage;
-  loadRequests();
+    if (canConfigure.value) {
+      const types = await LeaveService.getLeaveTypes();
+      leaveTypes.value = Array.isArray(types) ? types : [];
+    }
+  } catch (e) {
+    error.value = e?.response?.data?.message || 'Failed to load leave data';
+  } finally {
+    loading.value = false;
+  }
 };
 
-onMounted(loadRequests);
+const setStatus = async (item, status) => {
+  try {
+    if (status === 'approved') await LeaveService.approveRequest(item.id);
+    if (status === 'rejected') await LeaveService.rejectRequest(item.id);
+    await load();
+  } catch (e) {
+    error.value = e?.response?.data?.message || 'Failed to update leave status';
+  }
+};
+
+const submitRequest = async () => {
+  requestSuccess.value = '';
+  error.value = '';
+  isRequestSubmitting.value = true;
+
+  try {
+    await LeaveService.createRequest({
+      type: requestForm.value.type,
+      start_date: requestForm.value.start_date,
+      end_date: requestForm.value.end_date,
+      reason: requestForm.value.reason,
+    });
+    requestSuccess.value = 'Leave request submitted successfully.';
+    requestForm.value = {
+      type: requestForm.value.type || 'annual',
+      start_date: '',
+      end_date: '',
+      reason: '',
+    };
+    await load();
+  } catch (e) {
+    error.value = e?.response?.data?.message || 'Failed to submit leave request';
+  } finally {
+    isRequestSubmitting.value = false;
+  }
+};
+
+onMounted(load);
 </script>
 
 <template>
-  <div class="min-h-full bg-slate-950 text-white">
-    <div class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">Leave Requests</p>
-          <h1 class="text-3xl font-semibold">Leave Requests</h1>
-          <p class="mt-2 text-sm text-slate-300/70">
-            Review and approve employee leave submissions.
-          </p>
-        </div>
-        <div class="flex flex-wrap items-center gap-3">
-          <input
-            v-model="searchQuery"
-            type="search"
-            placeholder="Search leave..."
-            class="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-xs text-slate-200 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-          />
-          <div class="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs">
-            <button
-              class="rounded-full px-3 py-1 transition"
-              :class="statusFilter === 'all' ? 'bg-emerald-300/20 text-emerald-200' : 'text-slate-300/70'"
-              type="button"
-              @click="statusFilter = 'all'"
-            >
-              All
-            </button>
-            <button
-              class="rounded-full px-3 py-1 transition"
-              :class="statusFilter === 'pending' ? 'bg-amber-300/20 text-amber-200' : 'text-slate-300/70'"
-              type="button"
-              @click="statusFilter = 'pending'"
-            >
-              Pending
-            </button>
-            <button
-              class="rounded-full px-3 py-1 transition"
-              :class="statusFilter === 'approved' ? 'bg-emerald-300/20 text-emerald-200' : 'text-slate-300/70'"
-              type="button"
-              @click="statusFilter = 'approved'"
-            >
-              Approved
-            </button>
-            <button
-              class="rounded-full px-3 py-1 transition"
-              :class="statusFilter === 'rejected' ? 'bg-rose-300/20 text-rose-200' : 'text-slate-300/70'"
-              type="button"
-              @click="statusFilter = 'rejected'"
-            >
-              Rejected
-            </button>
-          </div>
-          <button
-            v-if="isEmployee || canManageRequests"
-            class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20"
-            type="button"
-            @click="openCreate"
-          >
-            Add request
-          </button>
-        </div>
-      </div>
+  <section class="min-h-full bg-slate-950 px-4 py-6 text-white sm:px-6 lg:px-8">
+    <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <header class="flex flex-col gap-2">
+        <h1 class="text-2xl font-semibold sm:text-3xl">Leaves</h1>
+        <p class="text-sm text-slate-300/80">Leave requests and policy overview.</p>
+      </header>
 
-      <p
-        v-if="errorMessage"
-        class="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100"
-      >
-        {{ errorMessage }}
+      <p v-if="error" class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        {{ error }}
       </p>
 
-      <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="max-h-130 overflow-auto">
-          <div class="overflow-x-auto">
-            <table class="min-w-245 w-full text-left text-xs sm:text-sm">
-              <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
-                <tr>
-                  <th class="px-6 py-4 font-medium">Employee</th>
-                  <th class="px-6 py-4 font-medium">Start</th>
-                  <th class="px-6 py-4 font-medium">End</th>
-                  <th class="px-6 py-4 font-medium hidden lg:table-cell">Reason</th>
-                  <th class="px-6 py-4 font-medium">Status</th>
-                  <th class="px-6 py-4 font-medium hidden xl:table-cell">Approved by</th>
-                  <th class="px-6 py-4 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-white/5">
-                <tr v-if="isLoading">
-                  <td class="px-6 py-6 text-center text-slate-400" colspan="6">
-                    Loading leave requests...
-                  </td>
-                </tr>
-                <tr
-                  v-for="request in filteredRequests"
-                  :key="request.id"
-                  class="hover:bg-white/5"
-                >
-                  <td class="px-6 py-4 text-slate-100">
-                    {{ request.employee?.name || `Employee #${request.employee_id}` }}
-                  </td>
-                  <td class="px-6 py-4 text-slate-300/80">{{ request.start_date }}</td>
-                  <td class="px-6 py-4 text-slate-300/80">{{ request.end_date }}</td>
-                  <td class="px-6 py-4 text-slate-300/80 hidden lg:table-cell">
-                    {{ request.reason || '—' }}
-                  </td>
-                  <td class="px-6 py-4">
-                    <span
-                      class="rounded-full px-3 py-1 text-xs"
-                      :class="request.status === 'approved'
-                        ? 'bg-emerald-400/10 text-emerald-200'
-                        : request.status === 'rejected'
-                          ? 'bg-rose-400/10 text-rose-200'
-                          : 'bg-amber-400/10 text-amber-200'"
-                    >
-                      {{ request.status }}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 text-slate-300/80 hidden xl:table-cell">
-                    <div v-if="request.approver" class="text-xs">
-                      <p class="text-slate-100">{{ request.approver.name }}</p>
-                      <p class="text-slate-400">{{ request.approved_role || 'Approver' }}</p>
-                    </div>
-                    <span v-else class="text-slate-400">—</span>
-                  </td>
-                  <td class="px-6 py-4">
-                    <div class="flex items-center justify-end gap-2">
-                      <button
-                        v-if="isEmployee || canManageRequests"
-                        class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200 transition hover:bg-white/10"
-                        type="button"
-                        @click="openEdit(request)"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        v-if="request.status === 'pending' && canApprove"
-                        class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-200 transition hover:bg-emerald-300/20"
-                        type="button"
-                        @click="updateStatus(request, 'approved')"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        v-if="request.status === 'pending' && canApprove"
-                        class="rounded-full border border-amber-300/40 bg-amber-300/10 px-3 py-1 text-xs text-amber-200 transition hover:bg-amber-300/20"
-                        type="button"
-                        @click="updateStatus(request, 'rejected')"
-                      >
-                        Reject
-                      </button>
-                      <button
-                        v-if="isEmployee || canManageRequests"
-                        class="rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs text-rose-200 transition hover:bg-rose-500/20"
-                        type="button"
-                        @click="deleteRequest(request)"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr v-if="!isLoading && !filteredRequests.length">
-                  <td class="px-6 py-6 text-center text-slate-400" colspan="6">
-                    No leave requests found.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300/70">
-        <span>
-          Showing {{ filteredRequests.length }} of {{ pagination.total }} requests
-        </span>
-        <div class="flex items-center gap-2">
-          <button
-            class="rounded-full border border-white/10 px-3 py-1 transition hover:bg-white/10 disabled:opacity-50"
-            type="button"
-            :disabled="currentPage === 1"
-            @click="goToPage(currentPage - 1)"
-          >
-            Prev
-          </button>
-          <span>Page {{ currentPage }} of {{ totalPages }}</span>
-          <button
-            class="rounded-full border border-white/10 px-3 py-1 transition hover:bg-white/10 disabled:opacity-50"
-            type="button"
-            :disabled="currentPage === totalPages"
-            @click="goToPage(currentPage + 1)"
-          >
-            Next
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <transition name="fade">
-      <div
-        v-if="isModalOpen"
-        class="vegro-modal-overlay"
-        @click="closeModal"
-      ></div>
-    </transition>
-
-    <transition name="slide-up">
-      <div v-if="isModalOpen" class="vegro-modal-wrap">
-        <div class="vegro-modal">
-          <div class="vegro-modal-header">
-            <div>
-              <p class="vegro-modal-title">
-                {{ modalMode === 'create' ? 'Create' : 'Edit' }} Leave Request
-              </p>
-              <h2 class="vegro-modal-subtitle">
-                {{ modalMode === 'create' ? 'New Request' : 'Update Request' }}
-              </h2>
-            </div>
-            <button class="vegro-modal-close" type="button" @click="closeModal">Close</button>
-          </div>
-
-          <form class="vegro-modal-body grid gap-4 sm:grid-cols-2" @submit.prevent="submitForm">
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80 sm:col-span-2">
-              <span>Employee</span>
-              <select
-                v-model="form.employee_id"
-                required
-                :disabled="isEmployee"
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              >
-                <option value="" disabled>Select employee</option>
-                <option v-for="employee in employees" :key="employee.id" :value="employee.id">
-                  {{ employee.name || `Employee #${employee.id}` }}
-                </option>
-              </select>
-              <span v-if="isEmployee" class="text-xs text-slate-400">
-                Your employee profile is used automatically.
-              </span>
-            </label>
-            <div
-              v-if="isEmployee"
-              class="sm:col-span-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-slate-300/80"
+      <article
+        v-if="canRequestLeave"
+        class="rounded-2xl border border-white/10 bg-white/5 p-4"
+      >
+        <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-200/80">Request Leave</h2>
+        <p
+          v-if="requestSuccess"
+          class="mt-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100"
+        >
+          {{ requestSuccess }}
+        </p>
+        <form class="mt-3 grid gap-3 md:grid-cols-2" @submit.prevent="submitRequest">
+          <label class="flex flex-col gap-1 text-xs text-slate-300/80">
+            Leave Type
+            <select
+              v-model="requestForm.type"
+              class="rounded-lg border border-white/15 bg-slate-900/70 px-3 py-2 text-sm text-white outline-none"
+              required
             >
-              <span class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Annual leave balance</span>
-              <p class="mt-2 text-sm text-emerald-200">
-                {{ currentEmployee?.annual_leave_balance ?? 0 }} days remaining
-              </p>
-              <p class="mt-1 text-xs text-slate-400">
-                {{ currentEmployee?.annual_leave_used ?? 0 }} used / {{ currentEmployee?.annual_leave_days ?? 0 }} total
-              </p>
-            </div>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
-              <span>Start date</span>
-              <input
-                v-model="form.start_date"
-                type="date"
-                required
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              />
-            </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
-              <span>End date</span>
-              <input
-                v-model="form.end_date"
-                type="date"
-                required
-                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              />
-            </label>
-            <label class="flex flex-col gap-2 text-sm text-slate-200/80 sm:col-span-2">
-              <span>Reason</span>
-              <textarea
-                v-model="form.reason"
-                rows="3"
-                class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
-              ></textarea>
-            </label>
-
-            <div class="sm:col-span-2 rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-xs text-slate-300/80">
-              <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400">Approval flow</p>
-              <div class="mt-3 flex flex-wrap items-center gap-2">
-                <span class="rounded-full border border-amber-300/40 bg-amber-300/10 px-3 py-1 text-amber-200">
-                  Submitted
-                </span>
-                <span class="text-slate-500">→</span>
-                <span class="rounded-full border border-blue-300/40 bg-blue-300/10 px-3 py-1 text-blue-200">
-                  Department manager
-                </span>
-                <span class="text-slate-500">→</span>
-                <span class="rounded-full border border-indigo-300/40 bg-indigo-300/10 px-3 py-1 text-indigo-200">
-                  HR review
-                </span>
-                <span class="text-slate-500">→</span>
-                <span class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-emerald-200">
-                  Approved
-                </span>
-                <span class="text-slate-500">/</span>
-                <span class="rounded-full border border-rose-400/40 bg-rose-400/10 px-3 py-1 text-rose-200">
-                  Rejected
-                </span>
-              </div>
-              <div class="mt-4 grid gap-2 text-xs text-slate-300/70">
-                <div class="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                  <span class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Manager</span>
-                  <p class="mt-1 text-slate-200">
-                    {{ approvers.manager?.name || 'Not assigned' }}
-                    <span v-if="approvers.manager?.email" class="text-slate-400">({{ approvers.manager.email }})</span>
-                  </p>
-                </div>
-                <div class="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                  <span class="text-[11px] uppercase tracking-[0.2em] text-slate-400">HR</span>
-                  <p v-if="approvers.hr?.length" class="mt-1 text-slate-200">
-                    {{ approvers.hr.map((person) => person.name).join(', ') }}
-                  </p>
-                  <p v-else class="mt-1 text-slate-400">No HR approvers assigned.</p>
-                </div>
-                <div class="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                  <span class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Director / MD</span>
-                  <p v-if="approvers.directors?.length" class="mt-1 text-slate-200">
-                    {{ approvers.directors.map((person) => person.name).join(', ') }}
-                  </p>
-                  <p v-else class="mt-1 text-slate-400">No director or MD assigned.</p>
-                </div>
-              </div>
-            </div>
-
+              <option v-for="type in requestLeaveOptions" :key="type.type" :value="type.type">
+                {{ type.label }}
+              </option>
+            </select>
+          </label>
+          <label class="flex flex-col gap-1 text-xs text-slate-300/80">
+            Start Date
+            <input
+              v-model="requestForm.start_date"
+              type="date"
+              class="rounded-lg border border-white/15 bg-slate-900/70 px-3 py-2 text-sm text-white outline-none"
+              required
+            />
+          </label>
+          <label class="flex flex-col gap-1 text-xs text-slate-300/80">
+            End Date
+            <input
+              v-model="requestForm.end_date"
+              type="date"
+              class="rounded-lg border border-white/15 bg-slate-900/70 px-3 py-2 text-sm text-white outline-none"
+              required
+            />
+          </label>
+          <label class="flex flex-col gap-1 text-xs text-slate-300/80 md:col-span-2">
+            Reason
+            <textarea
+              v-model="requestForm.reason"
+              rows="3"
+              class="rounded-lg border border-white/15 bg-slate-900/70 px-3 py-2 text-sm text-white outline-none"
+              placeholder="Optional reason"
+            />
+          </label>
+          <div class="md:col-span-2">
             <button
-              class="sm:col-span-2 mt-2 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-400 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
               type="submit"
-              :disabled="isSubmitting"
+              class="rounded-full border border-emerald-300/40 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-100 transition hover:border-emerald-200/60 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="isRequestSubmitting"
             >
-              {{ isSubmitting ? 'Saving...' : 'Save request' }}
+              {{ isRequestSubmitting ? 'Submitting...' : 'Submit Leave Request' }}
             </button>
-          </form>
+          </div>
+        </form>
+      </article>
+
+      <article
+        v-if="canConfigure"
+        class="rounded-2xl border border-white/10 bg-white/5 p-4"
+      >
+        <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-200/80">Leave Type Settings</h2>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            v-for="type in leaveTypes"
+            :key="type.id || type.type"
+            class="rounded-xl border border-white/10 bg-slate-900/50 p-3"
+          >
+            <p class="font-medium text-white">{{ type.label }}</p>
+            <p class="mt-1 text-xs text-slate-300/80">Type: {{ type.type }}</p>
+            <p class="text-xs text-slate-300/80">Days/year: {{ type.days_per_year ?? 0 }}</p>
+            <p class="text-xs text-slate-300/80">Min service: {{ type.min_months_of_service ?? 0 }} months</p>
+          </div>
         </div>
-      </div>
-    </transition>
-  </div>
+      </article>
+
+      <article class="rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
+        <div v-if="loading" class="py-8 text-center text-sm text-slate-400">Loading...</div>
+        <div v-else class="grid gap-3 md:hidden">
+          <div v-for="item in items" :key="`m-${item.id}`" class="rounded-xl border border-white/10 bg-slate-900/50 p-3">
+            <p class="font-medium">{{ item.employee?.name || `Employee #${item.employee_id}` }}</p>
+            <p class="text-xs text-slate-300/80">{{ item.type || 'annual' }} • {{ formatDateRange(item.start_date, item.end_date) }}</p>
+            <p class="mt-1 text-xs capitalize text-slate-300/80">Status: {{ item.status }}</p>
+            <div v-if="canApprove && item.status === 'pending'" class="mt-2 flex gap-2">
+              <button class="rounded-full border border-emerald-300/40 px-3 py-1 text-xs text-emerald-200" @click="setStatus(item, 'approved')">Approve</button>
+              <button class="rounded-full border border-amber-300/40 px-3 py-1 text-xs text-amber-200" @click="setStatus(item, 'rejected')">Reject</button>
+            </div>
+          </div>
+        </div>
+        <div v-if="!loading" class="hidden overflow-x-auto md:block">
+          <table class="min-w-full text-left text-sm">
+            <thead class="text-xs uppercase tracking-[0.2em] text-slate-400">
+              <tr>
+                <th class="px-3 py-2">Employee</th>
+                <th class="px-3 py-2">Type</th>
+                <th class="px-3 py-2">Dates</th>
+                <th class="px-3 py-2">Status</th>
+                <th class="px-3 py-2 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in items" :key="item.id" class="border-t border-white/10">
+                <td class="px-3 py-2">{{ item.employee?.name || `Employee #${item.employee_id}` }}</td>
+                <td class="px-3 py-2 capitalize">{{ item.type || 'annual' }}</td>
+                <td class="px-3 py-2 text-slate-300/80">{{ formatDateRange(item.start_date, item.end_date) }}</td>
+                <td class="px-3 py-2 capitalize">{{ item.status }}</td>
+                <td class="px-3 py-2 text-right">
+                  <div v-if="canApprove && item.status === 'pending'" class="inline-flex gap-2">
+                    <button class="rounded-full border border-emerald-300/40 px-3 py-1 text-xs text-emerald-200" @click="setStatus(item, 'approved')">Approve</button>
+                    <button class="rounded-full border border-amber-300/40 px-3 py-1 text-xs text-amber-200" @click="setStatus(item, 'rejected')">Reject</button>
+                  </div>
+                  <span v-else class="text-xs text-slate-500">{{ canManage ? '-' : 'View only' }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </div>
+  </section>
 </template>
 
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: transform 0.25s ease, opacity 0.25s ease;
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(20px);
-  opacity: 0;
-}
-</style>

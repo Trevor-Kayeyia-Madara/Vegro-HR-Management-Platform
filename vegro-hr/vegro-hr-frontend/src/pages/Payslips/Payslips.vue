@@ -294,9 +294,9 @@ onMounted(loadPayslips);
       </p>
 
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="max-h-130 overflow-auto">
+        <div class="max-h-[72vh] overflow-auto">
           <div class="overflow-x-auto">
-            <table class="min-w-245 w-full text-left text-xs sm:text-sm">
+            <table class="min-w-[760px] w-full text-left text-xs sm:text-sm">
               <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
                 <tr>
                   <th class="px-6 py-4 font-medium">Employee</th>

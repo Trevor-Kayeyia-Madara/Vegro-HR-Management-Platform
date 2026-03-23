@@ -23,6 +23,8 @@ class ResolveCompanyFromDomain
         $company = $domain?->company ?? Company::where('domain', $host)->first();
 
         if ($company) {
+            app()->instance('company_id', $company->id);
+            app()->instance('currentCompany', $company);
             $request->attributes->set('company_domain', $host);
             $request->attributes->set('company_id', $company->id);
             $request->attributes->set('company', $company);

@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Concerns\AuditsModelChanges;
 
 class Payslip extends Model
 {
     use HasFactory;
     use BelongsToCompany;
+    use AuditsModelChanges;
 
     protected $fillable = [
         'company_id',

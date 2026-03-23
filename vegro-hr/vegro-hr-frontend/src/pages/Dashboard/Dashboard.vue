@@ -15,6 +15,7 @@ const departments = ref([]);
 const attendances = ref([]);
 const leaveRequests = ref([]);
 const payrolls = ref([]);
+const taxProfiles = ref([]);
 
 const today = computed(() => new Date().toLocaleDateString('en-CA'));
 
@@ -61,10 +62,30 @@ const latestPayrollLabel = computed(() => {
   return 'Latest run recorded';
 });
 
+const dashboardCurrency = computed(() => {
+  const byId = new Map(
+    taxProfiles.value
+      .filter((profile) => profile?.id && profile?.currency)
+      .map((profile) => [Number(profile.id), String(profile.currency).toUpperCase()]),
+  );
+
+  const payrollCurrency = payrolls.value
+    .map((payroll) => byId.get(Number(payroll?.tax_profile_id)))
+    .find((currency) => /^[A-Z]{3}$/.test(currency || ''));
+
+  if (payrollCurrency) return payrollCurrency;
+
+  const profileCurrency = taxProfiles.value
+    .map((profile) => String(profile?.currency || '').toUpperCase())
+    .find((currency) => /^[A-Z]{3}$/.test(currency));
+
+  return profileCurrency || 'USD';
+});
+
 const formatCurrency = (value) =>
   new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: dashboardCurrency.value,
     maximumFractionDigits: 0,
   }).format(value || 0);
 
@@ -92,12 +113,14 @@ const loadDashboard = async () => {
       attendanceResponse,
       leaveResponse,
       payrollResponse,
+      taxProfilesResponse,
     ] = await Promise.all([
       apiClient.get('/api/employees', { params: { per_page: 1000 } }),
       apiClient.get('/api/departments', { params: { per_page: 500 } }),
       apiClient.get('/api/attendances', { params: { per_page: 2000 } }),
       apiClient.get('/api/leave-requests/all', { params: { per_page: 1000 } }),
       apiClient.get('/api/payrolls', { params: { per_page: 1000 } }),
+      apiClient.get('/api/tax-profiles', { params: { per_page: 1000 } }),
     ]);
 
     employees.value = unwrapList(employeesResponse);
@@ -105,6 +128,7 @@ const loadDashboard = async () => {
     attendances.value = unwrapList(attendanceResponse);
     leaveRequests.value = unwrapList(leaveResponse);
     payrolls.value = unwrapList(payrollResponse);
+    taxProfiles.value = unwrapList(taxProfilesResponse);
   } catch (error) {
     errorMessage.value =
       error?.response?.data?.message ||

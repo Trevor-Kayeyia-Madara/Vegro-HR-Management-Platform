@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Services\EmployeeService;
+use App\Services\LeaveService;
 use Illuminate\Http\Request;
 use App\Helpers\ApiResponse;
 use App\Http\Resources\EmployeeResource;
@@ -10,10 +11,12 @@ use OpenApi\Attributes as OA;
 class EmployeeController extends Controller
 {
     protected $employeeService;
+    protected $leaveService;
 
-    public function __construct(EmployeeService $employeeService)
+    public function __construct(EmployeeService $employeeService, LeaveService $leaveService)
     {
         $this->employeeService = $employeeService;
+        $this->leaveService = $leaveService;
     }
 
     #[OA\Post(
@@ -108,10 +111,16 @@ class EmployeeController extends Controller
             if (!$employee) {
                 return ApiResponse::success(EmployeeResource::collection(collect([])));
             }
+            $this->leaveService->initializeLeaveBalancesForEmployee($employee);
+            $employee->load(['department', 'roles', 'leaveBalances']);
             return ApiResponse::success(EmployeeResource::collection(collect([$employee])));
         }
 
         $employees = $this->employeeService->getEmployeesPaginated($perPage);
+        $employees->getCollection()->transform(function ($employee) {
+            $this->leaveService->initializeLeaveBalancesForEmployee($employee);
+            return $employee->fresh(['department', 'roles', 'leaveBalances']);
+        });
         return ApiResponse::success(EmployeeResource::collection($employees));
     }
 
@@ -214,6 +223,12 @@ class EmployeeController extends Controller
             if ($employee->user_id !== $user->id) {
                 return ApiResponse::forbidden('You can only update your own profile');
             }
+
+            $validated = $request->validate([
+                'phone' => 'nullable|string|max:50',
+            ]);
+
+            return ApiResponse::success($this->employeeService->updateEmployee($employee, $validated));
         }
 
         return ApiResponse::success($this->employeeService->updateEmployee($employee, $request->all()));
@@ -354,22 +369,84 @@ class EmployeeController extends Controller
     public function getMyDepartmentEmployees()
     {
         $user = auth()->user();
-        if (!$user || !$user->hasRole(['manager', 'admin', 'hr'])) {
-            return ApiResponse::forbidden('Forbidden');
-        }
-
-        if ($user->hasRole(['admin', 'hr'])) {
-            return ApiResponse::error('Provide a department ID.', 422);
+        if (!$user) {
+            return ApiResponse::unauthorized('Unauthorized');
         }
 
         $managedDepartmentId = \App\Models\Department::where('manager_id', $user->id)->value('id');
+
         if (!$managedDepartmentId) {
+            if (!$user->hasRole(['manager'])) {
+                return ApiResponse::forbidden('Forbidden');
+            }
+
             return ApiResponse::success(EmployeeResource::collection(collect([])));
         }
 
-        return ApiResponse::success(
-            EmployeeResource::collection($this->employeeService->getEmployeesByDepartment($managedDepartmentId))
-        );
+        return ApiResponse::success(EmployeeResource::collection(
+            $this->employeeService->getEmployeesByDepartment($managedDepartmentId)
+        ));
+    }
+
+    public function getLeaveBalances($id)
+    {
+        $employee = $this->employeeService->getEmployeeById($id);
+        $user = auth()->user();
+
+        if ($user && $user->hasRole('employee') && (int) $employee->user_id !== (int) $user->id) {
+            return ApiResponse::forbidden('You can only access your own leave balances');
+        }
+
+        $balances = $this->leaveService->initializeLeaveBalancesForEmployee($employee);
+        return ApiResponse::success($balances, 'Leave balances retrieved');
+    }
+
+    public function getLeaveSummary($id)
+    {
+        $employee = $this->employeeService->getEmployeeById($id);
+        $user = auth()->user();
+
+        if ($user && $user->hasRole('employee') && (int) $employee->user_id !== (int) $user->id) {
+            return ApiResponse::forbidden('You can only access your own leave summary');
+        }
+
+        $balances = $this->leaveService->initializeLeaveBalancesForEmployee($employee)
+            ->values();
+
+        $annual = $balances->firstWhere('leave_type', 'annual');
+
+        return ApiResponse::success([
+            'employee_id' => $employee->id,
+            'total_leave_days' => (float) $balances->sum('entitled_days'),
+            'leave_days_taken' => (float) $balances->sum('used_days'),
+            'leave_balance' => (float) $balances->sum('balance_days'),
+            'annual' => [
+                'entitled_days' => (float) ($annual?->entitled_days ?? 0),
+                'used_days' => (float) ($annual?->used_days ?? 0),
+                'balance_days' => (float) ($annual?->balance_days ?? 0),
+                'carry_forward_days' => (float) ($annual?->carry_forward_days ?? 0),
+            ],
+            'leave_balances' => $balances->map(function ($balance) {
+                return [
+                    'leave_type' => $balance->leave_type,
+                    'entitled_days' => (float) $balance->entitled_days,
+                    'used_days' => (float) $balance->used_days,
+                    'balance_days' => (float) $balance->balance_days,
+                    'carry_forward_days' => (float) ($balance->carry_forward_days ?? 0),
+                    'last_reset_at' => optional($balance->last_reset_at)->toDateString(),
+                ];
+            }),
+        ], 'Leave summary retrieved');
+    }
+
+    public function syncLeaveBalancesForCompany()
+    {
+        $companyId = auth()->user()?->company_id;
+        $synced = $this->leaveService->syncAllEmployeeLeaveBalances($companyId);
+
+        return ApiResponse::success([
+            'employees_synced' => $synced,
+        ], 'Employee leave balances initialized');
     }
 
     #[OA\Get(

@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Concerns\AuditsModelChanges;
 
 class Employee extends Model
 {
     use HasFactory;
     use BelongsToCompany;
+    use AuditsModelChanges;
 
     protected $fillable = [
         'company_id','employee_number','user_id','name','email','phone',
@@ -22,6 +24,7 @@ class Employee extends Model
     public function payrolls() { return $this->hasMany(Payroll::class); }
     public function attendance() { return $this->hasMany(Attendance::class); }
     public function leaveRequests() { return $this->hasMany(LeaveRequest::class); }
+    public function leaveBalances() { return $this->hasMany(EmployeeLeaveBalance::class); }
     public function user() { return $this->belongsTo(User::class); }
     public function roles() { return $this->belongsToMany(Role::class); }
 }

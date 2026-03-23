@@ -1,10 +1,38 @@
-<script setup>
-import { computed, onMounted } from 'vue';
+﻿<script setup>
+import { computed, onMounted, ref, watch } from 'vue';
+import authService from '../../services/authService';
 import useAuth from '../../hooks/useAuth';
+import { formatDate } from '../../utils/dateFormat';
 
 defineOptions({ name: 'UserProfilePage' });
 
 const { user, isLoading, error, checkAuth, roleTitle } = useAuth();
+
+const isSaving = ref(false);
+const saveError = ref('');
+const saveSuccess = ref('');
+
+const form = ref({
+  name: '',
+  email: '',
+  phone: '',
+  password: '',
+  password_confirmation: '',
+});
+
+watch(
+  () => user.value,
+  (value) => {
+    form.value = {
+      name: value?.name || '',
+      email: value?.email || '',
+      phone: value?.employee?.phone || value?.phone || '',
+      password: '',
+      password_confirmation: '',
+    };
+  },
+  { immediate: true },
+);
 
 const displayName = computed(() => user.value?.name || user.value?.full_name || 'Unknown User');
 const displayEmail = computed(() => user.value?.email || 'Not provided');
@@ -23,7 +51,7 @@ const displayDepartment = computed(() => {
   );
 });
 const displayPhone = computed(() => user.value?.employee?.phone || user.value?.phone || 'Not provided');
-const displayJoined = computed(() => user.value?.created_at || user.value?.createdAt || '—');
+const displayJoined = computed(() => formatDate(user.value?.created_at || user.value?.createdAt, '—'));
 
 const authStatus = computed(() => {
   if (isLoading.value) return 'Checking...';
@@ -70,6 +98,35 @@ onMounted(() => {
     checkAuth();
   }
 });
+
+const saveProfile = async () => {
+  isSaving.value = true;
+  saveError.value = '';
+  saveSuccess.value = '';
+
+  try {
+    const payload = {
+      name: form.value.name,
+      email: form.value.email,
+      phone: form.value.phone || null,
+    };
+
+    if (form.value.password) {
+      payload.password = form.value.password;
+      payload.password_confirmation = form.value.password_confirmation;
+    }
+
+    await authService.updateCurrentUser(payload);
+    await checkAuth();
+    form.value.password = '';
+    form.value.password_confirmation = '';
+    saveSuccess.value = 'Profile updated.';
+  } catch (err) {
+    saveError.value = err?.response?.data?.message || 'Unable to update profile.';
+  } finally {
+    isSaving.value = false;
+  }
+};
 </script>
 
 <template>
@@ -97,6 +154,20 @@ onMounted(() => {
         class="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100"
       >
         {{ error }}
+      </div>
+
+      <div
+        v-if="saveError"
+        class="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100"
+      >
+        {{ saveError }}
+      </div>
+
+      <div
+        v-if="saveSuccess"
+        class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100"
+      >
+        {{ saveSuccess }}
       </div>
 
       <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -127,6 +198,78 @@ onMounted(() => {
             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
               <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Joined</p>
               <p class="mt-2 text-lg font-semibold">{{ displayJoined }}</p>
+            </div>
+          </div>
+
+          <div class="mt-8 rounded-3xl border border-white/10 bg-slate-950/40 p-6">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Self-service</p>
+                <h3 class="mt-2 text-lg font-semibold">Update your profile</h3>
+                <p class="mt-1 text-xs text-slate-400/80">
+                  Update your contact details (and optionally your password).
+                </p>
+              </div>
+              <button
+                class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200 transition hover:bg-emerald-300/20 disabled:opacity-60"
+                type="button"
+                :disabled="isSaving"
+                @click="saveProfile"
+              >
+                {{ isSaving ? 'Saving...' : 'Save' }}
+              </button>
+            </div>
+
+            <div class="mt-6 grid gap-4 sm:grid-cols-2">
+              <label class="block text-xs text-slate-300/80 sm:col-span-2">
+                <span class="mb-2 block text-[11px] uppercase tracking-[0.2em] text-slate-400">Name</span>
+                <input
+                  v-model="form.name"
+                  type="text"
+                  class="h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-slate-100 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                  autocomplete="name"
+                />
+              </label>
+
+              <label class="block text-xs text-slate-300/80">
+                <span class="mb-2 block text-[11px] uppercase tracking-[0.2em] text-slate-400">Email</span>
+                <input
+                  v-model="form.email"
+                  type="email"
+                  class="h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-slate-100 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                  autocomplete="email"
+                />
+              </label>
+
+              <label class="block text-xs text-slate-300/80">
+                <span class="mb-2 block text-[11px] uppercase tracking-[0.2em] text-slate-400">Phone</span>
+                <input
+                  v-model="form.phone"
+                  type="tel"
+                  class="h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-slate-100 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                  autocomplete="tel"
+                />
+              </label>
+
+              <label class="block text-xs text-slate-300/80">
+                <span class="mb-2 block text-[11px] uppercase tracking-[0.2em] text-slate-400">New password</span>
+                <input
+                  v-model="form.password"
+                  type="password"
+                  class="h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-slate-100 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                  autocomplete="new-password"
+                />
+              </label>
+
+              <label class="block text-xs text-slate-300/80">
+                <span class="mb-2 block text-[11px] uppercase tracking-[0.2em] text-slate-400">Confirm password</span>
+                <input
+                  v-model="form.password_confirmation"
+                  type="password"
+                  class="h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-slate-100 outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+                  autocomplete="new-password"
+                />
+              </label>
             </div>
           </div>
         </section>
@@ -166,4 +309,6 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+
 

@@ -12,6 +12,10 @@ const normalizeRole = (value) => {
   const aliases = {
     hrmanager: 'hr',
     humanresourcesmanager: 'hr',
+    administrator: 'admin',
+    companyadmin: 'admin',
+    companyadministrator: 'admin',
+    financemanager: 'financemanager',
   };
   return aliases[normalized] || normalized;
 };
@@ -21,9 +25,7 @@ const roleTitle = computed(() =>
 );
 
 const isSuperAdmin = computed(() => roleTitle.value === 'superadmin');
-const isAdmin = computed(() =>
-  ['admin', 'administrator', 'companyadmin', 'companyadministrator'].includes(roleTitle.value),
-);
+const isAdmin = computed(() => roleTitle.value === 'admin');
 
 const permissions = computed(() => user.value?.role?.permissions || []);
 
@@ -32,6 +34,9 @@ const hasRole = (roles = []) => {
   const normalized = list.map((role) => normalizeRole(role));
   if (isSuperAdmin.value) return normalized.includes('superadmin');
   if (isAdmin.value) return true;
+  if (roleTitle.value === 'financemanager') {
+    return normalized.includes('financemanager') || normalized.includes('finance') || normalized.includes('manager');
+  }
   return normalized.includes(roleTitle.value);
 };
 

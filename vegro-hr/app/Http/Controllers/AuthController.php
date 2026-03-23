@@ -4,6 +4,14 @@ namespace App\Http\Controllers;
 use App\Services\AuthService;
 use App\Helpers\ApiResponse;
 use App\Http\Requests\RegisterRequest;
+use App\Models\User;
+use Illuminate\Auth\Events\Verified;
+use Illuminate\Support\Str;
+use App\Models\ApiToken;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
 class AuthController extends Controller
@@ -13,6 +21,11 @@ class AuthController extends Controller
     public function __construct(AuthService $authService)
     {
         $this->authService = $authService;
+    }
+
+    protected function emailVerificationRequired(): bool
+    {
+        return !app()->environment('local');
     }
 
     #[OA\Post(
@@ -61,6 +74,11 @@ class AuthController extends Controller
    public function store(RegisterRequest $request)
     {
         $user = $this->authService->store($request->validated());
+        if ($this->emailVerificationRequired()) {
+            $user->sendEmailVerificationNotification();
+        } else {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
         return ApiResponse::success(['message' => 'Registration successful', 'user' => $user]);
     }
 
@@ -191,6 +209,108 @@ class AuthController extends Controller
         return ApiResponse::success(['user' => $user]);
     }   
 
+    public function updateMe(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return ApiResponse::unauthorized('Unauthorized');
+        }
+
+        $companyId = $user->company_id;
+
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'email' => [
+                'sometimes',
+                'required',
+                'email',
+                Rule::unique('users', 'email')
+                    ->where('company_id', $companyId)
+                    ->ignore($user->id),
+            ],
+            'phone' => 'nullable|string|max:50',
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
+
+        $userPayload = array_intersect_key($validated, [
+            'name' => true,
+            'email' => true,
+            'password' => true,
+        ]);
+
+        if (!empty($userPayload['password'])) {
+            $userPayload['password'] = Hash::make($userPayload['password']);
+        } else {
+            unset($userPayload['password']);
+        }
+
+        $emailChanged = array_key_exists('email', $userPayload) && $userPayload['email'] !== $user->email;
+
+        if (!empty($userPayload)) {
+            $user->update($userPayload);
+        }
+
+        if ($emailChanged) {
+            if ($this->emailVerificationRequired()) {
+                $user->forceFill(['email_verified_at' => null])->save();
+                $user->sendEmailVerificationNotification();
+            } else {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
+        }
+
+        $employeePayload = array_intersect_key($validated, ['phone' => true]);
+
+        $employee = $user->employee;
+        if ($employee && !empty($employeePayload)) {
+            $employee->update($employeePayload);
+        }
+
+        $user = $user->fresh();
+        $user?->load('role.permissions', 'employee.department');
+
+        return ApiResponse::success(['user' => $user], 'Profile updated');
+    }
+
+    public function verifyEmail(Request $request, int $id, string $hash)
+    {
+        $user = User::findOrFail($id);
+
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            return ApiResponse::error('Invalid verification link.', 403);
+        }
+
+        if (is_null($user->email_verified_at)) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+            event(new Verified($user));
+        }
+
+        $frontendBase = rtrim((string) env('FRONTEND_URL', 'http://localhost:5173'), '/');
+        return redirect()->away($frontendBase . '/login?verified=1');
+    }
+
+    public function resendVerification(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return ApiResponse::unauthorized('Unauthorized');
+        }
+
+        if (!$this->emailVerificationRequired()) {
+            if (is_null($user->email_verified_at)) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
+            return ApiResponse::success(['verified' => true], 'Email verification is disabled in local environment.');
+        }
+
+        if (!is_null($user->email_verified_at)) {
+            return ApiResponse::success(['verified' => true], 'Email is already verified.');
+        }
+
+        $user->sendEmailVerificationNotification();
+        return ApiResponse::success(['verified' => false], 'Verification email sent.');
+    }
+
     #[OA\Get(
         path: "/api/auth/check",
         operationId: "authCheck",
@@ -219,5 +339,49 @@ class AuthController extends Controller
     public function authCheck()
     {
         return ApiResponse::success(['authenticated' => auth()->check()]);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $status = Password::broker()->sendResetLink([
+            'email' => $validated['email'],
+        ]);
+
+        if ($status !== Password::RESET_LINK_SENT) {
+            return ApiResponse::error(__($status), 422);
+        }
+
+        return ApiResponse::success([], 'Password reset link sent to your email.');
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'token' => 'required|string',
+            'email' => 'required|email',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $status = Password::broker()->reset(
+            $validated,
+            function (User $user, string $password) {
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                    'remember_token' => Str::random(60),
+                ])->save();
+
+                ApiToken::where('user_id', $user->id)->delete();
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            return ApiResponse::error(__($status), 422);
+        }
+
+        return ApiResponse::success([], 'Password reset successfully. You can now log in.');
     }
 }

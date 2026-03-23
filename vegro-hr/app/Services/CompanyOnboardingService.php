@@ -56,6 +56,7 @@ class CompanyOnboardingService
             Subscription::create([
                 'company_id' => $company->id,
                 'plan_id' => $planId,
+                'billing_cycle' => 'monthly',
                 'status' => 'active',
                 'starts_at' => now(),
             ]);
@@ -82,10 +83,10 @@ class CompanyOnboardingService
 
     protected function createCompanyAdmin(int $companyId, array $payload): User
     {
-        $roleId = Role::where('title', 'Company Admin')->value('id');
+        $roleId = Role::where('title', 'companyadmin')->value('id');
         if (!$roleId) {
             $roleId = Role::create([
-                'title' => 'Company Admin',
+                'title' => 'companyadmin',
                 'description' => 'Company-level administrator with full access',
                 'company_id' => $companyId,
             ])->id;

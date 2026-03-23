@@ -150,7 +150,7 @@ onMounted(loadCompanies);
         </div>
 
         <div class="mt-5 overflow-x-auto">
-          <table class="min-w-full text-left text-xs text-slate-200">
+          <table class="min-w-[760px] text-left text-xs text-slate-200">
             <thead class="text-[11px] uppercase text-slate-400">
               <tr>
                 <th class="px-3 py-2">Company</th>

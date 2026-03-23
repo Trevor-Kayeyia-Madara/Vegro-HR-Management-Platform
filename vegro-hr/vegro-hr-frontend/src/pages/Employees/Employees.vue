@@ -21,11 +21,30 @@ const selectedEmployee = ref(null);
 const searchQuery = ref('');
 const pageSize = ref(8);
 const currentPage = ref(1);
-const { hasPermission } = useAuth();
-const canManageEmployees = computed(() => hasPermission('employees.manage'));
+const { hasPermission, hasRole } = useAuth();
+const canManageEmployees = computed(
+  () => hasRole(['admin', 'hr']) && hasPermission('employees.manage'),
+);
+const canManageHierarchy = computed(() => hasRole(['admin', 'hr']));
+const canCreateLeaveForEmployee = computed(() => hasRole(['admin', 'hr']) && hasPermission('leaves.manage'));
 const employeeCsvInput = ref(null);
 const csvMode = ref('upsert');
 const isCsvBusy = ref(false);
+const isSyncingLeaveDefaults = ref(false);
+const isHierarchyLoading = ref(false);
+const isHierarchySaving = ref(false);
+const hierarchyForm = ref({
+  functional_manager_ids: [],
+  dotted_manager_ids: [],
+});
+const isLeaveSubmitting = ref(false);
+const leaveSuccessMessage = ref('');
+const leaveForm = ref({
+  type: 'annual',
+  start_date: '',
+  end_date: '',
+  reason: '',
+});
 const pagination = ref({
   current_page: 1,
   last_page: 1,
@@ -126,12 +145,99 @@ const closeEdit = () => {
 const openView = (employee) => {
   selectedEmployee.value = employee;
   isViewOpen.value = true;
+  leaveSuccessMessage.value = '';
+  leaveForm.value = {
+    type: 'annual',
+    start_date: '',
+    end_date: '',
+    reason: '',
+  };
+  if (canManageHierarchy.value) {
+    loadHierarchy(employee);
+  }
 };
 
 const closeView = () => {
   isViewOpen.value = false;
   selectedEmployee.value = null;
+  leaveSuccessMessage.value = '';
+  hierarchyForm.value = {
+    functional_manager_ids: [],
+    dotted_manager_ids: [],
+  };
+  leaveForm.value = {
+    type: 'annual',
+    start_date: '',
+    end_date: '',
+    reason: '',
+  };
 };
+
+const loadHierarchy = async (employee) => {
+  if (!employee?.id) return;
+  isHierarchyLoading.value = true;
+  try {
+    const response = await employeeService.getEmployeeManagers(employee.id);
+    const assignments = unwrapList(response);
+    hierarchyForm.value = {
+      functional_manager_ids: assignments
+        .filter((item) => item?.relationship_type === 'functional')
+        .map((item) => item?.manager?.id)
+        .filter(Boolean),
+      dotted_manager_ids: assignments
+        .filter((item) => item?.relationship_type === 'dotted')
+        .map((item) => item?.manager?.id)
+        .filter(Boolean),
+    };
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.message || 'Unable to load reporting hierarchy.';
+  } finally {
+    isHierarchyLoading.value = false;
+  }
+};
+
+const saveHierarchy = async () => {
+  if (!selectedEmployee.value?.id) return;
+  isHierarchySaving.value = true;
+  try {
+    await employeeService.syncEmployeeManagers(selectedEmployee.value.id, hierarchyForm.value);
+    await loadHierarchy(selectedEmployee.value);
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.message || 'Unable to save hierarchy.';
+  } finally {
+    isHierarchySaving.value = false;
+  }
+};
+
+const syncLeaveDefaults = async () => {
+  isSyncingLeaveDefaults.value = true;
+  errorMessage.value = '';
+  try {
+    await employeeService.syncLeaveBalancesDefaults();
+    await loadEmployees();
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.message || 'Unable to sync leave defaults.';
+  } finally {
+    isSyncingLeaveDefaults.value = false;
+  }
+};
+
+const managerCandidates = computed(() =>
+  employees.value.filter((employee) => employee?.user_id && employee?.id !== selectedEmployee.value?.id),
+);
+
+const leaveTypeLabelMap = {
+  annual: 'Annual',
+  sick: 'Sick',
+  maternity: 'Maternity',
+  paternity: 'Paternity',
+  adoptive: 'Adoptive',
+  compassionate: 'Compassionate',
+  emergency: 'Emergency',
+  public_holiday: 'Public holiday',
+};
+
+const leaveLabel = (type) => leaveTypeLabelMap[String(type || '').toLowerCase()] || String(type || 'Leave');
 
 const handleUpdated = () => {
   loadEmployees();
@@ -174,6 +280,34 @@ const goToPage = (page) => {
   if (nextPage === currentPage.value) return;
   currentPage.value = nextPage;
   loadEmployees();
+};
+
+const submitLeaveForEmployee = async () => {
+  if (!selectedEmployee.value?.id) return;
+  isLeaveSubmitting.value = true;
+  errorMessage.value = '';
+  leaveSuccessMessage.value = '';
+  try {
+    await apiClient.post('/api/leave-requests', {
+      employee_id: selectedEmployee.value.id,
+      type: leaveForm.value.type,
+      start_date: leaveForm.value.start_date,
+      end_date: leaveForm.value.end_date,
+      reason: leaveForm.value.reason || null,
+    });
+    leaveSuccessMessage.value = 'Leave request added successfully.';
+    leaveForm.value = {
+      type: 'annual',
+      start_date: '',
+      end_date: '',
+      reason: '',
+    };
+    await loadEmployees();
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.message || 'Unable to add leave request.';
+  } finally {
+    isLeaveSubmitting.value = false;
+  }
 };
 
 const downloadCsv = async () => {
@@ -275,6 +409,14 @@ onMounted(loadEmployees);
             >
               Import CSV
             </button>
+            <button
+              class="rounded-full border border-sky-300/40 bg-sky-300/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-200 transition hover:bg-sky-300/20 disabled:opacity-60"
+              type="button"
+              :disabled="isSyncingLeaveDefaults"
+              @click="syncLeaveDefaults"
+            >
+              {{ isSyncingLeaveDefaults ? 'Syncing...' : 'Sync Leave Defaults' }}
+            </button>
           </div>
           <button
             v-if="canManageEmployees"
@@ -295,23 +437,23 @@ onMounted(loadEmployees);
       </p>
 
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="max-h-150 overflow-auto">
-          <div class="overflow-x-auto">
-            <table class="min-w-250 w-full text-left text-xs sm:text-sm">
+        <div class="employees-table-scroll max-h-[72vh] w-full overflow-y-auto overflow-x-scroll overscroll-contain touch-pan-x">
+            <table class="min-w-[920px] w-full table-fixed text-left text-[11px] sm:text-xs">
             <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
               <tr>
-                <th class="px-6 py-4 font-medium">Employee ID</th>
-                <th class="px-6 py-4 font-medium">Name</th>
-                <th class="px-6 py-4 font-medium hidden md:table-cell">Email</th>
-                <th class="px-6 py-4 font-medium hidden lg:table-cell">Department</th>
-                <th class="px-6 py-4 font-medium hidden lg:table-cell">Role</th>
-                <th class="px-6 py-4 font-medium hidden md:table-cell">Salary</th>
-                <th class="px-6 py-4 font-medium text-right">Actions</th>
+                <th class="w-[70px] px-2 py-2 font-medium">ID</th>
+                <th class="w-[150px] px-2 py-2 font-medium">Name</th>
+                <th class="w-[190px] px-2 py-2 font-medium hidden md:table-cell">Email</th>
+                <th class="w-[130px] px-2 py-2 font-medium hidden lg:table-cell">Department</th>
+                <th class="w-[140px] px-2 py-2 font-medium hidden lg:table-cell">Role</th>
+                <th class="w-[220px] px-2 py-2 font-medium hidden xl:table-cell">Leave Balances</th>
+                <th class="w-[110px] px-2 py-2 font-medium hidden md:table-cell">Salary</th>
+                <th class="w-[170px] px-2 py-2 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
               <tr v-if="isLoading">
-                <td class="px-6 py-6 text-center text-slate-400" colspan="7">
+                <td class="px-3 py-5 text-center text-slate-400" colspan="8">
                   Loading employees...
                 </td>
               </tr>
@@ -320,11 +462,11 @@ onMounted(loadEmployees);
                 :key="employee.id"
                 class="hover:bg-white/5"
               >
-                <td class="px-6 py-4 font-medium text-slate-100">{{ employee.id }}</td>
-                <td class="px-6 py-4 text-slate-200/80">{{ employee.name || '—' }}</td>
-                <td class="px-6 py-4 text-slate-200/70 hidden md:table-cell">{{ employee.email }}</td>
-                <td class="px-6 py-4 text-slate-300/70 hidden lg:table-cell">{{ employee.department || '—' }}</td>
-                <td class="px-6 py-4 text-slate-300/70 hidden lg:table-cell">
+                <td class="px-2 py-2 font-medium text-slate-100">{{ employee.id }}</td>
+                <td class="px-2 py-2 text-slate-200/80 truncate" :title="employee.name || '—'">{{ employee.name || '—' }}</td>
+                <td class="px-2 py-2 text-slate-200/70 hidden md:table-cell truncate" :title="employee.email">{{ employee.email }}</td>
+                <td class="px-2 py-2 text-slate-300/70 hidden lg:table-cell truncate" :title="employee.department || '—'">{{ employee.department || '—' }}</td>
+                <td class="px-2 py-2 text-slate-300/70 hidden lg:table-cell">
                   <div class="flex flex-wrap gap-2">
                     <span
                       v-for="role in employee.roles || (employee.role ? [employee.role] : [])"
@@ -336,10 +478,28 @@ onMounted(loadEmployees);
                     <span v-if="!(employee.roles || employee.role)" class="text-slate-400">—</span>
                   </div>
                 </td>
-                <td class="px-6 py-4 text-slate-300/70 hidden md:table-cell">
+                                <td class="px-2 py-2 text-slate-300/70 hidden xl:table-cell">
+                  <div class="space-y-2">
+                    <p class="text-[11px] text-slate-200/80">
+                      Annual:
+                      {{ Number(employee.annual_leave_balance ?? 0).toFixed(1) }}
+                      /
+                      {{ Number(employee.annual_leave_days ?? 0).toFixed(1) }}
+                    </p>
+                    <div class="flex flex-wrap gap-1">
+                      <span
+                        v-for="balance in (employee.leave_balances || []).slice(0, 3)"
+                        :key="`${employee.id}-${balance.leave_type}`"
+                        class="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-slate-200/80"
+                      >
+                        {{ leaveLabel(balance.leave_type) }} {{ Number(balance.balance_days || 0).toFixed(1) }}
+                      </span>
+                    </div>
+                  </div>
+                </td><td class="px-2 py-2 text-slate-300/70 hidden md:table-cell">
                   {{ employee.salary ? Number(employee.salary).toLocaleString() : '—' }}
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-2 py-2">
                   <div class="flex items-center justify-end gap-2">
                     <button
                       class="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200 transition hover:bg-white/10"
@@ -368,13 +528,12 @@ onMounted(loadEmployees);
                 </td>
               </tr>
               <tr v-if="!isLoading && !filteredEmployees.length">
-                <td class="px-6 py-6 text-center text-slate-400" colspan="7">
+                <td class="px-3 py-5 text-center text-slate-400" colspan="8">
                   No team members found yet.
                 </td>
               </tr>
             </tbody>
           </table>
-          </div>
         </div>
       </div>
 
@@ -486,6 +645,78 @@ onMounted(loadEmployees);
                 </p>
               </div>
             </div>
+
+            <div
+              v-if="canCreateLeaveForEmployee"
+              class="rounded-2xl border border-white/10 bg-white/5 p-4"
+            >
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Leave</p>
+              <h3 class="mt-1 text-lg font-semibold">Add Leave Request</h3>
+
+              <p
+                v-if="leaveSuccessMessage"
+                class="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100"
+              >
+                {{ leaveSuccessMessage }}
+              </p>
+
+              <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <label class="text-xs text-slate-300/80">
+                  <span class="mb-2 block text-[11px] uppercase tracking-[0.2em] text-slate-400">Type</span>
+                  <select
+                    v-model="leaveForm.type"
+                    class="h-10 w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 text-sm text-white outline-none"
+                  >
+                    <option value="annual">Annual</option>
+                    <option value="sick">Sick</option>
+                    <option value="maternity">Maternity</option>
+                    <option value="paternity">Paternity</option>
+                    <option value="adoptive">Adoptive</option>
+                    <option value="compassionate">Compassionate</option>
+                    <option value="emergency">Emergency</option>
+                  </select>
+                </label>
+
+                <label class="text-xs text-slate-300/80">
+                  <span class="mb-2 block text-[11px] uppercase tracking-[0.2em] text-slate-400">Start Date</span>
+                  <input
+                    v-model="leaveForm.start_date"
+                    type="date"
+                    class="h-10 w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 text-sm text-white outline-none"
+                  />
+                </label>
+
+                <label class="text-xs text-slate-300/80">
+                  <span class="mb-2 block text-[11px] uppercase tracking-[0.2em] text-slate-400">End Date</span>
+                  <input
+                    v-model="leaveForm.end_date"
+                    type="date"
+                    class="h-10 w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 text-sm text-white outline-none"
+                  />
+                </label>
+
+                <label class="text-xs text-slate-300/80 sm:col-span-2">
+                  <span class="mb-2 block text-[11px] uppercase tracking-[0.2em] text-slate-400">Reason</span>
+                  <textarea
+                    v-model="leaveForm.reason"
+                    rows="2"
+                    class="w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-white outline-none"
+                    placeholder="Optional reason"
+                  />
+                </label>
+              </div>
+
+              <div class="mt-4 flex justify-end">
+                <button
+                  class="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200 transition hover:bg-emerald-300/20 disabled:opacity-60"
+                  type="button"
+                  :disabled="isLeaveSubmitting"
+                  @click="submitLeaveForEmployee"
+                >
+                  {{ isLeaveSubmitting ? 'Adding...' : 'Add Leave' }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -513,6 +744,28 @@ onMounted(loadEmployees);
 .slide-up-leave-to {
   transform: translateY(20px);
   opacity: 0;
+}
+</style>
+
+<style scoped>
+.employees-table-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.8) rgba(15, 23, 42, 0.45);
+}
+
+.employees-table-scroll::-webkit-scrollbar {
+  height: 12px;
+  width: 10px;
+}
+
+.employees-table-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.employees-table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.8);
+  border-radius: 9999px;
+  border: 2px solid rgba(15, 23, 42, 0.45);
 }
 </style>
 

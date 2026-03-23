@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('vegro:reset-demo')->dailyAt('02:00');
+Schedule::command('vegro:compliance-check')->dailyAt('06:00');

@@ -241,8 +241,8 @@ class PayrollController extends Controller
             'year' => $validated['year'],
         ], $computed);
 
+        $payload['status'] = 'draft';
         $payroll = Payroll::create($payload);
-        $this->payslipService->createPayslip(['payroll_id' => $payroll->id]);
 
         return ApiResponse::success(new PayrollResource($payroll), "Payroll created successfully", 201);
     }
@@ -341,7 +341,15 @@ class PayrollController extends Controller
         $profile = $this->resolveTaxProfile($validated['tax_profile_id'] ?? null, $payroll);
         $computed = $this->computePayrollFields($validated, $profile, $payroll);
 
-        $payroll->update($computed);
+        $payroll->update(array_merge($computed, [
+            'status' => 'draft',
+            'approved_by' => null,
+            'approved_at' => null,
+            'approver_signature_name' => null,
+            'approver_signature_at' => null,
+            'approver_signature_ip' => null,
+            'approver_signature_user_agent' => null,
+        ]));
 
         $this->payslipService->syncPayslipForPayroll($payroll->load('employee', 'payslip'));
 
@@ -382,6 +390,50 @@ class PayrollController extends Controller
     {
         $payroll->delete();
         return ApiResponse::success(null, "Payroll deleted successfully");
+    }
+
+    public function approve(Request $request, Payroll $payroll)
+    {
+        $validated = $request->validate([
+            'signature_name' => 'required|string|max:255',
+        ]);
+
+        $user = $request->user();
+        if (!$user) {
+            return ApiResponse::unauthorized('Unauthorized');
+        }
+
+        $payroll->update([
+            'status' => 'approved',
+            'approved_by' => $user->id,
+            'approved_at' => now(),
+            'approver_signature_name' => $validated['signature_name'],
+            'approver_signature_at' => now(),
+            'approver_signature_ip' => (string) $request->ip(),
+            'approver_signature_user_agent' => substr((string) $request->userAgent(), 0, 512),
+        ]);
+
+        $payslip = $this->payslipService->createPayslip(['payroll_id' => $payroll->id]);
+        if ($payslip && $payslip->status !== 'approved' && $payslip->status !== 'issued') {
+            $this->payslipService->approvePayslip($payslip->id, $user->id);
+        }
+
+        app(\App\Services\ActivityLogService::class)->log(
+            'payroll.approved',
+            (int) $user->company_id,
+            Payroll::class,
+            $payroll->id,
+            [
+                'payroll_id' => $payroll->id,
+                'approved_by' => $user->id,
+                'signature_name' => $validated['signature_name'],
+            ]
+        );
+
+        return ApiResponse::success(
+            new PayrollResource($payroll->fresh(['employee', 'payslip'])),
+            'Payroll approved and converted to payslip'
+        );
     }
 
     #[OA\Get(
@@ -582,7 +634,15 @@ class PayrollController extends Controller
                         $existing
                     );
                     $computed = $this->computePayrollFields($input, $profile, $existing);
-                    $existing->update($computed);
+                    $existing->update(array_merge($computed, [
+                        'status' => 'draft',
+                        'approved_by' => null,
+                        'approved_at' => null,
+                        'approver_signature_name' => null,
+                        'approver_signature_at' => null,
+                        'approver_signature_ip' => null,
+                        'approver_signature_user_agent' => null,
+                    ]));
                     $this->payslipService->syncPayslipForPayroll($existing->load('employee', 'payslip'));
                     $updated++;
                 } else {
@@ -592,9 +652,9 @@ class PayrollController extends Controller
                         'employee_id' => $input['employee_id'],
                         'month' => $input['month'],
                         'year' => $input['year'],
+                        'status' => 'draft',
                     ], $computed);
-                    $payroll = Payroll::create($payload);
-                    $this->payslipService->createPayslip(['payroll_id' => $payroll->id]);
+                    Payroll::create($payload);
                     $created++;
                 }
             } catch (\Throwable $e) {

@@ -2,12 +2,15 @@
 
 namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Company;
 use App\Models\Concerns\BelongsToCompany;
+use App\Notifications\VerifyUserEmailNotification;
+use App\Notifications\ResetPasswordLinkNotification;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable;
     use BelongsToCompany;
@@ -31,7 +34,25 @@ class User extends Authenticatable
 
     public function role() { return $this->belongsTo(Role::class); }    
     public function employee() { return $this->hasOne(Employee::class); }
+    public function notifications() { return $this->hasMany(InAppNotification::class); }
+    public function chatConversations()
+    {
+        return $this->belongsToMany(ChatConversation::class, 'chat_conversation_user', 'user_id', 'conversation_id')
+            ->withPivot(['joined_at'])
+            ->withTimestamps();
+    }
+    public function chatMessages() { return $this->hasMany(ChatMessage::class, 'user_id'); }
     public function company() { return $this->belongsTo(Company::class); }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyUserEmailNotification());
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordLinkNotification($token));
+    }
 
     public function roleTitle(): ?string
     {
@@ -56,6 +77,12 @@ class User extends Authenticatable
 
         if (in_array($roleTitle, ['admin', 'administrator', 'superadmin', 'companyadmin', 'companyadministrator'], true)) {
             return true;
+        }
+
+        if ($roleTitle === 'financemanager') {
+            return in_array('financemanager', $normalizedRoles, true)
+                || in_array('finance', $normalizedRoles, true)
+                || in_array('manager', $normalizedRoles, true);
         }
 
         return in_array($roleTitle, $normalizedRoles, true);

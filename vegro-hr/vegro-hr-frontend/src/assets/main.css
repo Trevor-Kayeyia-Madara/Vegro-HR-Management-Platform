@@ -1,16 +1,55 @@
 @import "tailwindcss";
 
+@layer base {
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  select {
+    color-scheme: dark;
+  }
+
+  select option,
+  select optgroup {
+    background-color: #ffffff;
+    color: #0f172a;
+  }
+
+  select option:disabled {
+    color: #64748b;
+  }
+}
+
 @layer components {
+  .vegro-modal-viewport {
+    @apply fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 px-2 py-2 backdrop-blur-sm sm:items-center sm:px-4 sm:py-8;
+  }
+
   .vegro-modal-overlay {
     @apply fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm;
   }
 
   .vegro-modal-wrap {
-    @apply fixed inset-0 z-50 flex items-center justify-center px-4 py-6 sm:py-10;
+    @apply fixed inset-0 z-50 flex items-end justify-center px-2 py-2 sm:items-center sm:px-4 sm:py-10;
   }
 
   .vegro-modal {
-    @apply relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950 text-white shadow-[0_30px_90px_rgba(6,11,23,0.75)];
+    @apply relative w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-950 text-white shadow-[0_30px_90px_rgba(6,11,23,0.75)] sm:rounded-3xl;
+    max-height: 92dvh;
   }
 
   .vegro-modal-header {
@@ -26,7 +65,7 @@
   }
 
   .vegro-modal-body {
-    @apply px-6 py-6 sm:px-8;
+    @apply overflow-y-auto px-4 py-4 sm:px-8 sm:py-6;
   }
 
   .vegro-modal-footer {
@@ -35,5 +74,9 @@
 
   .vegro-modal-close {
     @apply inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-slate-200 transition hover:border-white/30 hover:text-white;
+  }
+
+  .vegro-table-scroll {
+    @apply overflow-x-auto;
   }
 }

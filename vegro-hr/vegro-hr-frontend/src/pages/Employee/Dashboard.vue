@@ -1,8 +1,10 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import apiClient from '../../api/apiClient';
+import employeeService from '../../services/employeeService';
 import useAuth from '../../hooks/useAuth';
+import { formatDateRange } from '../../utils/dateFormat';
 
 defineOptions({ name: 'EmployeeDashboardPage' });
 
@@ -13,6 +15,8 @@ const isLoading = ref(true);
 const errorMessage = ref('');
 const leaveRequests = ref([]);
 const payslips = ref([]);
+const employeeRecord = ref(null);
+const leaveSummary = ref(null);
 const profile = computed(() => user.value);
 
 const unwrapList = (response) => {
@@ -27,13 +31,22 @@ const loadDashboard = async () => {
   errorMessage.value = '';
 
   try {
-    const [leavesResponse, payslipsResponse] = await Promise.all([
+    const [leavesResponse, payslipsResponse, employeesResponse] = await Promise.all([
       apiClient.get('/api/leave-requests', { params: { per_page: 50 } }),
       apiClient.get('/api/payslips/me', { params: { per_page: 20 } }),
+      employeeService.getEmployees({ per_page: 1 }),
     ]);
 
     leaveRequests.value = unwrapList(leavesResponse);
     payslips.value = unwrapList(payslipsResponse);
+    employeeRecord.value = unwrapList(employeesResponse)[0] || null;
+
+    if (employeeRecord.value?.id) {
+      const leaveSummaryResponse = await employeeService.getEmployeeLeaveSummary(employeeRecord.value.id);
+      leaveSummary.value = leaveSummaryResponse?.data?.data ?? leaveSummaryResponse?.data ?? null;
+    } else {
+      leaveSummary.value = null;
+    }
   } catch (error) {
     errorMessage.value =
       error?.response?.data?.message ||
@@ -72,9 +85,14 @@ const stats = computed(() => [
     change: latestPayslip.value ? 'Latest ready' : 'No payslips yet',
   },
   {
-    label: 'Annual Leave Balance',
-    value: profile.value?.annual_leave_balance?.toLocaleString() ?? '—',
-    change: `${profile.value?.annual_leave_used ?? 0} used / ${profile.value?.annual_leave_days ?? '—'} total`,
+    label: 'Total Leave Days',
+    value: Number(leaveSummary.value?.total_leave_days ?? 0).toFixed(1),
+    change: `${Number(leaveSummary.value?.leave_days_taken ?? 0).toFixed(1)} taken`,
+  },
+  {
+    label: 'Leave Balance',
+    value: Number(leaveSummary.value?.leave_balance ?? 0).toFixed(1),
+    change: `Carry forward ${Number(leaveSummary.value?.annual?.carry_forward_days ?? 0).toFixed(1)} days`,
   },
 ]);
 
@@ -215,15 +233,27 @@ onMounted(loadDashboard);
           <div class="mt-6 grid gap-4 text-sm">
             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
               <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Name</p>
-              <p class="mt-2 text-base font-semibold">{{ profile?.name || '—' }}</p>
+              <p class="mt-2 text-base font-semibold">{{ profile?.name || 'â€”' }}</p>
             </div>
             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
               <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Email</p>
-              <p class="mt-2 text-base font-semibold">{{ profile?.email || '—' }}</p>
+              <p class="mt-2 text-base font-semibold">{{ profile?.email || 'â€”' }}</p>
             </div>
-            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                        <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
               <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Role</p>
               <p class="mt-2 text-base font-semibold">{{ profile?.role?.title || 'Employee' }}</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Annual Leave</p>
+              <p class="mt-2 text-base font-semibold">
+                {{ Number(leaveSummary?.annual?.balance_days ?? 0).toFixed(1) }}
+                /
+                {{ Number(leaveSummary?.annual?.entitled_days ?? 0).toFixed(1) }}
+              </p>
+              <p class="mt-1 text-xs text-slate-300/70">
+                {{ Number(leaveSummary?.annual?.used_days ?? 0).toFixed(1) }} used Â·
+                Carry {{ Number(leaveSummary?.annual?.carry_forward_days ?? 0).toFixed(1) }}
+              </p>
             </div>
           </div>
         </div>
@@ -244,7 +274,7 @@ onMounted(loadDashboard);
                   {{ leave.leave_type || 'Leave request' }}
                 </p>
                 <p class="text-xs text-slate-400">
-                  {{ leave.start_date || '—' }} → {{ leave.end_date || '—' }}
+                  {{ formatDateRange(leave.start_date, leave.end_date, '—') }}
                 </p>
               </div>
               <span
@@ -267,3 +297,7 @@ onMounted(loadDashboard);
     </div>
   </div>
 </template>
+
+
+
+

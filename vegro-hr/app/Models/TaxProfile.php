@@ -14,6 +14,8 @@ class TaxProfile extends Model
         'name',
         'country_code',
         'currency',
+        'base_currency',
+        'exchange_rate_to_base',
         'paye_bands',
         'personal_relief',
         'insurance_relief_rate',

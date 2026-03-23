@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import ApexCharts from 'vue3-apexcharts';
 import apiClient from '../../api/apiClient';
+import { formatDate } from '../../utils/dateFormat';
 
 defineOptions({ name: 'SuperAdminDashboardPage' });
 
@@ -328,7 +329,7 @@ onMounted(loadDashboard);
           <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Recent Companies</p>
           <h2 class="mt-2 text-lg font-semibold">Latest onboarded</h2>
           <div class="mt-4 overflow-x-auto">
-            <table class="min-w-full text-left text-xs text-slate-200">
+            <table class="min-w-[760px] text-left text-xs text-slate-200">
               <thead class="text-[11px] uppercase text-slate-400">
                 <tr>
                   <th class="px-3 py-2">Name</th>
@@ -437,7 +438,7 @@ onMounted(loadDashboard);
         <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Companies</p>
         <h2 class="mt-2 text-lg font-semibold">Manage tenants</h2>
         <div class="mt-4 overflow-x-auto">
-          <table class="min-w-full text-left text-xs text-slate-200">
+          <table class="min-w-[760px] text-left text-xs text-slate-200">
             <thead class="text-[11px] uppercase text-slate-400">
               <tr>
                 <th class="px-3 py-2">Company</th>
@@ -559,7 +560,7 @@ onMounted(loadDashboard);
         <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Subscriptions</p>
         <h2 class="mt-2 text-lg font-semibold">Active licenses</h2>
         <div class="mt-4 overflow-x-auto">
-          <table class="min-w-full text-left text-xs text-slate-200">
+          <table class="min-w-[760px] text-left text-xs text-slate-200">
             <thead class="text-[11px] uppercase text-slate-400">
               <tr>
                 <th class="px-3 py-2">Company</th>
@@ -573,7 +574,7 @@ onMounted(loadDashboard);
                 <td class="px-3 py-2">{{ subscription.company?.name || subscription.company_id }}</td>
                 <td class="px-3 py-2">{{ subscription.plan?.name || subscription.plan_id }}</td>
                 <td class="px-3 py-2">{{ subscription.status }}</td>
-                <td class="px-3 py-2">{{ subscription.starts_at || '-' }}</td>
+                <td class="px-3 py-2">{{ formatDate(subscription.starts_at) }}</td>
               </tr>
               <tr v-if="!subscriptions.length">
                 <td class="px-3 py-4 text-sm text-slate-400" colspan="4">
@@ -588,7 +589,7 @@ onMounted(loadDashboard);
         <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Top Companies</p>
         <h2 class="mt-2 text-lg font-semibold">Users by company</h2>
         <div class="mt-4 overflow-x-auto">
-          <table class="min-w-full text-left text-xs text-slate-200">
+          <table class="min-w-[760px] text-left text-xs text-slate-200">
             <thead class="text-[11px] uppercase text-slate-400">
               <tr>
                 <th class="px-3 py-2">Company</th>
@@ -617,4 +618,6 @@ onMounted(loadDashboard);
     </div>
   </div>
 </template>
+
+
 

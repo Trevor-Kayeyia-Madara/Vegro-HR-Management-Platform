@@ -11,6 +11,11 @@ use OpenApi\Attributes as OA;
 
 class UserController extends Controller
 {
+    protected function emailVerificationRequired(): bool
+    {
+        return !app()->environment('local');
+    }
+
     protected function isProtectedAdmin(User $user): bool
     {
         $roleTitle = strtolower(trim((string) ($user->role?->title ?? '')));
@@ -117,6 +122,11 @@ class UserController extends Controller
 
         $user = User::create($validated);
         $user->load('role');
+        if ($this->emailVerificationRequired()) {
+            $user->sendEmailVerificationNotification();
+        } else {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
 
         $roleTitle = strtolower(trim((string) ($user->role?->title ?? '')));
         $roleTitle = str_replace([' ', '-', '_'], '', $roleTitle);
@@ -266,8 +276,19 @@ class UserController extends Controller
             unset($validated['password']);
         }
 
+        $emailChanged = array_key_exists('email', $validated) && $validated['email'] !== $user->email;
+
         $user->update($validated);
         $user->load('role');
+
+        if ($emailChanged) {
+            if ($this->emailVerificationRequired()) {
+                $user->forceFill(['email_verified_at' => null])->save();
+                $user->sendEmailVerificationNotification();
+            } else {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
+        }
 
         return ApiResponse::success($user, "User updated successfully");
     }

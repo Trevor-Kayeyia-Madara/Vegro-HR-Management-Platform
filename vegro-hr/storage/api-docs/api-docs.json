@@ -1081,6 +1081,72 @@
                 ]
             }
         },
+        "/api/companies/{company}": {
+            "put": {
+                "tags": [
+                    "Companies"
+                ],
+                "summary": "Update company",
+                "description": "Update company profile fields (super admin only)",
+                "operationId": "updateCompany",
+                "parameters": [
+                    {
+                        "name": "company",
+                        "in": "path",
+                        "description": "Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Acme Ltd"
+                                    },
+                                    "industry": {
+                                        "type": "string",
+                                        "example": "Manufacturing"
+                                    },
+                                    "country": {
+                                        "type": "string",
+                                        "example": "KE"
+                                    },
+                                    "environment": {
+                                        "type": "string",
+                                        "example": "production"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "active"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Company updated successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/departments": {
             "get": {
                 "tags": [
@@ -1921,6 +1987,82 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Import complete"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/lead-capture": {
+            "post": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Capture lead",
+                "description": "Capture demo waitlist leads",
+                "operationId": "leadCapture",
+                "requestBody": {
+                    "description": "Lead data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Jane Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "jane@company.com"
+                                    },
+                                    "company": {
+                                        "type": "string",
+                                        "example": "Acme Inc"
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "example": "We want payroll and reporting demo"
+                                    },
+                                    "source": {
+                                        "type": "string",
+                                        "example": "landing-page"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Lead captured successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Lead captured"
                                         },
                                         "data": {
                                             "type": "object"
@@ -4405,6 +4547,10 @@
         {
             "name": "Employees",
             "description": "Employees"
+        },
+        {
+            "name": "Leads",
+            "description": "Leads"
         },
         {
             "name": "Leave Requests",

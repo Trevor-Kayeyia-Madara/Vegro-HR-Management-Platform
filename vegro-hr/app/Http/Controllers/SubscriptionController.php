@@ -39,6 +39,7 @@ class SubscriptionController extends Controller
         $validated = $request->validate([
             'company_id' => 'required|integer|exists:companies,id',
             'plan_id' => 'required|integer|exists:plans,id',
+            'billing_cycle' => ['nullable', Rule::in(['monthly', 'annual'])],
             'status' => ['nullable', Rule::in(['trialing', 'active', 'past_due', 'canceled', 'paused'])],
             'starts_at' => 'nullable|date',
             'ends_at' => 'nullable|date',
@@ -63,6 +64,7 @@ class SubscriptionController extends Controller
     {
         $validated = $request->validate([
             'plan_id' => 'sometimes|integer|exists:plans,id',
+            'billing_cycle' => ['sometimes', Rule::in(['monthly', 'annual'])],
             'status' => ['sometimes', Rule::in(['trialing', 'active', 'past_due', 'canceled', 'paused'])],
             'starts_at' => 'sometimes|date',
             'ends_at' => 'sometimes|date',

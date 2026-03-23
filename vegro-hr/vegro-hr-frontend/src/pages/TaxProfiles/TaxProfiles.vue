@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue';
 import apiClient from '../../api/apiClient';
 
@@ -26,6 +26,8 @@ const form = ref({
   name: '',
   country_code: '',
   currency: '',
+  base_currency: '',
+  exchange_rate_to_base: '',
   personal_relief: '',
   insurance_relief_rate: '',
   insurance_relief_cap: '',
@@ -103,6 +105,8 @@ const openCreate = () => {
     name: '',
     country_code: '',
     currency: 'KES',
+    base_currency: 'USD',
+    exchange_rate_to_base: '1',
     personal_relief: '',
     insurance_relief_rate: '',
     insurance_relief_cap: '',
@@ -127,6 +131,8 @@ const openEdit = (profile) => {
     name: profile?.name || '',
     country_code: profile?.country_code || '',
     currency: profile?.currency || '',
+    base_currency: profile?.base_currency || '',
+    exchange_rate_to_base: profile?.exchange_rate_to_base ?? '',
     personal_relief: profile?.personal_relief ?? '',
     insurance_relief_rate: profile?.insurance_relief_rate ?? '',
     insurance_relief_cap: profile?.insurance_relief_cap ?? '',
@@ -170,8 +176,10 @@ const submitForm = async () => {
 
     const payload = {
       name: form.value.name,
-      country_code: form.value.country_code,
-      currency: form.value.currency,
+      country_code: String(form.value.country_code || '').toUpperCase(),
+      currency: String(form.value.currency || '').toUpperCase(),
+      base_currency: form.value.base_currency ? String(form.value.base_currency).toUpperCase() : null,
+      exchange_rate_to_base: form.value.exchange_rate_to_base === '' ? null : Number(form.value.exchange_rate_to_base),
       personal_relief: Number(form.value.personal_relief || 0),
       insurance_relief_rate: Number(form.value.insurance_relief_rate || 0),
       insurance_relief_cap: Number(form.value.insurance_relief_cap || 0),
@@ -280,14 +288,16 @@ onMounted(loadProfiles);
       </p>
 
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="max-h-130 overflow-auto">
+        <div class="max-h-[72vh] overflow-auto">
           <div class="overflow-x-auto">
-            <table class="min-w-225 w-full text-left text-xs sm:text-sm">
+            <table class="min-w-[720px] w-full text-left text-xs sm:text-sm">
             <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
               <tr>
                 <th class="px-6 py-4 font-medium">Name</th>
                 <th class="px-6 py-4 font-medium hidden md:table-cell">Country</th>
                 <th class="px-6 py-4 font-medium hidden md:table-cell">Currency</th>
+                <th class="px-6 py-4 font-medium hidden lg:table-cell">Base</th>
+                <th class="px-6 py-4 font-medium hidden lg:table-cell">FX Rate</th>
                 <th class="px-6 py-4 font-medium hidden lg:table-cell">Relief</th>
                 <th class="px-6 py-4 font-medium hidden lg:table-cell">Housing Levy</th>
                 <th class="px-6 py-4 font-medium text-right">Actions</th>
@@ -295,7 +305,7 @@ onMounted(loadProfiles);
             </thead>
             <tbody class="divide-y divide-white/5">
               <tr v-if="isLoading">
-                <td class="px-6 py-6 text-center text-slate-400" colspan="6">
+                <td class="px-6 py-6 text-center text-slate-400" colspan="8">
                   Loading tax profiles...
                 </td>
               </tr>
@@ -307,6 +317,8 @@ onMounted(loadProfiles);
                 <td class="px-6 py-4 font-medium text-slate-100">{{ profile.name }}</td>
                 <td class="px-6 py-4 text-slate-200/80 hidden md:table-cell">{{ profile.country_code }}</td>
                 <td class="px-6 py-4 text-slate-200/80 hidden md:table-cell">{{ profile.currency }}</td>
+                <td class="px-6 py-4 text-slate-200/80 hidden lg:table-cell">{{ profile.base_currency || '—' }}</td>
+                <td class="px-6 py-4 text-slate-200/80 hidden lg:table-cell">{{ profile.exchange_rate_to_base ? Number(profile.exchange_rate_to_base).toFixed(6) : '—' }}</td>
                 <td class="px-6 py-4 text-slate-200/80 hidden lg:table-cell">
                   {{ profile.personal_relief ? Number(profile.personal_relief).toLocaleString() : '—' }}
                 </td>
@@ -333,7 +345,7 @@ onMounted(loadProfiles);
                 </td>
               </tr>
               <tr v-if="!isLoading && !filteredProfiles.length">
-                <td class="px-6 py-6 text-center text-slate-400" colspan="6">
+                <td class="px-6 py-6 text-center text-slate-400" colspan="8">
                   No tax profiles found yet.
                 </td>
               </tr>
@@ -424,6 +436,26 @@ onMounted(loadProfiles);
                 maxlength="3"
                 required
                 class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white uppercase outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+              <span>Base Currency</span>
+              <input
+                v-model="form.base_currency"
+                type="text"
+                maxlength="3"
+                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white uppercase outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+              <span>FX Rate to Base</span>
+              <input
+                v-model="form.exchange_rate_to_base"
+                type="number"
+                min="0.000001"
+                step="0.000001"
+                placeholder="e.g. 0.007750"
+                class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
               />
             </label>
             <label class="flex flex-col gap-2 text-sm text-slate-200/80">
@@ -616,4 +648,9 @@ onMounted(loadProfiles);
   opacity: 0;
 }
 </style>
+
+
+
+
+
 

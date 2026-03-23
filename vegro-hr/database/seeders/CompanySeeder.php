@@ -32,5 +32,17 @@ class CompanySeeder extends Seeder
             'timezone' => 'UTC',
             'locale' => 'en',
         ]);
+
+        $starterPlanId = \App\Models\Plan::where('slug', 'starter')->value('id');
+        if ($starterPlanId) {
+            \App\Models\Subscription::updateOrCreate(
+                ['company_id' => $company->id, 'status' => 'active'],
+                [
+                    'plan_id' => $starterPlanId,
+                    'billing_cycle' => 'monthly',
+                    'starts_at' => now(),
+                ]
+            );
+        }
     }
 }

@@ -2,6 +2,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { AlertCircle, CheckCircle2 } from 'lucide-vue-next';
 import authService from '../../services/authService';
 import useAuth from '../../hooks/useAuth';
 
@@ -14,10 +15,14 @@ const email = ref('');
 const password = ref('');
 const errorMessage = ref('');
 const isSubmitting = ref(false);
+const isLoginSuccess = ref(false);
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const handleSubmit = async () => {
   errorMessage.value = '';
   isSubmitting.value = true;
+  isLoginSuccess.value = false;
 
   try {
     await authService.login({
@@ -26,6 +31,8 @@ const handleSubmit = async () => {
     });
 
     await fetchUser();
+    isLoginSuccess.value = true;
+    await wait(600);
 
     if (isAdmin.value) {
       await router.push('/dashboard/home');
@@ -61,6 +68,7 @@ const handleSubmit = async () => {
   } catch (error) {
     const apiMessage = error?.response?.data?.message;
     errorMessage.value = apiMessage || 'Login failed. Please check your credentials and try again.';
+    isLoginSuccess.value = false;
   } finally {
     isSubmitting.value = false;
   }
@@ -149,16 +157,46 @@ const handleSubmit = async () => {
             />
           </label>
 
-          <p v-if="errorMessage" class="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {{ errorMessage }}
-          </p>
+          <div class="flex justify-end">
+            <RouterLink
+              to="/forgot-password"
+              class="text-xs text-emerald-200/90 transition hover:text-emerald-100"
+            >
+              Forgot password?
+            </RouterLink>
+          </div>
+
+                    <transition name="status-fade" mode="out-in">
+            <div
+              v-if="isLoginSuccess"
+              key="success"
+              class="flex items-start gap-3 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100"
+            >
+              <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0 text-emerald-200" />
+              <div>
+                <p class="font-medium">Login successful</p>
+                <p class="mt-0.5 text-emerald-100/90">Preparing your dashboard...</p>
+              </div>
+            </div>
+            <div
+              v-else-if="errorMessage"
+              key="error"
+              class="flex items-start gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100"
+            >
+              <AlertCircle class="mt-0.5 h-4 w-4 shrink-0 text-rose-200" />
+              <div>
+                <p class="font-medium">Could not sign in</p>
+                <p class="mt-0.5 text-rose-100/90">{{ errorMessage }}</p>
+              </div>
+            </div>
+          </transition>
 
           <button
             class="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-400 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
             type="submit"
-            :disabled="isSubmitting"
+            :disabled="isSubmitting || isLoginSuccess"
           >
-            {{ isSubmitting ? 'Signing in...' : 'Continue' }}
+            {{ isLoginSuccess ? 'Success! Opening workspace...' : (isSubmitting ? 'Signing in...' : 'Continue') }}
           </button>
 
           <div class="flex items-center justify-between text-xs text-slate-300/70">
@@ -170,3 +208,18 @@ const handleSubmit = async () => {
     </div>
   </div>
 </template>
+
+
+<style scoped>
+.status-fade-enter-active,
+.status-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.status-fade-enter-from,
+.status-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>
+

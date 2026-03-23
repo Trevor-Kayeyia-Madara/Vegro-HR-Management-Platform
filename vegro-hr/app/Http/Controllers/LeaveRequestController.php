@@ -28,6 +28,17 @@ class LeaveRequestController extends Controller
         }
 
         if ($user->hasRole('manager')) {
+            $isAssignedManager = \App\Models\EmployeeManagerAssignment::where('employee_id', $leave?->employee_id)
+                ->where('manager_user_id', $user->id)
+                ->whereIn('relationship_type', ['functional', 'dotted'])
+                ->where(function ($query) {
+                    $query->whereNull('end_date')->orWhere('end_date', '>=', now()->toDateString());
+                })
+                ->exists();
+            if ($isAssignedManager) {
+                return true;
+            }
+
             $departmentId = $leave?->employee?->department_id;
             if (!$departmentId) {
                 return false;
@@ -47,6 +58,47 @@ class LeaveRequestController extends Controller
         }
 
         return \App\Models\Employee::where('user_id', $user->id)->first();
+    }
+
+    protected function userCanViewLeave($leave): bool
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->hasRole(['admin', 'hr', 'director', 'md'])) {
+            return true;
+        }
+
+        if ($user->hasRole('employee')) {
+            $employee = $this->resolveEmployeeForUser($user);
+            return $employee && (int) $leave->employee_id === (int) $employee->id;
+        }
+
+        if ($user->hasRole('manager')) {
+            $isAssignedManager = \App\Models\EmployeeManagerAssignment::where('employee_id', $leave?->employee_id)
+                ->where('manager_user_id', $user->id)
+                ->whereIn('relationship_type', ['functional', 'dotted'])
+                ->where(function ($query) {
+                    $query->whereNull('end_date')->orWhere('end_date', '>=', now()->toDateString());
+                })
+                ->exists();
+            if ($isAssignedManager) {
+                return true;
+            }
+
+            $departmentId = $leave?->employee?->department_id;
+            if (!$departmentId) {
+                return false;
+            }
+
+            return \App\Models\Department::where('id', $departmentId)
+                ->where('manager_id', $user->id)
+                ->exists();
+        }
+
+        return false;
     }
 
     #[OA\Get(
@@ -143,7 +195,13 @@ class LeaveRequestController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        $payload = $request->all();
+        $payload = $request->validate([
+            'employee_id' => ['nullable', 'integer', 'exists:employees,id'],
+            'type' => ['nullable', 'string', 'max:50'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
 
         if ($user && $user->hasRole('employee')) {
             $employee = $this->resolveEmployeeForUser($user);
@@ -168,11 +226,38 @@ class LeaveRequestController extends Controller
     {
         $user = auth()->user();
         $employee = $this->resolveEmployeeForUser($user);
-        $manager = null;
+        $managers = collect([]);
 
-        if ($employee?->department_id) {
+        if ($employee) {
+            $managers = \App\Models\EmployeeManagerAssignment::with('manager:id,name,email')
+                ->where('employee_id', $employee->id)
+                ->whereIn('relationship_type', ['functional', 'dotted'])
+                ->where(function ($query) {
+                    $query->whereNull('end_date')->orWhere('end_date', '>=', now()->toDateString());
+                })
+                ->get()
+                ->map(function ($assignment) {
+                    return [
+                        'id' => $assignment->manager?->id,
+                        'name' => $assignment->manager?->name,
+                        'email' => $assignment->manager?->email,
+                        'relationship_type' => $assignment->relationship_type,
+                    ];
+                })
+                ->filter(fn ($item) => !empty($item['id']))
+                ->values();
+        }
+
+        if ($managers->isEmpty() && $employee?->department_id) {
             $department = \App\Models\Department::with('manager')->find($employee->department_id);
-            $manager = $department?->manager;
+            if ($department?->manager) {
+                $managers = collect([[
+                    'id' => $department->manager->id,
+                    'name' => $department->manager->name,
+                    'email' => $department->manager->email,
+                    'relationship_type' => 'department',
+                ]]);
+            }
         }
 
         $hrUsers = \App\Models\User::whereHas('role', function ($query) {
@@ -184,11 +269,8 @@ class LeaveRequestController extends Controller
         })->with('role')->get(['id', 'name', 'email', 'role_id']);
 
         return ApiResponse::success([
-            'manager' => $manager ? [
-                'id' => $manager->id,
-                'name' => $manager->name,
-                'email' => $manager->email,
-            ] : null,
+            'manager' => $managers->first(),
+            'managers' => $managers,
             'hr' => $hrUsers,
             'directors' => $directors->map(function ($user) {
                 return [
@@ -234,16 +316,11 @@ class LeaveRequestController extends Controller
     public function show($id)
     {
         $leave = $this->leaveService->getLeaveById($id);
-        $user = auth()->user();
-
-        if ($user && $user->hasRole('employee')) {
-            $employee = $this->resolveEmployeeForUser($user);
-            if (!$employee || $leave->employee_id !== $employee->id) {
-                return ApiResponse::forbidden('You can only view your own leave requests');
-            }
+        if (!$this->userCanViewLeave($leave)) {
+            return ApiResponse::forbidden('You are not allowed to view this leave request');
         }
 
-        return $leave;
+        return ApiResponse::success($leave);
     }
 
     #[OA\Post(
@@ -406,13 +483,34 @@ class LeaveRequestController extends Controller
     public function getLeavesByEmployee($employeeId)
     {
         $user = auth()->user();
-        if ($user && $user->hasRole('employee')) {
-            $employee = $this->resolveEmployeeForUser($user);
-            if (!$employee || (int) $employeeId !== (int) $employee->id) {
-                return ApiResponse::forbidden('You can only view your own leave requests');
+        $employee = \App\Models\Employee::find($employeeId);
+        if (!$employee) {
+            return ApiResponse::notFound('Employee not found');
+        }
+
+        if ($user && $user->hasRole('employee') && ((int) $employeeId !== (int) $this->resolveEmployeeForUser($user)?->id)) {
+            return ApiResponse::forbidden('You can only view your own leave requests');
+        }
+
+        if ($user && $user->hasRole('manager')) {
+            $isAssignedManager = \App\Models\EmployeeManagerAssignment::where('employee_id', $employee->id)
+                ->where('manager_user_id', $user->id)
+                ->whereIn('relationship_type', ['functional', 'dotted'])
+                ->where(function ($query) {
+                    $query->whereNull('end_date')->orWhere('end_date', '>=', now()->toDateString());
+                })
+                ->exists();
+
+            $managesDepartment = \App\Models\Department::where('id', $employee->department_id)
+                ->where('manager_id', $user->id)
+                ->exists();
+
+            if (!$isAssignedManager && !$managesDepartment) {
+                return ApiResponse::forbidden('You can only view leaves for employees in your department');
             }
         }
-        return $this->leaveService->getLeavesByEmployee($employeeId);
+
+        return ApiResponse::success($this->leaveService->getLeavesByEmployee($employeeId));
     }
 
     #[OA\Get(
@@ -442,9 +540,9 @@ class LeaveRequestController extends Controller
         }
         $user = auth()->user();
         if ($user && $user->hasRole('manager')) {
-            return $this->leaveService->getLeavesForManagerByStatus($user->id, 'pending');
+            return ApiResponse::success($this->leaveService->getLeavesForManagerByStatus($user->id, 'pending'));
         }
-        return $this->leaveService->getPendingLeaves();
+        return ApiResponse::success($this->leaveService->getPendingLeaves());
     }
 
     #[OA\Get(
@@ -474,9 +572,9 @@ class LeaveRequestController extends Controller
         }
         $user = auth()->user();
         if ($user && $user->hasRole('manager')) {
-            return $this->leaveService->getLeavesForManagerByStatus($user->id, 'approved');
+            return ApiResponse::success($this->leaveService->getLeavesForManagerByStatus($user->id, 'approved'));
         }
-        return $this->leaveService->getApprovedLeaves();
+        return ApiResponse::success($this->leaveService->getApprovedLeaves());
     }
 
     #[OA\Get(
@@ -506,9 +604,9 @@ class LeaveRequestController extends Controller
         }
         $user = auth()->user();
         if ($user && $user->hasRole('manager')) {
-            return $this->leaveService->getLeavesForManagerByStatus($user->id, 'rejected');
+            return ApiResponse::success($this->leaveService->getLeavesForManagerByStatus($user->id, 'rejected'));
         }
-        return $this->leaveService->getRejectedLeaves();
+        return ApiResponse::success($this->leaveService->getRejectedLeaves());
     }
 
     #[OA\Get(

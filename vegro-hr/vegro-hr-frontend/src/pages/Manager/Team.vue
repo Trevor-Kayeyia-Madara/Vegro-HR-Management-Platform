@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue';
 import apiClient from '../../api/apiClient';
 
@@ -50,9 +50,9 @@ onMounted(loadTeam);
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/80">Manager</p>
-          <h1 class="text-3xl font-semibold">My Team</h1>
+          <h1 class="text-3xl font-semibold">Department Team</h1>
           <p class="mt-2 text-sm text-slate-300/70">
-            Department roster based on your manager assignment.
+            Employees in your managed department.
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
@@ -80,9 +80,9 @@ onMounted(loadTeam);
       </p>
 
       <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="max-h-130 overflow-auto">
+        <div class="max-h-[72vh] overflow-auto">
           <div class="overflow-x-auto">
-            <table class="min-w-200 w-full text-left text-xs sm:text-sm">
+            <table class="min-w-[640px] w-full text-left text-xs sm:text-sm">
               <thead class="sticky top-0 bg-slate-950/90 text-xs uppercase tracking-[0.24em] text-slate-400">
                 <tr>
                   <th class="px-6 py-4 font-medium">Employee</th>
@@ -100,12 +100,12 @@ onMounted(loadTeam);
                 </tr>
                 <tr v-for="member in filteredTeam" :key="member.id" class="hover:bg-white/5">
                   <td class="px-6 py-4 text-slate-100">
-                    {{ member.name || '—' }}
+                    {{ member.name || 'â€”' }}
                   </td>
-                  <td class="px-6 py-4 text-slate-300/80">{{ member.email || '—' }}</td>
-                  <td class="px-6 py-4 text-slate-300/80">{{ member.department || '—' }}</td>
+                  <td class="px-6 py-4 text-slate-300/80">{{ member.email || 'â€”' }}</td>
+                  <td class="px-6 py-4 text-slate-300/80">{{ member.department || 'â€”' }}</td>
                   <td class="px-6 py-4 text-slate-300/80">
-                    {{ (member.roles || []).join(', ') || member.role || '—' }}
+                    {{ (member.roles || []).join(', ') || member.role || 'â€”' }}
                   </td>
                   <td class="px-6 py-4">
                     <span
@@ -114,7 +114,7 @@ onMounted(loadTeam);
                         ? 'bg-emerald-400/10 text-emerald-200'
                         : 'bg-slate-400/10 text-slate-300/70'"
                     >
-                      {{ member.status || '—' }}
+                      {{ member.status || 'â€”' }}
                     </span>
                   </td>
                 </tr>
@@ -131,3 +131,4 @@ onMounted(loadTeam);
     </div>
   </div>
 </template>
+

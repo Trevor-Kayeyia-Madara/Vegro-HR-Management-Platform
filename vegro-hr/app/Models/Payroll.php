@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Concerns\AuditsModelChanges;
 
 class Payroll extends Model
 {
     use HasFactory;
     use BelongsToCompany;
+    use AuditsModelChanges;
 
     protected $fillable = [
         'company_id',
@@ -33,7 +35,19 @@ class Payroll extends Model
         'mortgage_interest',
         'deductions',
         'tax',
-        'net_salary'
+        'net_salary',
+        'status',
+        'approved_by',
+        'approved_at',
+        'approver_signature_name',
+        'approver_signature_at',
+        'approver_signature_ip',
+        'approver_signature_user_agent',
+    ];
+
+    protected $casts = [
+        'approved_at' => 'datetime',
+        'approver_signature_at' => 'datetime',
     ];
 
     // Relationship: Payroll belongs to Employee
@@ -56,5 +70,10 @@ class Payroll extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }
