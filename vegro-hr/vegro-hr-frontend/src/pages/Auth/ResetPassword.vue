@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import authService from '../../services/authService';
+import authService from '../../services/AuthService';
 
 defineOptions({ name: 'ResetPasswordPage' });
 
