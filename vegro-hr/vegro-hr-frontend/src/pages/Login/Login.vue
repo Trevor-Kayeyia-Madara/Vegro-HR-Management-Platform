@@ -3,7 +3,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { AlertCircle, CheckCircle2 } from 'lucide-vue-next';
-import authService from '../../services/authService';
+import authService from '../../services/AuthService';
 import useAuth from '../../hooks/useAuth';
 
 defineOptions({ name: 'LoginPage' });
