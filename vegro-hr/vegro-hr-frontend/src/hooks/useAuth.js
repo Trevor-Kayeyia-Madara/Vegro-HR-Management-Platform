@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import authService from '../services/authService';
+import authService from '../services/AuthService';
 
 const user = ref(null);
 const isLoading = ref(false);
