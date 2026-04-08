@@ -1,89 +1,49 @@
-# Docker Compose configuration for Laravel + MySQL + Redis
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
 
+# Here the instructions define your application as a service called "server".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
 services:
-  app:
+  server:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: vegro-app
     ports:
-      - "80:80"
-    environment:
-      - APP_NAME=VegroHR
-      - APP_ENV=production
-      - APP_DEBUG=false
-      - APP_URL=http://localhost
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_DATABASE=${DB_DATABASE:-vegro_hr}
-      - DB_USERNAME=${DB_USERNAME:-vegro}
-      - DB_PASSWORD=${DB_PASSWORD:-vegro_password}
-      - CACHE_DRIVER=redis
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - QUEUE_CONNECTION=redis
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - app-storage:/var/www/html/storage
-      - app-cache:/var/www/html/bootstrap/cache
-    networks:
-      - app-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 40s
+      - 80:80
 
-  mysql:
-    image: mysql:8.0
-    container_name: vegro-mysql
-    environment:
-      - MYSQL_DATABASE=${DB_DATABASE:-vegro_hr}
-      - MYSQL_USER=${DB_USERNAME:-vegro}
-      - MYSQL_PASSWORD=${DB_PASSWORD:-vegro_password}
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_password}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
-    networks:
-      - app-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+# The commented out section below is an example of how to define a PostgreSQL
+# database that your application can use. `depends_on` tells Docker Compose to
+# start the database before your application. The `db-data` volume persists the
+# database data between container restarts. The `db-password` secret is used
+# to set the database password. You must create `db/password.txt` and add
+# a password of your choosing to it before running `docker-compose up`.
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#   db:
+#     image: postgres
+#     restart: always
+#     user: postgres
+#     secrets:
+#       - db-password
+#     volumes:
+#       - db-data:/var/lib/postgresql/data
+#     environment:
+#       - POSTGRES_DB=example
+#       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+#     expose:
+#       - 5432
+#     healthcheck:
+#       test: [ "CMD", "pg_isready" ]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+# volumes:
+#   db-data:
+# secrets:
+#   db-password:
+#     file: db/password.txt
 
-  redis:
-    image: redis:7-alpine
-    container_name: vegro-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - app-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-
-volumes:
-  mysql-data:
-  redis-data:
-  app-storage:
-  app-cache:
-
-networks:
-  app-network:
-    driver: bridge

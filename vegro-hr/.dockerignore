@@ -6,8 +6,7 @@
 
 **/.classpath
 **/.dockerignore
-**/.env*
-!**/.env.docker
+**/.env
 **/.git
 **/.gitignore
 **/.project
@@ -23,18 +22,14 @@
 **/charts
 **/docker-compose*
 **/compose.y*ml
-!**/docker-compose.yml
 !**/composer.json
 !**/composer.lock
 **/Dockerfile*
-!**/Dockerfile
 **/node_modules
 **/npm-debug.log
 **/obj
 **/secrets.dev.yaml
 **/values.dev.yaml
 **/vendor
-**/public/build
-!**/public/build/.gitkeep
 LICENSE
-*.md
+README.md

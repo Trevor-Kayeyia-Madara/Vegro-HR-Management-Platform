@@ -1,91 +1,189 @@
-﻿# Vegro HR
+# Vegro HR
 
-Modern HR platform for employee management, payroll, attendance, and access control. Built as a portfolio-grade system with clean domain modeling, API-ready modules, and room for a rich front-end experience.
+Portfolio-grade HR platform built for long-term maintainability: a Laravel API backend, a (WIP) Vite frontend workspace, and a codebase structure that keeps business logic testable and easy to extend.
 
-**Badges**
 ![License](https://img.shields.io/badge/License-MIT-black)
-![Backend](https://img.shields.io/badge/Backend-Laravel%2010-red)
-![PHP](https://img.shields.io/badge/PHP-8-blue)
-![DB](https://img.shields.io/badge/DB-MySQL%20%2B%20MongoDB-teal)
+![Backend](https://img.shields.io/badge/Backend-Laravel%2012-red)
+![PHP](https://img.shields.io/badge/PHP-8.2-blue)
+![Frontend](https://img.shields.io/badge/Frontend-Vite%20%2B%20Vue-informational)
 
-**Highlights**
-- End-to-end HR core: employees, departments, attendance, leave, payroll, payslips
-- Role-based access with audit-friendly activity logs
-- Laravel-first architecture with clear module boundaries
-- Designed for Phase 3 UI expansion and analytics
+## Table of Contents
 
-**Project Layout**
-- `vegro-hr/` Laravel backend and core modules
-- `vegro-hr/vegro-hr-frontend/` UI workspace (in progress)
+- [Why this repo exists](#why-this-repo-exists)
+- [Architecture](#architecture)
+  - [System diagram (Mermaid)](#system-diagram-mermaid)
+  - [Maintainability principles](#maintainability-principles)
+- [Project structure](#project-structure)
+- [Developer runbook](#developer-runbook)
+  - [Backend (Laravel API)](#backend-laravel-api)
+  - [Frontend (Vite workspace)](#frontend-vite-workspace)
+  - [Secrets & environment management](#secrets--environment-management)
+- [Scaling & performance](#scaling--performance)
+- [Contributing](#contributing)
+- [Roadmap](#roadmap)
+- [License](#license)
+- [Author](#author)
 
-**Tech Stack**
-- Backend: PHP 8, Laravel 10
-- Database: MySQL (core HR), MongoDB (activity logs)
-- Auth: Laravel Breeze + Spatie Permissions
-- UI (Phase 3): Blade + Tailwind CSS / Livewire
+## Why this repo exists
 
-**Core Modules**
-- Departments: structure, managers, assignments
-- Employees: profiles, positions, salary, status
-- Attendance: clock-in/out, status tracking
-- Leave Requests: approval workflows
-- Payroll + Payslips: net salary calculation and records
-- Activity Logs: audit trail for critical actions
+Vegro HR is a learning + portfolio system that is intentionally structured like a production app:
 
-**Demo**
-- Live demo: `TBD`
-- Walkthrough video: `TBD`
+- Clear boundaries between HTTP/controllers, services, repositories, and persistence models
+- A multi-tenant API surface with role/permission checks and audit-friendly activity logs
+- Room for growth: reporting, compliance workflows, ATS modules, dashboards, and a dedicated frontend workspace
 
-**Screenshots**
-- Coming soon. I will add UI previews here.
+## Architecture
 
-**API Snapshot**
-| Module | Endpoint | Method | Description |
-|---|---|---|---|
-| Departments | `/departments` | GET | List all departments |
-| Departments | `/departments` | POST | Create a department |
-| Employees | `/employees` | GET | List all employees |
-| Payrolls | `/payrolls` | POST | Create payroll |
-| Payslips | `/payslips` | POST | Generate payslip |
-| Attendance | `/attendances` | POST | Record attendance |
-| Leave | `/leave-requests` | POST | Submit leave request |
+### System diagram (Mermaid)
 
-**Quick Start**
+```mermaid
+flowchart LR
+  U((User)) -->|Browser| FE[Frontend\nVite workspace]
+
+  FE -->|HTTPS / JSON| API[Vegro HR API\nLaravel]
+
+  API -->|Eloquent ORM| DB[(MySQL)]
+  API -->|Events / jobs| Q[Queue]
+  Q --> W[Queue workers]
+  API --> LOG[Activity logs\n(audit trail)]
+
+  subgraph Backend
+    API
+    Q
+    W
+  end
+```
+
+### Maintainability principles
+
+- **Layered flow:** `Controllers -> Services -> Repositories/Models` to keep business rules out of HTTP glue.
+- **Single-responsibility services:** domain operations live in `vegro-hr/app/Services/`.
+- **Testability:** business logic is structured to be callable without a UI, and verified via `vegro-hr/tests/`.
+- **API-first:** REST-ish endpoints in `vegro-hr/routes/api.php`, designed to serve both server-rendered and SPA clients.
+
+## Project structure
+
+High-level map (trimmed to the pieces contributors need most):
+
+```text
+.
+├─ vegro-hr/                         # Laravel backend (API + core domain)
+│  ├─ app/
+│  │  ├─ Http/Controllers/           # Request/response layer (thin)
+│  │  ├─ Services/                   # Business workflows (core logic)
+│  │  ├─ Repositories/               # Data access patterns
+│  │  └─ Models/                     # Eloquent models
+│  ├─ routes/                        # API routes and middleware wiring
+│  ├─ database/
+│  │  ├─ migrations/                 # Schema evolution
+│  │  └─ seeders/                    # Sample/dev data
+│  ├─ tests/                         # PHPUnit tests
+│  ├─ docker/                        # Container tooling (optional)
+│  ├─ docker-compose.yml
+│  └─ vegro-hr-frontend/             # UI workspace (separate app)
+├─ ROADMAP.md
+├─ LICENSE
+└─ README.md
+```
+
+## Developer runbook
+
+### Backend (Laravel API)
+
+From repo root:
+
 ```bash
-git clone https://github.com/Trevor-Kayeyia-Madara/vegro.git
-cd vegro/vegro-hr
+cd vegro-hr
 composer install
 npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+```
+
+On Windows (PowerShell), the copy step can be:
+
+```bash
+copy .env.example .env
+```
+
+Run the dev stack (API server + queue listener + logs + Vite):
+
+```bash
+composer run dev
+```
+
+Run tests:
+
+```bash
+composer test
+```
+
+Lint/format (PHP):
+
+```bash
+./vendor/bin/pint
+```
+
+Optional: generate OpenAPI/Swagger docs (if configured for your env):
+
+```bash
+php artisan l5-swagger:generate
+```
+
+### Frontend (Vite workspace)
+
+```bash
+cd vegro-hr/vegro-hr-frontend
+npm install
 npm run dev
-php artisan migrate
-php artisan db:seed
-php artisan serve
 ```
 
-**Environment**
-```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=vegro_hr
-DB_USERNAME=root
-DB_PASSWORD=
+Run frontend quality checks:
+
+```bash
+npm run lint
+npm run test:unit
+npm run test:e2e
 ```
 
-**Roadmap**
-- Phase 3 UI: modern dashboard, real-time Livewire components
-- PDF payslips and exportable reports
-- Analytics and workforce insights
+### Secrets & environment management
 
-**Notes**
-- Backend implementation details live in `vegro-hr/README.md`.
-- This repo is intended as a portfolio project; contributions are welcome.
+- **Never commit secrets**: local overrides belong in `vegro-hr/.env` and `vegro-hr/vegro-hr-frontend/.env`.
+- **Use the templates**:
+  - Backend: `vegro-hr/.env.example`, plus optional `vegro-hr/.env.demo.example` and `vegro-hr/.env.live.example`
+  - Docker profile: `vegro-hr/.env.docker`
+- **Rotation-friendly config**: prefer environment variables for credentials (DB, mail, queue, API keys).
 
-**About the Author**
-Hi, I’m Trevor Madara — a software engineer focused on building practical, well-structured products. I enjoy working on clean architecture, robust APIs, and polished user experiences. Connect with me on LinkedIn and see more of my work on GitHub.
+## Scaling & performance
+
+This project is intentionally shaped for “real app” scaling patterns:
+
+- **Stateless API scaling**: run multiple API instances behind a load balancer; keep auth tokens client-side.
+- **Queues for heavy work**: offload email, report generation, and long-running workflows to queue workers (scale workers horizontally).
+- **Database hygiene**: paginate list endpoints, avoid N+1 queries, and add indexes as data volume grows.
+- **Rate limiting**: use throttles on auth and public endpoints to reduce abuse.
+- **Observability**: keep audit logs for sensitive actions; emit structured logs for debugging and tracing.
+
+## Contributing
+
+Contributions are welcome. Please read `CONTRIBUTING.md` for:
+
+- Local setup expectations
+- Coding standards
+- PR process and checks to run before opening a pull request
+
+## Roadmap
+
+See `ROADMAP.md`.
+
+## License
+
+MIT License — free for personal and commercial use.
+
+## Author
+
+Trevor Madara
 
 - LinkedIn: `https://www.linkedin.com/in/trevor-madara/`
 - GitHub: `https://github.com/Trevor-Kayeyia-Madara`
-
-**License**
-MIT License — free for personal and commercial use.
