@@ -38,14 +38,14 @@ Vegro HR is a learning + portfolio system that is intentionally structured like 
 
 ```mermaid
 flowchart LR
-  U((User)) -->|Browser| FE[Frontend\nVite workspace]
+  U((User)) -->|Browser| FE[Frontend<br/>Vite workspace]
 
-  FE -->|HTTPS / JSON| API[Vegro HR API\nLaravel]
+  FE -->|HTTPS / JSON| API[Vegro HR API<br/>Laravel]
 
   API -->|Eloquent ORM| DB[(MySQL)]
   API -->|Events / jobs| Q[Queue]
   Q --> W[Queue workers]
-  API --> LOG[Activity logs\n(audit trail)]
+  API --> LOG[Activity logs<br/>audit trail]
 
   subgraph Backend
     API
@@ -67,23 +67,23 @@ High-level map (trimmed to the pieces contributors need most):
 
 ```text
 .
-├─ vegro-hr/                         # Laravel backend (API + core domain)
-│  ├─ app/
-│  │  ├─ Http/Controllers/           # Request/response layer (thin)
-│  │  ├─ Services/                   # Business workflows (core logic)
-│  │  ├─ Repositories/               # Data access patterns
-│  │  └─ Models/                     # Eloquent models
-│  ├─ routes/                        # API routes and middleware wiring
-│  ├─ database/
-│  │  ├─ migrations/                 # Schema evolution
-│  │  └─ seeders/                    # Sample/dev data
-│  ├─ tests/                         # PHPUnit tests
-│  ├─ docker/                        # Container tooling (optional)
-│  ├─ docker-compose.yml
-│  └─ vegro-hr-frontend/             # UI workspace (separate app)
-├─ ROADMAP.md
-├─ LICENSE
-└─ README.md
+|-- vegro-hr/                         # Laravel backend (API + core domain)
+|   |-- app/
+|   |   |-- Http/Controllers/         # Request/response layer (thin)
+|   |   |-- Services/                 # Business workflows (core logic)
+|   |   |-- Repositories/             # Data access patterns
+|   |   `-- Models/                   # Eloquent models
+|   |-- routes/                       # API routes and middleware wiring
+|   |-- database/
+|   |   |-- migrations/               # Schema evolution
+|   |   `-- seeders/                  # Sample/dev data
+|   |-- tests/                        # PHPUnit tests
+|   |-- docker/                       # Container tooling (optional)
+|   |-- docker-compose.yml
+|   `-- vegro-hr-frontend/            # UI workspace (separate app)
+|-- ROADMAP.md
+|-- LICENSE
+`-- README.md
 ```
 
 ## Developer runbook
