@@ -26,9 +26,11 @@ return new class extends Migration
         ];
 
         foreach ($tables as $table) {
-            Schema::table($table, function (Blueprint $table) {
-                $table->unsignedBigInteger('company_id')->nullable()->index();
-            });
+            if (!Schema::hasColumn($table, 'company_id')) {
+                Schema::table($table, function (Blueprint $table) {
+                    $table->unsignedBigInteger('company_id')->nullable()->index();
+                });
+            }
         }
 
         foreach ($tables as $table) {
