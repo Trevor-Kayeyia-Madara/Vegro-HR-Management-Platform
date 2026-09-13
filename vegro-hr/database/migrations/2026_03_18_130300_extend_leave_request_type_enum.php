@@ -11,7 +11,7 @@ return new class extends Migration
 
         if ($driver === 'mysql') {
             DB::statement(
-                "ALTER TABLE leave_requests MODIFY type ENUM('annual','sick','emergency','maternity','paternity','adoptive','compassionate','public_holiday') NOT NULL"
+                "ALTER TABLE leave_requests MODIFY leave_type ENUM('annual','sick','emergency','maternity','paternity','adoptive','compassionate','public_holiday') NOT NULL"
             );
         }
     }
@@ -22,7 +22,7 @@ return new class extends Migration
 
         if ($driver === 'mysql') {
             DB::statement(
-                "ALTER TABLE leave_requests MODIFY type ENUM('annual','sick','emergency') NOT NULL"
+                "ALTER TABLE leave_requests MODIFY leave_type ENUM('annual','sick','emergency') NOT NULL"
             );
         }
     }

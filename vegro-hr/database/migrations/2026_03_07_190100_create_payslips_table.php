@@ -12,14 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('payslips', function (Blueprint $table) {
-    $table->id();
-    $table->unsignedBigInteger('payroll_id');
-    $table->string('pdf_path')->nullable(); // Store PDF path
-    $table->timestamp('generated_at')->nullable();
-    $table->timestamps();
+            $table->id();
+            $table->unsignedBigInteger('payroll_id');
+            $table->string('file_path')->nullable();
+            $table->string('generated_by')->nullable();
+            $table->timestamp('generated_at')->nullable();
+            $table->unsignedBigInteger('company_id')->nullable();
+            $table->timestamps();
 
-    $table->foreign('payroll_id')->references('id')->on('payrolls')->onDelete('cascade');
-});
+            // Foreign keys will be added after all tables are created
+        });
     }
 
     /**

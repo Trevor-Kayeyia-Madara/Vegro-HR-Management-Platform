@@ -14,15 +14,19 @@ return new class extends Migration
         Schema::create('leave_requests', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('employee_id');
-            $table->enum('type', ['annual','sick','emergency']);
+            $table->enum('leave_type', ['annual', 'sick', 'maternity', 'paternity', 'compassionate', 'study', 'unpaid']);
             $table->date('start_date');
             $table->date('end_date');
-            $table->enum('status', ['pending','approved','rejected'])->default('pending');
+            $table->integer('days_requested');
+            $table->text('reason')->nullable();
+            $table->enum('status', ['pending', 'approved', 'rejected', 'cancelled'])->default('pending');
             $table->unsignedBigInteger('approved_by')->nullable();
+            $table->timestamp('approved_at')->nullable();
+            $table->text('rejection_reason')->nullable();
+            $table->unsignedBigInteger('company_id')->nullable();
             $table->timestamps();
 
-            $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
-            $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
+            // Foreign keys will be added after all tables are created
         });
     }
 

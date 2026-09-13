@@ -16,6 +16,7 @@ class Employee extends Model
     protected $fillable = [
         'company_id','employee_number','user_id','name','email','phone',
         'department_id','position','salary','hire_date','status',
+        'has_overtime','daily_overtime_hours','hourly_rate','overtime_rate_multiplier','monthly_overtime_hours',
         'annual_leave_days','annual_leave_used','annual_leave_balance'
     ];
 

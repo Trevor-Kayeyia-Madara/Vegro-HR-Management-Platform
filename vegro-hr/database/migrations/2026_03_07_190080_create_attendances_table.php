@@ -15,12 +15,16 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('employee_id');
             $table->date('date');
-            $table->time('clock_in')->nullable();
-            $table->time('clock_out')->nullable();
-            $table->enum('status', ['present', 'absent', 'late'])->default('present');
+            $table->time('check_in')->nullable();
+            $table->time('check_out')->nullable();
+            $table->decimal('hours_worked', 5, 2)->default(0);
+            $table->decimal('overtime_hours', 5, 2)->default(0);
+            $table->string('status')->default('present');
+            $table->text('notes')->nullable();
+            $table->unsignedBigInteger('company_id')->nullable();
             $table->timestamps();
 
-            $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
+            // Foreign keys will be added after all tables are created
         });
     }
 
