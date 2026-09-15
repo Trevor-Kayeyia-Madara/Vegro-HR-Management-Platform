@@ -26,6 +26,9 @@ const form = ref({
   salary: '',
   annual_leave_days: 21,
   status: 'active',
+  has_overtime: false,
+  daily_overtime_hours: 8,
+  overtime_rate_multiplier: 1.5,
 });
 
 const splitName = (name = '') => {
@@ -49,6 +52,9 @@ const populateForm = () => {
     salary: employee.salary || '',
     annual_leave_days: employee.annual_leave_days ?? 21,
     status: employee.status || 'active',
+    has_overtime: employee.has_overtime || false,
+    daily_overtime_hours: employee.daily_overtime_hours || 8,
+    overtime_rate_multiplier: employee.overtime_rate_multiplier || 1.5,
   };
 };
 
@@ -69,6 +75,9 @@ const submitForm = async () => {
       salary: Number(form.value.salary),
       annual_leave_days: Number(form.value.annual_leave_days),
       status: form.value.status,
+      has_overtime: Boolean(form.value.has_overtime),
+      daily_overtime_hours: Number(form.value.daily_overtime_hours),
+      overtime_rate_multiplier: Number(form.value.overtime_rate_multiplier),
     });
     emit('updated');
     closeModal();
@@ -162,6 +171,36 @@ watch(
               min="0"
               step="1"
               required
+              class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+            />
+          </label>
+          <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+            <span>Overtime Eligible</span>
+            <select
+              v-model="form.has_overtime"
+              class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+            >
+              <option :value="false">No</option>
+              <option :value="true">Yes</option>
+            </select>
+          </label>
+          <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+            <span>Daily Overtime Threshold (hours)</span>
+            <input
+              v-model="form.daily_overtime_hours"
+              type="number"
+              min="0"
+              step="0.5"
+              class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
+            />
+          </label>
+          <label class="flex flex-col gap-2 text-sm text-slate-200/80">
+            <span>Overtime Rate Multiplier</span>
+            <input
+              v-model="form.overtime_rate_multiplier"
+              type="number"
+              min="1"
+              step="0.1"
               class="h-11 rounded-xl border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-300/40"
             />
           </label>
