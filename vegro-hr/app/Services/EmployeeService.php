@@ -6,9 +6,12 @@ use App\Repositories\EmployeeRepository;
 use App\Models\Employee;
 use App\Models\Department;
 use App\Models\Role;
+use App\Models\User;
 use App\Helpers\CsvHelper;
 use Illuminate\Http\UploadedFile;
 use App\Services\LeaveService;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class EmployeeService
 {
@@ -68,13 +71,35 @@ class EmployeeService
 
         $employee = $this->employeeRepository->create($data);
 
+        // Create user account automatically if email is provided
+        if (!empty($data['email']) && !$employee->user_id) {
+            $temporaryPassword = Str::random(12);
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($temporaryPassword),
+                'company_id' => $data['company_id'] ?? auth()->user()?->company_id,
+            ]);
+
+            // Assign default employee role to user
+            $employeeRole = Role::where('title', 'employee')->first();
+            if ($employeeRole) {
+                $user->role_id = $employeeRole->id;
+                $user->save();
+            }
+
+            // Link user to employee
+            $employee->user_id = $user->id;
+            $employee->save();
+        }
+
         if (!empty($roleIds)) {
             $employee->roles()->sync($roleIds);
         }
 
         $this->leaveService->initializeLeaveBalancesForEmployee($employee, true);
 
-        return $employee->load(['department', 'roles']);
+        return $employee->load(['department', 'roles', 'user']);
     }
 
     public function updateEmployee(Employee $employee, array $data)
@@ -124,7 +149,7 @@ class EmployeeService
     {
         $employee = $this->employeeRepository->findById($id);
         $this->leaveService->initializeLeaveBalancesForEmployee($employee);
-        return $employee->fresh(['department', 'roles', 'leaveBalances']);
+        return $employee->fresh(['department', 'roles', 'leaveBalances', 'user']);
     }
 
     public function getEmployeeByEmail($email)
@@ -296,6 +321,10 @@ class EmployeeService
                     $this->updateEmployee($existing, $employeeData);
                     $updated++;
                 } else {
+                    // Add company_id from authenticated user if not provided
+                    if (!isset($employeeData['company_id'])) {
+                        $employeeData['company_id'] = auth()->user()?->company_id;
+                    }
                     $this->createEmployee($employeeData);
                     $created++;
                 }
