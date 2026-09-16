@@ -9,7 +9,7 @@ echo "🚀 Preparing Frontend Deployment for Two-Domain Architecture"
 echo "=============================================================="
 
 # Configuration
-API_DOMAIN="https://vegro-hr.invodtechltd.com/api"
+API_DOMAIN="https://vegro-hr.invodtechltd.com"
 FRONTEND_DOMAIN="app.vegro-hr.invodtechltd.com"
 
 echo "📋 Configuration:"
