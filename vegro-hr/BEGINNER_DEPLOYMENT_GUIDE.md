@@ -189,6 +189,8 @@
 
 ## 🔧 STEP 12: Run Setup Scripts (In Order)
 
+**Important:** These scripts are web-based alternatives to SSH commands. The storage script copies files instead of creating a symlink because shared hosting often restricts the symlink() function.
+
 ### Script 1: Generate Application Key
 1. Open a new browser tab
 2. Visit: `https://vegro-hr.invodtechltd.com/generate_key.php`
@@ -198,16 +200,14 @@
 6. Navigate to `public` folder (inside vegro-hr → public)
 7. Find and delete `generate_key.php`
 
-### Script 2: Link Storage
+### Script 2: Copy Storage Files
 1. Open a new browser tab
-2. Visit: `https://vegro-hr.invodtechltd.com/link_storage.php`
-3. **If successful:** You'll see "Storage linked successfully!"
-   - Close tab, go to File Manager, delete `link_storage.php`
-4. **If it fails:** 
-   - Go to File Manager → `public` folder
-   - Create a folder named `storage`
-   - Set permissions to 777
-   - Delete `link_storage.php`
+2. Visit: `https://vegro-hr.invodtechltd.com/copy_storage.php`
+3. **If successful:** You'll see "Storage copy completed successfully!"
+   - Close tab, go to File Manager, delete `copy_storage.php`
+4. **If it fails:**
+   - This should not fail as it copies files instead of creating a symlink
+   - If it does fail, check file permissions on the storage directories
 
 ### Script 3: Run Database Migrations
 1. Open a new browser tab
