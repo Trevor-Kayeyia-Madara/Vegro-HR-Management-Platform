@@ -15,26 +15,19 @@ return [
     |
     */
 
-    'paths' => ['api/*','/', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*','/', 'sanctum/csrf-cookie', 'api/auth/*'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => [
-        'http://localhost:5173',
-        'http://127.0.0.1:51330',
-        'https://vegrohr.invodtech.ltd',
-        'https://demo.vegrohr.invodtechltd.com',
-        'https://app.vegro-hr.invodtechltd.com',
-        'https://vegro-hr.invodtechltd.com',
-    ],
+    'allowed_origins' => ['*'],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => ['/localhost:.*/', '/127\.0\.0\.1:.*/'],
 
     'allowed_headers' => ['*'],
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    'max_age' => 86400,
 
     'supports_credentials' => true,
 
