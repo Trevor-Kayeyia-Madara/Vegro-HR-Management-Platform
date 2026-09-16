@@ -2,87 +2,152 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\ApiResponse;
-use App\Models\Company;
-use App\Models\Role;
 use App\Models\User;
+use App\Models\Company;
+use App\Services\LoginLinkService;
 use Illuminate\Http\Request;
-use OpenApi\Attributes as OA;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class SuperAdminController extends Controller
 {
-    #[OA\Get(
-        path: "/api/super/dashboard",
-        operationId: "superAdminDashboard",
-        description: "Super admin dashboard summary",
-        summary: "Super admin dashboard",
-        tags: ["Super Admin"],
-        security: [["bearerAuth" => []]],
-        responses: [
-            new OA\Response(
-                response: 200,
-                description: "Dashboard data retrieved successfully",
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "status", type: "string", example: "success"),
-                        new OA\Property(property: "message", type: "string", example: "Dashboard retrieved successfully"),
-                        new OA\Property(property: "data", type: "object")
-                    ]
-                )
-            ),
-            new OA\Response(response: 401, description: "Unauthorized"),
-            new OA\Response(response: 403, description: "Forbidden")
-        ]
-    )]
-    public function dashboard(Request $request)
+    protected $loginLinkService;
+
+    public function __construct(LoginLinkService $loginLinkService)
     {
-        $companyCount = Company::count();
-        $userCount = User::count();
-        $environmentBreakdown = Company::selectRaw('environment, COUNT(*) as total')
-            ->groupBy('environment')
-            ->pluck('total', 'environment');
+        $this->loginLinkService = $loginLinkService;
+        $this->middleware('check.api.token');
+    }
 
-        $recentCompanies = Company::orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+    /**
+     * Create a new company with admin and HR accounts
+     */
+    public function onboardCompany(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'company_name' => 'required|string|max:255',
+            'company_email' => 'required|email',
+            'company_phone' => 'required|string|max:20',
+            'admin_name' => 'required|string|max:255',
+            'admin_email' => 'required|email|unique:users,email',
+            'hr_name' => 'required|string|max:255',
+            'hr_email' => 'required|email|unique:users,email',
+        ]);
 
-        $statusBreakdown = Company::selectRaw('status, COUNT(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
-        $planBreakdown = Company::selectRaw('plan, COUNT(*) as total')
-            ->groupBy('plan')
-            ->pluck('total', 'plan');
+        // Create company
+        $company = Company::create([
+            'name' => $request->company_name,
+            'email' => $request->company_email,
+            'phone' => $request->company_phone,
+            'status' => 'active',
+        ]);
 
-        $roleBreakdown = Role::leftJoin('users', 'roles.id', '=', 'users.role_id')
-            ->selectRaw('roles.title as role, COUNT(users.id) as total')
-            ->groupBy('roles.title')
-            ->pluck('total', 'role');
+        // Create Company Admin
+        $adminPassword = Hash::make(Str::random(16));
+        $admin = User::create([
+            'name' => $request->admin_name,
+            'email' => $request->admin_email,
+            'password' => $adminPassword,
+            'company_id' => $company->id,
+            'is_super_admin' => false,
+        ]);
 
-        $recentUsers = User::with('role')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+        // Assign admin role
+        $adminRole = \App\Models\Role::where('name', 'admin')->first();
+        if ($adminRole) {
+            $admin->roles()->attach($adminRole->id);
+        }
 
-        $topCompaniesByUsers = Company::leftJoin('users', 'companies.id', '=', 'users.company_id')
-            ->selectRaw('companies.id, companies.name, companies.environment, companies.status, COUNT(users.id) as users_count')
-            ->groupBy('companies.id', 'companies.name', 'companies.environment', 'companies.status')
-            ->orderByDesc('users_count')
-            ->limit(10)
-            ->get();
+        // Create HR
+        $hrPassword = Hash::make(Str::random(16));
+        $hr = User::create([
+            'name' => $request->hr_name,
+            'email' => $request->hr_email,
+            'password' => $hrPassword,
+            'company_id' => $company->id,
+            'is_super_admin' => false,
+        ]);
 
-        return ApiResponse::success([
-            'stats' => [
-                'companies' => $companyCount,
-                'users' => $userCount,
-                'environments' => $environmentBreakdown,
-                'status' => $statusBreakdown,
-                'plans' => $planBreakdown,
-                'roles' => $roleBreakdown,
+        // Assign HR role
+        $hrRole = \App\Models\Role::where('name', 'hr')->first();
+        if ($hrRole) {
+            $hr->roles()->attach($hrRole->id);
+        }
+
+        // Generate login links
+        $adminLoginUrl = $this->loginLinkService->getLoginUrl($admin);
+        $hrLoginUrl = $this->loginLinkService->getLoginUrl($hr);
+
+        // Send login link emails (implement actual email sending)
+        $this->loginLinkService->sendLoginLinkEmail($admin);
+        $this->loginLinkService->sendLoginLinkEmail($hr);
+
+        return response()->json([
+            'message' => 'Company onboarded successfully',
+            'company' => $company,
+            'admin' => [
+                'user' => $admin,
+                'login_url' => $adminLoginUrl,
+                'expires_in_hours' => 24,
             ],
-            'recent_companies' => $recentCompanies,
-            'recent_users' => $recentUsers,
-            'top_companies_by_users' => $topCompaniesByUsers,
-        ], 'Dashboard retrieved successfully');
+            'hr' => [
+                'user' => $hr,
+                'login_url' => $hrLoginUrl,
+                'expires_in_hours' => 24,
+            ],
+        ], 201);
+    }
+
+    /**
+     * Get all companies (super admin only)
+     */
+    public function getAllCompanies()
+    {
+        $companies = Company::with(['users' => function ($query) {
+            $query->with('roles');
+        }])->get();
+
+        return response()->json([
+            'companies' => $companies,
+        ]);
+    }
+
+    /**
+     * Create super admin account
+     */
+    public function createSuperAdmin(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $superAdmin = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'is_super_admin' => true,
+        ]);
+
+        // Assign super admin role if it exists
+        $superAdminRole = \App\Models\Role::where('name', 'super_admin')->first();
+        if ($superAdminRole) {
+            $superAdmin->roles()->attach($superAdminRole->id);
+        }
+
+        return response()->json([
+            'message' => 'Super admin created successfully',
+            'user' => $superAdmin,
+        ], 201);
     }
 }

@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Helpers\CsvHelper;
 use Illuminate\Http\UploadedFile;
 use App\Services\LeaveService;
+use App\Services\LoginLinkService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -17,11 +18,13 @@ class EmployeeService
 {
     protected $employeeRepository;
     protected LeaveService $leaveService;
+    protected LoginLinkService $loginLinkService;
 
-    public function __construct(EmployeeRepository $employeeRepository, LeaveService $leaveService)
+    public function __construct(EmployeeRepository $employeeRepository, LeaveService $leaveService, LoginLinkService $loginLinkService)
     {
         $this->employeeRepository = $employeeRepository;
         $this->leaveService = $leaveService;
+        $this->loginLinkService = $loginLinkService;
     }
 
     public function getAllEmployees()
@@ -91,6 +94,17 @@ class EmployeeService
             // Link user to employee
             $employee->user_id = $user->id;
             $employee->save();
+
+            // Generate and send login link to employee
+            try {
+                $loginUrl = $this->loginLinkService->getLoginUrl($user);
+                $this->loginLinkService->sendLoginLinkEmail($user);
+                
+                // Return login URL in response for testing/development
+                $employee->login_url = $loginUrl;
+            } catch (\Exception $e) {
+                \Log::error('Failed to send login link to employee: ' . $e->getMessage());
+            }
         }
 
         if (!empty($roleIds)) {

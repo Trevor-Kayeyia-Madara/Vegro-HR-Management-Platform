@@ -35,10 +35,10 @@ Route::get('/', function () {
 });
 
 // Authentication Routes
-Route::post('/auth/register', 'App\Http\Controllers\AuthController@store')->middleware(['tenant.domain', 'throttle:10,1']);
-Route::post('/auth/login', 'App\Http\Controllers\AuthController@login')->middleware(['tenant.domain', 'throttle:10,1']);
-Route::post('/auth/forgot-password', 'App\Http\Controllers\AuthController@forgotPassword')->middleware(['tenant.domain', 'throttle:5,1']);
-Route::post('/auth/reset-password', 'App\Http\Controllers\AuthController@resetPassword')->middleware(['tenant.domain', 'throttle:10,1']);
+Route::post('/auth/register', 'App\Http\Controllers\AuthController@store')->middleware(['throttle:10,1']);
+Route::post('/auth/login', 'App\Http\Controllers\AuthController@login')->middleware(['throttle:10,1']);
+Route::post('/auth/forgot-password', 'App\Http\Controllers\AuthController@forgotPassword')->middleware(['throttle:5,1']);
+Route::post('/auth/reset-password', 'App\Http\Controllers\AuthController@resetPassword')->middleware(['throttle:10,1']);
 Route::post('/auth/logout', 'App\Http\Controllers\AuthController@logout')->middleware('check.api.token');
 Route::get('/auth/me', 'App\Http\Controllers\AuthController@me')->middleware('check.api.token');
 Route::patch('/auth/me', 'App\Http\Controllers\AuthController@updateMe')->middleware('check.api.token');
@@ -47,9 +47,22 @@ Route::get('/auth/email/verify/{id}/{hash}', 'App\Http\Controllers\AuthControlle
     ->middleware(['signed', 'throttle:6,1'])
     ->name('verification.verify');
 
+// Login Link Routes
+Route::post('/auth/login-link/send', 'App\Http\Controllers\LoginLinkController@sendLoginLink')->middleware(['throttle:5,1']);
+Route::post('/auth/login-link/generate', 'App\Http\Controllers\LoginLinkController@generateLoginLinkForUser')->middleware('check.api.token');
+Route::get('/login-link/{token}', 'App\Http\Controllers\LoginLinkController@loginWithLink');
+
+// Super Admin Routes
+Route::post('/super-admin/onboard-company', 'App\Http\Controllers\SuperAdminController@onboardCompany')->middleware('check.api.token');
+Route::get('/super-admin/companies', 'App\Http\Controllers\SuperAdminController@getAllCompanies')->middleware('check.api.token');
+Route::post('/super-admin/create', 'App\Http\Controllers\SuperAdminController@createSuperAdmin')->middleware(['throttle:5,1']);
+
 // Public lead capture (email waitlist)
 Route::post('/lead-capture', 'App\Http\Controllers\LeadCaptureController@store');
 Route::get('/public/plans', 'App\Http\Controllers\PlanController@publicIndex')->middleware('throttle:60,1');
+
+// Public endpoint for overtime calculation (read-only for payroll auto-calculation)
+Route::get('/attendances/calculate-overtime', 'App\Http\Controllers\AttendanceController@calculateOvertime');
 
 // Shared authenticated routes (available to superadmin and tenant users)
 Route::middleware(['check.api.token'])->group(function () {
@@ -86,7 +99,7 @@ Route::middleware(['check.api.token', 'superadmin'])->group(function () {
 });
 
 // Protected Routes (require authentication)
-Route::middleware(['check.api.token', 'tenant.domain', 'tenant', 'tenant.env'])->group(function () {
+Route::middleware(['check.api.token', 'tenant', 'tenant.env'])->group(function () {
     Route::get('/departments', 'App\Http\Controllers\DepartmentController@index')->middleware('role:admin,hr,director,md');
     Route::get('/departments/{department}', 'App\Http\Controllers\DepartmentController@show')->middleware('role:admin,hr,director,md');
     Route::post('/departments', 'App\Http\Controllers\DepartmentController@store')->middleware('role:admin,hr');
@@ -161,6 +174,12 @@ Route::middleware(['check.api.token', 'tenant.domain', 'tenant', 'tenant.env'])-
     Route::post('/payslips/{id}/approve', 'App\Http\Controllers\PayslipController@approve')->middleware('role:admin,hr,finance,manager');
     Route::post('/payslips/{id}/issue', 'App\Http\Controllers\PayslipController@issue')->middleware('role:admin,hr,finance');
     
+    // Payslip Settings
+    Route::get('/payslip-settings', 'App\Http\Controllers\PayslipSettingController@index')->middleware('role:admin,hr,finance');
+    Route::put('/payslip-settings', 'App\Http\Controllers\PayslipSettingController@update')->middleware('role:admin,hr,finance');
+    Route::post('/payslip-settings/logo', 'App\Http\Controllers\PayslipSettingController@uploadLogo')->middleware('role:admin,hr,finance');
+    Route::delete('/payslip-settings/logo', 'App\Http\Controllers\PayslipSettingController@deleteLogo')->middleware('role:admin,hr,finance');
+    
     Route::apiResource('attendances', 'App\Http\Controllers\AttendanceController')->middleware('role:admin,hr,manager');
     Route::get('/attendances/export/csv', 'App\Http\Controllers\AttendanceController@exportToCSV')->middleware('role:admin,HR,manager');
     Route::post('/attendances/import/csv', 'App\Http\Controllers\AttendanceController@importFromCSV')->middleware('role:admin,HR,manager');
@@ -204,7 +223,7 @@ Route::middleware(['check.api.token', 'tenant.domain', 'tenant', 'tenant.env'])-
     Route::get('/roles/permissions/matrix', 'App\Http\Controllers\RoleController@permissionsMatrix')->middleware('role:admin');
     Route::put('/roles/{role}/permissions', 'App\Http\Controllers\RoleController@updatePermissions')->middleware('role:admin');
     Route::apiResource('roles', 'App\Http\Controllers\RoleController')->middleware('role:admin');
-    Route::apiResource('users', 'App\Http\Controllers\UserController')->middleware('role:admin');
+    Route::apiResource('users', 'App\Http\Controllers\UserController')->middleware('role:admin,hr');
     Route::apiResource('tax-profiles', 'App\Http\Controllers\TaxProfileController')->middleware('role:admin,finance');
     Route::post('/roles/{role}/users/{user}', 'App\Http\Controllers\RoleController@assignUserByRoute')->middleware('role:admin');
 
