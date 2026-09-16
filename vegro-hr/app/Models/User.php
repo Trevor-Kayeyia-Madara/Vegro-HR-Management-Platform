@@ -21,6 +21,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'role_id',
         'company_id',
+        'is_super_admin',
     ];
 
     protected $hidden = [
@@ -32,7 +33,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
     ];
 
-    public function role() { return $this->belongsTo(Role::class); }    
+    public function role() { return $this->belongsTo(Role::class); }
+    public function roles() { return $this->belongsToMany(Role::class); }
     public function employee() { return $this->hasOne(Employee::class); }
     public function notifications() { return $this->hasMany(InAppNotification::class); }
     public function chatConversations()

@@ -17,7 +17,7 @@ class SuperAdminController extends Controller
     public function __construct(LoginLinkService $loginLinkService)
     {
         $this->loginLinkService = $loginLinkService;
-        $this->middleware('check.api.token');
+        $this->middleware('check.api.token')->except(['createSuperAdmin']);
     }
 
     /**

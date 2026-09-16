@@ -53,9 +53,9 @@ Route::post('/auth/login-link/generate', 'App\Http\Controllers\LoginLinkControll
 Route::get('/login-link/{token}', 'App\Http\Controllers\LoginLinkController@loginWithLink');
 
 // Super Admin Routes
+Route::post('/super-admin/create', 'App\Http\Controllers\SuperAdminController@createSuperAdmin')->middleware(['throttle:5,1']);
 Route::post('/super-admin/onboard-company', 'App\Http\Controllers\SuperAdminController@onboardCompany')->middleware('check.api.token');
 Route::get('/super-admin/companies', 'App\Http\Controllers\SuperAdminController@getAllCompanies')->middleware('check.api.token');
-Route::post('/super-admin/create', 'App\Http\Controllers\SuperAdminController@createSuperAdmin')->middleware(['throttle:5,1']);
 
 // Public lead capture (email waitlist)
 Route::post('/lead-capture', 'App\Http\Controllers\LeadCaptureController@store');
