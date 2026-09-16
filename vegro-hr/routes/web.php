@@ -41,7 +41,15 @@ Route::get('/deploy', function () {
 });
 */
 Route::get('/', function () {
-    $base = rtrim(config('app.url'), '/'); // Get APP_URL from .env
+    // Serve the Vue.js frontend
+    $frontendPath = public_path('vegro-hr-frontend/dist/index.html');
+
+    if (file_exists($frontendPath)) {
+        return file_get_contents($frontendPath);
+    }
+
+    // Fallback to API info if frontend not found
+    $base = rtrim(config('app.url'), '/');
 
     return response()->json([
         'message' => 'Welcome to Vegro HR API',
@@ -62,3 +70,39 @@ Route::get('/', function () {
         ]
     ]);
 });
+
+// Serve Vue.js frontend assets
+Route::get('/{path}', function ($path) {
+    $frontendPath = public_path('vegro-hr-frontend/dist/' . $path);
+
+    if (file_exists($frontendPath)) {
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+        $mimeTypes = [
+            'js' => 'application/javascript',
+            'css' => 'text/css',
+            'html' => 'text/html',
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'svg' => 'image/svg+xml',
+            'ico' => 'image/x-icon',
+            'woff' => 'font/woff',
+            'woff2' => 'font/woff2',
+            'ttf' => 'font/ttf',
+            'eot' => 'application/vnd.ms-fontobject',
+        ];
+
+        $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
+
+        return response()->file($frontendPath, ['Content-Type' => $mimeType]);
+    }
+
+    // For SPA routing, return index.html for non-existent routes
+    $indexPath = public_path('vegro-hr-frontend/dist/index.html');
+    if (file_exists($indexPath)) {
+        return file_get_contents($indexPath);
+    }
+
+    return abort(404);
+})->where('path', '.*');
