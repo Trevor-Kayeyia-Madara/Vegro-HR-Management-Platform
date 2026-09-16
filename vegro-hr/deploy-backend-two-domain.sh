@@ -179,6 +179,9 @@ tar -czf backend-two-domain.tar.gz \
   --exclude='*.postman_collection.json' \
   --exclude='node_modules' \
   --exclude='vegro-hr-frontend' \
+  --exclude='*.md' \
+  --exclude='*.MD' \
+  --exclude='deploy-*.sh' \
   .
 echo "✅ Backend archive created: backend-two-domain.tar.gz"
 echo ""

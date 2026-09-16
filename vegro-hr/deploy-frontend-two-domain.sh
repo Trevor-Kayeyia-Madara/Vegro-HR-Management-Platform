@@ -30,7 +30,7 @@ echo ""
 # Step 2: Create frontend deployment package
 echo "📦 Creating frontend deployment package..."
 cd vegro-hr-frontend/dist
-tar -czf ../../frontend-two-domain.tar.gz .
+tar -czf ../../frontend-two-domain.tar.gz --exclude='*.md' --exclude='*.MD' .
 cd ../..
 echo "✅ Frontend archive created: frontend-two-domain.tar.gz"
 echo ""
