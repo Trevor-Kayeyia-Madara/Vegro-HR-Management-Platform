@@ -29,13 +29,19 @@ Thumbs.db
 # Deployment files (sensitive info)
 deploy-directadmin.sh
 deploy-no-ssh.sh
+deploy-frontend.sh
+backend-update.sh
 DEPLOYMENT_GUIDE.md
 DEPLOYMENT_NO_SSH.md
 QUICK_DEPLOY.md
 QUICK_DEPLOY_NO_SSH.md
+TWO_DOMAIN_DEPLOYMENT.md
 .htaccess.production
+frontend-htaccess
 migration.sql
 vegro-hr-complete.tar.gz
+frontend-deploy.tar.gz
+backend-update.tar.gz
 public/generate_key.php
 public/link_storage.php
 public/migrate.php
