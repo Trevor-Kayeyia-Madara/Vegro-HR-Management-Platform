@@ -24,6 +24,7 @@ return [
         'http://127.0.0.1:51330',
         'https://vegrohr.invodtech.ltd',
         'https://demo.vegrohr.invodtechltd.com',
+        'https://app.vegro-hr.invodtechltd.com',
         'https://vegro-hr.invodtechltd.com',
     ],
 
