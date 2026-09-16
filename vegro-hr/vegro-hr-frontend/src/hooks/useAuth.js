@@ -24,7 +24,10 @@ const roleTitle = computed(() =>
   normalizeRole(user.value?.role?.title || user.value?.role?.name || user.value?.role),
 );
 
-const isSuperAdmin = computed(() => roleTitle.value === 'superadmin');
+const isSuperAdmin = computed(() => {
+  // Check both the is_super_admin flag and the role title
+  return user.value?.is_super_admin === true || user.value?.is_super_admin === 1 || roleTitle.value === 'superadmin';
+});
 const isAdmin = computed(() => roleTitle.value === 'admin');
 
 const permissions = computed(() => user.value?.role?.permissions || []);

@@ -96,8 +96,13 @@ try {
     Artisan::call('migrate', ['--force' => true]);
     echo "Migration completed successfully!\n";
     echo Artisan::output();
+    
+    // Seed roles and permissions
+    Artisan::call('db:seed', ['--force' => true]);
+    echo "Database seeding completed successfully!\n";
+    echo Artisan::output();
 } catch (Exception $e) {
-    echo "Migration failed: " . $e->getMessage() . "\n";
+    echo "Migration/Seeding failed: " . $e->getMessage() . "\n";
 }
 PHPEOF
 
@@ -229,6 +234,37 @@ try {
 }
 PHPEOF
 
+# Email verification fix
+cat > public/fix_email_verification.php << 'PHPEOF'
+<?php
+require __DIR__.'/../vendor/autoload.php';
+
+$app = require_once __DIR__.'/../bootstrap/app.php';
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+echo "=== Email Verification Fix Script ===\n\n";
+
+try {
+    $updated = \App\Models\User::where('is_super_admin', true)
+        ->whereNull('email_verified_at')
+        ->update(['email_verified_at' => now()]);
+
+    echo "✓ Updated $updated super admin(s) with email verification\n";
+
+    $updatedUsers = \App\Models\User::whereNull('email_verified_at')
+        ->where('created_at', '>=', now()->subDays(1))
+        ->update(['email_verified_at' => now()]);
+
+    echo "✓ Updated $updatedUsers user(s) created in last 24 hours\n";
+    echo "\n✓ Email verification fix completed successfully!\n";
+    echo "\nIMPORTANT: Delete this script after use for security.\n";
+
+} catch (Exception $e) {
+    echo "✗ Error: " . $e->getMessage() . "\n";
+    exit(1);
+}
+PHPEOF
+
 echo "✅ Web-based helper scripts created"
 echo ""
 
@@ -282,6 +318,7 @@ echo "   - https://$DOMAIN/generate_key.php"
 echo "   - https://$DOMAIN/copy_storage.php"
 echo "   - https://$DOMAIN/migrate.php"
 echo "   - https://$DOMAIN/clear_cache.php"
+echo "   - https://$DOMAIN/fix_email_verification.php (if users exist before fix)"
 echo "8. Delete the helper scripts after successful deployment"
 echo ""
 echo "📋 Frontend Deployment:"

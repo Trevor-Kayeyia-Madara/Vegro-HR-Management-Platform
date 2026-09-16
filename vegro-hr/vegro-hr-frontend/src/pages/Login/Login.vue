@@ -9,7 +9,7 @@ import useAuth from '../../hooks/useAuth';
 defineOptions({ name: 'LoginPage' });
 
 const router = useRouter();
-const { fetchUser, roleTitle, user, isAdmin, hasRole } = useAuth();
+const { fetchUser, roleTitle, user, isAdmin, hasRole, isSuperAdmin } = useAuth();
 
 const email = ref('');
 const password = ref('');
@@ -33,6 +33,12 @@ const handleSubmit = async () => {
     await fetchUser();
     isLoginSuccess.value = true;
     await wait(600);
+
+    // Handle super admin routing
+    if (isSuperAdmin.value) {
+      await router.push('/dashboard/home');
+      return;
+    }
 
     if (isAdmin.value) {
       await router.push('/dashboard/home');
