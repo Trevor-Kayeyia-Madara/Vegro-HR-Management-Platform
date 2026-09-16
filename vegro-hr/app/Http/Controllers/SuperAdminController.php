@@ -57,8 +57,8 @@ class SuperAdminController extends Controller
             'is_super_admin' => false,
         ]);
 
-        // Assign admin role
-        $adminRole = \App\Models\Role::where('name', 'admin')->first();
+        // Assign admin role to user
+        $adminRole = \App\Models\Role::where('title', 'admin')->first();
         if ($adminRole) {
             $admin->roles()->attach($adminRole->id);
         }
@@ -73,8 +73,8 @@ class SuperAdminController extends Controller
             'is_super_admin' => false,
         ]);
 
-        // Assign HR role
-        $hrRole = \App\Models\Role::where('name', 'hr')->first();
+        // Assign HR role to user
+        $hrRole = \App\Models\Role::where('title', 'hr')->first();
         if ($hrRole) {
             $hr->roles()->attach($hrRole->id);
         }
@@ -140,7 +140,7 @@ class SuperAdminController extends Controller
         ]);
 
         // Assign super admin role if it exists
-        $superAdminRole = \App\Models\Role::where('name', 'super_admin')->first();
+        $superAdminRole = \App\Models\Role::where('title', 'super_admin')->first();
         if ($superAdminRole) {
             $superAdmin->roles()->attach($superAdminRole->id);
         }
