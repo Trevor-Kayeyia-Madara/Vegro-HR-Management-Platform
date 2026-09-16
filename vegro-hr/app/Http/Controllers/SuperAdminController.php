@@ -49,6 +49,7 @@ class SuperAdminController extends Controller
             'password' => $adminPassword,
             'company_id' => $company->id,
             'is_super_admin' => false,
+            'email_verified_at' => now(),
         ]);
 
         // Assign admin role to user
@@ -65,6 +66,7 @@ class SuperAdminController extends Controller
             'password' => $hrPassword,
             'company_id' => $company->id,
             'is_super_admin' => false,
+            'email_verified_at' => now(),
         ]);
 
         // Assign HR role to user
@@ -132,6 +134,7 @@ class SuperAdminController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'is_super_admin' => true,
+            'email_verified_at' => now(),
         ]);
 
         // Assign super admin role if it exists

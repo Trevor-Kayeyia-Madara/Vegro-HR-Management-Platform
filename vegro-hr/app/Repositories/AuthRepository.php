@@ -60,6 +60,11 @@ class AuthRepository
             $roleTitle = str_replace([' ', '-', '_'], '', $roleTitle);
             $verificationExempt = in_array($roleTitle, ['superadmin', 'companyadmin', 'admin', 'companyadministrator'], true);
 
+            // Super admins are always exempt from email verification
+            if ($user->is_super_admin) {
+                $verificationExempt = true;
+            }
+
             if ($emailVerificationRequired && !$verificationExempt && is_null($user->email_verified_at)) {
                 return ['error' => 'Please verify your email before logging in.'];
             }

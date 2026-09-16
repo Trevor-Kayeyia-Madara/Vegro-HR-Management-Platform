@@ -82,6 +82,7 @@ class EmployeeService
                 'email' => $data['email'],
                 'password' => Hash::make($temporaryPassword),
                 'company_id' => $data['company_id'] ?? auth()->user()?->company_id,
+                'email_verified_at' => now(),
             ]);
 
             // Assign default employee role to user
