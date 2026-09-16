@@ -27,6 +27,12 @@ class RequireSuperAdmin
             ], 401);
         }
 
+        // Check is_super_admin flag first (primary check)
+        if ($user->is_super_admin === true || $user->is_super_admin === 1) {
+            return $next($request);
+        }
+
+        // Fallback to role title check
         $userRoleTitle = $user->role?->title;
         if (!$userRoleTitle && $user->role_id) {
             $userRoleTitle = Role::where('id', $user->role_id)->value('title');
