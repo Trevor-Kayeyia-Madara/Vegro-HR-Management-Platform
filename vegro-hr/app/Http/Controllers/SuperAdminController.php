@@ -12,19 +12,13 @@ use Illuminate\Support\Str;
 
 class SuperAdminController extends Controller
 {
-    protected $loginLinkService;
-
-    public function __construct(LoginLinkService $loginLinkService)
-    {
-        $this->loginLinkService = $loginLinkService;
-        $this->middleware('check.api.token')->except(['createSuperAdmin']);
-    }
-
     /**
      * Create a new company with admin and HR accounts
      */
     public function onboardCompany(Request $request)
     {
+        $this->middleware('check.api.token');
+
         $validator = Validator::make($request->all(), [
             'company_name' => 'required|string|max:255',
             'company_email' => 'required|email',
@@ -80,12 +74,13 @@ class SuperAdminController extends Controller
         }
 
         // Generate login links
-        $adminLoginUrl = $this->loginLinkService->getLoginUrl($admin);
-        $hrLoginUrl = $this->loginLinkService->getLoginUrl($hr);
+        $loginLinkService = app(\App\Services\LoginLinkService::class);
+        $adminLoginUrl = $loginLinkService->getLoginUrl($admin);
+        $hrLoginUrl = $loginLinkService->getLoginUrl($hr);
 
         // Send login link emails (implement actual email sending)
-        $this->loginLinkService->sendLoginLinkEmail($admin);
-        $this->loginLinkService->sendLoginLinkEmail($hr);
+        $loginLinkService->sendLoginLinkEmail($admin);
+        $loginLinkService->sendLoginLinkEmail($hr);
 
         return response()->json([
             'message' => 'Company onboarded successfully',
