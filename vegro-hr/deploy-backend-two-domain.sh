@@ -75,10 +75,9 @@ EOF
 echo "✅ Production .env created"
 echo ""
 
-# Step 4: Generate migration SQL
-echo "🗄️  Generating migration SQL..."
-php artisan migrate --pretend > migration.sql
-echo "✅ Migration SQL generated: migration.sql"
+# Step 4: Skip migration SQL generation (migrations will run via web script)
+echo "🗄️  Skipping migration SQL generation (migrations will run via web script)..."
+echo "✅ Migration generation skipped"
 echo ""
 
 # Step 5: Create web-based helper scripts
