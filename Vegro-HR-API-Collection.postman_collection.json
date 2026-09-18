@@ -1,0 +1,127 @@
+{
+  "info": {
+    "name": "Vegro HR API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Super Admin",
+      "item": [
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/super/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "super", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Onboard Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Test Company\",\n  \"company_email\": \"test@example.com\",\n  \"company_phone\": \"+254700000000\",\n  \"admin_name\": \"Test Admin\",\n  \"admin_email\": \"admin@test.com\",\n  \"hr_name\": \"Test HR\",\n  \"hr_email\": \"hr@test.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/super-admin/onboard-company",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "super-admin", "onboard-company"]
+            }
+          }
+        },
+        {
+          "name": "Get Companies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "companies"]
+            }
+          }
+        },
+        {
+          "name": "Get Plans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plans"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://vegro-hr.invodtechltd.com",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

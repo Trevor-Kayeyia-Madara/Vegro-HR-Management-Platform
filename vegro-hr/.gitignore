@@ -59,7 +59,7 @@ public/clear_cache.php
 # Postman and API collections
 .postman/
 postman/
-Vegro-HR-API-Collection.postman_collection.json
+*.postman_collection.json
 
 # Kilo IDE
 .kilo/
