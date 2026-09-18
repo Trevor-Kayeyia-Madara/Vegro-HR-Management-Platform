@@ -48,12 +48,9 @@ frontend-htaccess
 .env.backend
 .env.production
 migration.sql
-vegro-hr-complete.tar.gz
-frontend-deploy.tar.gz
-frontend-two-domain.tar.gz
-backend-update.tar.gz
-backend-fresh.tar.gz
-backend-two-domain.tar.gz
+*.tar.gz
+*.zip
+dist/
 public/generate_key.php
 public/link_storage.php
 public/migrate.php
