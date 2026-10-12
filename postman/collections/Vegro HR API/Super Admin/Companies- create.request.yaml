@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Companies: create"
-url: "{{base_url}}/api/companies"
-method: POST
-body:
-  type: json
-  content: '{"name":"Example Company","domain":"example.com"}'
-order: 6000

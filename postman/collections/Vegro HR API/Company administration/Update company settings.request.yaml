@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/company/admin/settings"
-method: PUT
-body:
-  type: json
-  content: '{"name":"Example Company"}'
-order: 3000

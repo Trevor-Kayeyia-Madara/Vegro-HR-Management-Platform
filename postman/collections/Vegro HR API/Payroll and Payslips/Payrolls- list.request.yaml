@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Payrolls: list"
-url: "{{base_url}}/api/payrolls"
-method: GET
-order: 1000

@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/projects/{{project_id}}/members"
-method: POST
-body:
-  type: json
-  content: '{"employee_id":{{employee_id}}}'
-order: 6000

@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Jobs: create"
-url: "{{base_url}}/api/ats/jobs"
-method: POST
-body:
-  type: json
-  content: '{"title":"Software Engineer","department_id":{{department_id}}}'
-order: 2000

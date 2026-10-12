@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Applications: show"
-url: "{{base_url}}/api/ats/applications/{{application_id}}"
-method: GET
-order: 13000

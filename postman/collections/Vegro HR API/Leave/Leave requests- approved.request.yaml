@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Leave requests: approved"
-url: "{{base_url}}/api/leave-requests/approved"
-method: GET
-order: 2000

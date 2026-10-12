@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Candidates: list"
-url: "{{base_url}}/api/ats/candidates"
-method: GET
-order: 6000

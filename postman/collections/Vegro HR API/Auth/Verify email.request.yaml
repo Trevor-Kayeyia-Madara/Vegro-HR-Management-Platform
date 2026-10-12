@@ -1,9 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/auth/email/verify/{{user_id}}/{{verification_hash}}?expires={{expires}}&signature={{signature}}"
-method: GET
-queryParams:
-  expires: "{{expires}}"
-  signature: "{{signature}}"
-auth:
-  type: noauth
-order: 9000

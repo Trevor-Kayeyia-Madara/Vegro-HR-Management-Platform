@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/dashboards/{{dashboard_id}}/widgets/{{widget_id}}"
-method: DELETE
-order: 21000

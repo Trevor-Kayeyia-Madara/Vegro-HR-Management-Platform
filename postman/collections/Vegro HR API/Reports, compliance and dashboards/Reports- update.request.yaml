@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Reports: update"
-url: "{{base_url}}/api/reports/{{report_id}}"
-method: PUT
-body:
-  type: json
-  content: '{"name":"Employee report"}'
-order: 7000

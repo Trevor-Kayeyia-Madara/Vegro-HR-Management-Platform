@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Payslip logo: delete"
-url: "{{base_url}}/api/payslip-settings/logo"
-method: DELETE
-order: 21000

@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/super/dashboard"
-method: GET
-order: 4000

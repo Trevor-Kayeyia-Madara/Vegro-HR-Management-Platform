@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/onboarding/assignments"
-method: POST
-body:
-  type: json
-  content: '{"template_id":{{template_id}},"employee_id":{{employee_id}}}'
-order: 14000

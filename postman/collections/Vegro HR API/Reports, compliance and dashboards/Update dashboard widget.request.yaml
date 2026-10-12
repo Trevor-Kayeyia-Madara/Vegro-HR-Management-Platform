@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/dashboards/{{dashboard_id}}/widgets/{{widget_id}}"
-method: PUT
-body:
-  type: json
-  content: '{"config":{}}'
-order: 20000

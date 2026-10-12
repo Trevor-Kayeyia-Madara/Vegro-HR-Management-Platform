@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/onboarding/assignments/{{assignment_id}}/sign"
-method: POST
-body:
-  type: json
-  content: '{"signature":"Jane Doe"}'
-order: 16000

@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Feedback: create"
-url: "{{base_url}}/api/feedback"
-method: POST
-body:
-  type: json
-  content: '{"employee_id":{{employee_id}},"content":"Great work"}'
-order: 6000

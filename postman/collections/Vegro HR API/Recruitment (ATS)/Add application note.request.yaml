@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/ats/applications/{{application_id}}/notes"
-method: POST
-body:
-  type: json
-  content: '{"note":"Strong candidate"}'
-order: 16000

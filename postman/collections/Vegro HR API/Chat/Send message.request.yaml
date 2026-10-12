@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/chat/conversations/{{conversation_id}}/messages"
-method: POST
-body:
-  type: json
-  content: '{"message":"Hello from Postman"}'
-order: 6000

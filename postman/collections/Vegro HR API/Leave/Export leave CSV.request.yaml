@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/leave-requests/export/csv"
-method: GET
-order: 9000

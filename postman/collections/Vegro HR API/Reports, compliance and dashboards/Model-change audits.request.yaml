@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/audits/model-changes"
-method: GET
-order: 12000

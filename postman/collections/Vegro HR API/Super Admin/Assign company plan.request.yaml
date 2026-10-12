@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/admin/companies/{{company_id}}/assign-plan"
-method: POST
-body:
-  type: json
-  content: '{"plan_id":{{plan_id}}}'
-order: 14000

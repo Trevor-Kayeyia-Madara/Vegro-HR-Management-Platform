@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/compliance/alerts/{{alert_id}}/acknowledge"
-method: PUT
-order: 11000

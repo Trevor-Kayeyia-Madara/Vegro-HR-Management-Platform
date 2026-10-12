@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Company domains: list"
-url: "{{base_url}}/api/companies/{{company_id}}/domains"
-method: GET
-order: 10000

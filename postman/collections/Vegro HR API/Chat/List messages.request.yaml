@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/chat/conversations/{{conversation_id}}/messages"
-method: GET
-order: 5000

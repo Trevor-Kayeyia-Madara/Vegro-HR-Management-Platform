@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/org-chart/layout"
-method: PUT
-body:
-  type: json
-  content: '{"layout":{}}'
-order: 9000

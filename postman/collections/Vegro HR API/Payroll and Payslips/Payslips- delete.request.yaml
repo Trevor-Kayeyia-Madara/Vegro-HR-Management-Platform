@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Payslips: delete"
-url: "{{base_url}}/api/payslips/{{payslip_id}}"
-method: DELETE
-order: 14000

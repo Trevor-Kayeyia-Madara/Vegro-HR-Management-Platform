@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/onboarding/templates/{{template_id}}"
-method: DELETE
-order: 12000

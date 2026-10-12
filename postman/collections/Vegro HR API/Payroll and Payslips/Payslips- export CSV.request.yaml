@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Payslips: export CSV"
-url: "{{base_url}}/api/payslips/export/csv"
-method: GET
-order: 15000

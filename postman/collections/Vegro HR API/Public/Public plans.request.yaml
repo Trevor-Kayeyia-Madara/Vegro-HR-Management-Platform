@@ -1,6 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/public/plans"
-method: GET
-auth:
-  type: noauth
-order: 2000

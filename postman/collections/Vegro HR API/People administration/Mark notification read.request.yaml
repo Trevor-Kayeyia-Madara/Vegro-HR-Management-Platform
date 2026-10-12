@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/notifications/{{notification_id}}/read"
-method: PUT
-order: 2000

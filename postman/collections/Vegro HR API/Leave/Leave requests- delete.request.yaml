@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Leave requests: delete"
-url: "{{base_url}}/api/leave-requests/{{leave_request_id}}"
-method: DELETE
-order: 14000

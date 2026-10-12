@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/reports/metadata"
-method: GET
-order: 1000

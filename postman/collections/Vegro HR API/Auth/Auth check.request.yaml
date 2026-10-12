@@ -1,6 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/auth/check"
-method: GET
-auth:
-  type: noauth
-order: 8000

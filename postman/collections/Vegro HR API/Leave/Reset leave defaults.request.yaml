@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/leave-types/reset-defaults"
-method: POST
-order: 17000

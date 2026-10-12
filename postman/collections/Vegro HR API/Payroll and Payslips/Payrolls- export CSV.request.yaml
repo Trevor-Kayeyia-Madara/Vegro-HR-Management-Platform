@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Payrolls: export CSV"
-url: "{{base_url}}/api/payrolls/export/csv"
-method: GET
-order: 7000

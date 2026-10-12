@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Users: show"
-url: "{{base_url}}/api/users/{{user_id}}"
-method: GET
-order: 13000

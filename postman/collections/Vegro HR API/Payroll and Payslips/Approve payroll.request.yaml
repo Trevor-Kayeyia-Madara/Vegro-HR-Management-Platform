@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/payrolls/{{payroll_id}}/approve"
-method: POST
-body:
-  type: json
-  content: '{"status":"approved"}'
-order: 6000

@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/auth/me"
-method: PATCH
-body:
-  type: json
-  content: '{"name":"Jane Doe"}'
-order: 7000

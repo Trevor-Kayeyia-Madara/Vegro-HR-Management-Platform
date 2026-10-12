@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/employees/department/{{department_id}}"
-method: GET
-order: 8000

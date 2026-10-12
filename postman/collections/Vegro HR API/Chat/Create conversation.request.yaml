@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/chat/conversations"
-method: POST
-body:
-  type: json
-  content: '{"user_ids":[{{user_id}}]}'
-order: 3000

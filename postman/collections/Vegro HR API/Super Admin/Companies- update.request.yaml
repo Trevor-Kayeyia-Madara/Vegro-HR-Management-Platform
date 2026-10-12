@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Companies: update"
-url: "{{base_url}}/api/companies/{{company_id}}"
-method: PUT
-body:
-  type: json
-  content: '{"name":"Example Company"}'
-order: 7000

@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Company domains: add"
-url: "{{base_url}}/api/companies/{{company_id}}/domains"
-method: POST
-body:
-  type: json
-  content: '{"domain":"example.com"}'
-order: 11000

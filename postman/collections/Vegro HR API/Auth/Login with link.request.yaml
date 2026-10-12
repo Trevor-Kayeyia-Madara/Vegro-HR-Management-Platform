@@ -1,6 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/login-link/{{login_link_token}}"
-method: GET
-auth:
-  type: noauth
-order: 13000

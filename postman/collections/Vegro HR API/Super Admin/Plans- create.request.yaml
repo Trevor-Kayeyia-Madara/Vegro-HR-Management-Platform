@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Plans: create"
-url: "{{base_url}}/api/plans"
-method: POST
-body:
-  type: json
-  content: '{"name":"Professional","price":100}'
-order: 16000

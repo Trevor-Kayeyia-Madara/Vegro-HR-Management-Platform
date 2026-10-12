@@ -1,9 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/attendances/calculate-overtime?employee_id={{employee_id}}&month=2026-09"
-method: GET
-queryParams:
-  employee_id: "{{employee_id}}"
-  month: 2026-09
-auth:
-  type: noauth
-order: 3000

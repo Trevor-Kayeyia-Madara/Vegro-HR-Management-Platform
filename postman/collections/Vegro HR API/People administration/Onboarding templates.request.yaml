@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/onboarding/templates"
-method: GET
-order: 8000

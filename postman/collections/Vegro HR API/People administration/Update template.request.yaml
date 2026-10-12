@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/onboarding/templates/{{template_id}}"
-method: PUT
-body:
-  type: json
-  content: '{"name":"Employment contract"}'
-order: 11000

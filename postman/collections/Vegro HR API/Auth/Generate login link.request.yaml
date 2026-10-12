@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/auth/login-link/generate"
-method: POST
-body:
-  type: json
-  content: '{"email":"employee@example.com"}'
-order: 12000

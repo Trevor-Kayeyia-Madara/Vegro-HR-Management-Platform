@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Projects: show"
-url: "{{base_url}}/api/projects/{{project_id}}"
-method: GET
-order: 3000

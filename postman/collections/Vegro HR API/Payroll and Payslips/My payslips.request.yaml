@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/payslips/me"
-method: GET
-order: 9000

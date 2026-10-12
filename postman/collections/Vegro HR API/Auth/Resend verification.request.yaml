@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/auth/email/resend"
-method: POST
-order: 10000

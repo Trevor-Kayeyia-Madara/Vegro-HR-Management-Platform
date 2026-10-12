@@ -1,7 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/super-admin/onboard-company"
-method: POST
-body:
-  type: json
-  content: '{"name":"Example Company","domain":"example.com"}'
-order: 2000

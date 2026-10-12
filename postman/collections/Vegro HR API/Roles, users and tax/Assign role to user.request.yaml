@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/roles/{{role_id}}/users/{{user_id}}"
-method: POST
-order: 10000

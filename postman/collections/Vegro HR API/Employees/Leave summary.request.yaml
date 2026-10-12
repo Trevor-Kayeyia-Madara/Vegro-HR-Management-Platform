@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/employees/{{employee_id}}/leave-summary"
-method: GET
-order: 10000

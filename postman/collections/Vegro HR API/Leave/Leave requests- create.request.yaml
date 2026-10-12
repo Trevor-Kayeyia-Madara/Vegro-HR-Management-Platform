@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Leave requests: create"
-url: "{{base_url}}/api/leave-requests"
-method: POST
-body:
-  type: json
-  content: '{"employee_id":{{employee_id}},"type":"annual","start_date":"2026-10-01","end_date":"2026-10-03","reason":"Vacation"}'
-order: 11000

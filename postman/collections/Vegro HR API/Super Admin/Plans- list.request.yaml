@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Plans: list"
-url: "{{base_url}}/api/plans"
-method: GET
-order: 15000

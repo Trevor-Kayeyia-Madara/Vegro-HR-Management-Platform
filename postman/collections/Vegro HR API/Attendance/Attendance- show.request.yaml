@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Attendance: show"
-url: "{{base_url}}/api/attendances/{{attendance_id}}"
-method: GET
-order: 3000

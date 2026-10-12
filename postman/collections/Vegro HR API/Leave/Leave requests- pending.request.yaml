@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Leave requests: pending"
-url: "{{base_url}}/api/leave-requests/pending"
-method: GET
-order: 1000

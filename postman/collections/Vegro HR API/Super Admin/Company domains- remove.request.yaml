@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Company domains: remove"
-url: "{{base_url}}/api/companies/{{company_id}}/domains/{{domain_id}}"
-method: DELETE
-order: 12000

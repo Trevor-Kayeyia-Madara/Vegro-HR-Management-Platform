@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Roles: create"
-url: "{{base_url}}/api/roles"
-method: POST
-body:
-  type: json
-  content: '{"name":"manager"}'
-order: 6000

@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Feedback: update"
-url: "{{base_url}}/api/feedback/{{feedback_id}}"
-method: PUT
-body:
-  type: json
-  content: '{"content":"Updated feedback"}'
-order: 7000

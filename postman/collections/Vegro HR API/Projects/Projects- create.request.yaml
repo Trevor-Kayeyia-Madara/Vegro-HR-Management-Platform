@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Projects: create"
-url: "{{base_url}}/api/projects"
-method: POST
-body:
-  type: json
-  content: '{"name":"Website refresh","description":"Example project"}'
-order: 2000

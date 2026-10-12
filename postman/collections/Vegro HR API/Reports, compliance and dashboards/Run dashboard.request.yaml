@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/dashboards/{{dashboard_id}}/run"
-method: POST
-order: 16000

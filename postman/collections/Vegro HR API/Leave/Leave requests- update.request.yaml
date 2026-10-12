@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Leave requests: update"
-url: "{{base_url}}/api/leave-requests/{{leave_request_id}}"
-method: PUT
-body:
-  type: json
-  content: '{"reason":"Updated reason"}'
-order: 13000

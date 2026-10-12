@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/roles/assignable"
-method: GET
-order: 1000

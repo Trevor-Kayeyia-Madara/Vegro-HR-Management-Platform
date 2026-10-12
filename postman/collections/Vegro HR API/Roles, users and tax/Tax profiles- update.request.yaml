@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Tax profiles: update"
-url: "{{base_url}}/api/tax-profiles/{{tax_profile_id}}"
-method: PUT
-body:
-  type: json
-  content: '{"name":"Standard tax profile"}'
-order: 19000

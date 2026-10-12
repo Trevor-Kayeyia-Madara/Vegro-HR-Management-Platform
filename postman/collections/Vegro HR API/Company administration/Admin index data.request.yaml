@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/company/admin/index-data"
-method: GET
-order: 4000

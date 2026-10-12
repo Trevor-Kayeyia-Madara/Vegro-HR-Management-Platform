@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/auth/logout"
-method: POST
-order: 5000

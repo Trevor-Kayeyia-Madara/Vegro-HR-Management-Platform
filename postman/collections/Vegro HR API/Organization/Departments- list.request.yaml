@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Departments: list"
-url: "{{base_url}}/api/departments"
-method: GET
-order: 1000

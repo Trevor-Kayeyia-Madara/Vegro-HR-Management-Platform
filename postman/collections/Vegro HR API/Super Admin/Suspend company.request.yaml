@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/companies/{{company_id}}/suspend"
-method: POST
-order: 8000

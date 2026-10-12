@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Feedback: list"
-url: "{{base_url}}/api/feedback"
-method: GET
-order: 4000

@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/org-chart/matrix"
-method: GET
-order: 7000

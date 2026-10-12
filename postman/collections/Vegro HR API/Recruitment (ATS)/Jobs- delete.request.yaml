@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Jobs: delete"
-url: "{{base_url}}/api/ats/jobs/{{job_posting_id}}"
-method: DELETE
-order: 5000

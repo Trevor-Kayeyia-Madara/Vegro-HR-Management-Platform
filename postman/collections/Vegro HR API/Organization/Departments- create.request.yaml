@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Departments: create"
-url: "{{base_url}}/api/departments"
-method: POST
-body:
-  type: json
-  content: '{"name":"Engineering"}'
-order: 3000

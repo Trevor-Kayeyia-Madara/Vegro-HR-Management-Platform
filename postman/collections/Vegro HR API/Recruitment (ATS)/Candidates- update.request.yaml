@@ -1,8 +1,0 @@
-$kind: http-request
-name: "Candidates: update"
-url: "{{base_url}}/api/ats/candidates/{{candidate_id}}"
-method: PUT
-body:
-  type: json
-  content: '{"phone":"+254700000000"}'
-order: 9000

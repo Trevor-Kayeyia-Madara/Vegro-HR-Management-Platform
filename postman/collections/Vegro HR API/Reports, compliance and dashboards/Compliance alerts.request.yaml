@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/compliance/alerts"
-method: GET
-order: 9000

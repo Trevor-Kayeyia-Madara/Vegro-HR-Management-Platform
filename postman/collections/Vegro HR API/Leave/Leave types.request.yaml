@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/leave-types"
-method: GET
-order: 15000

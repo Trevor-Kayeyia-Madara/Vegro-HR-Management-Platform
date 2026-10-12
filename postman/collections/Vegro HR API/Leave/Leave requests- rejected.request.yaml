@@ -1,5 +1,0 @@
-$kind: http-request
-name: "Leave requests: rejected"
-url: "{{base_url}}/api/leave-requests/rejected"
-method: GET
-order: 3000

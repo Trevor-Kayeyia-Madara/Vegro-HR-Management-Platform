@@ -1,4 +1,0 @@
-$kind: http-request
-url: "{{base_url}}/api/activity-logs"
-method: GET
-order: 21000
