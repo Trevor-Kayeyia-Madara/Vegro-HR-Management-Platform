@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Subscriptions: update"
+url: "{{base_url}}/api/subscriptions/{{subscription_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"status":"active"}'
+order: 20000

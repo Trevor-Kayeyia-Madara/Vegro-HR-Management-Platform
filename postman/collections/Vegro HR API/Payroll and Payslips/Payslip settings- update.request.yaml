@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Payslip settings: update"
+url: "{{base_url}}/api/payslip-settings"
+method: PUT
+body:
+  type: json
+  content: '{"company_name":"Example Company"}'
+order: 19000

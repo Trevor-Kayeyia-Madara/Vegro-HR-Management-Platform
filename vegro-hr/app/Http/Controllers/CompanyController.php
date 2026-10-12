@@ -96,6 +96,8 @@ class CompanyController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'industry' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:2',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:30',
             'environment' => ['nullable', Rule::in(['demo', 'staging', 'production'])],
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
         ]);
@@ -117,9 +119,11 @@ class CompanyController extends Controller
             required: true,
             content: new OA\JsonContent(
                 type: "object",
-                required: ["name", "admin_name", "admin_email", "admin_password"],
+                required: ["name", "admin_name", "admin_email", "hr_name", "hr_email"],
                 properties: [
                     new OA\Property(property: "name", type: "string", example: "Acme Ltd"),
+                    new OA\Property(property: "email", type: "string", format: "email", example: "contact@acme.test"),
+                    new OA\Property(property: "phone", type: "string", example: "+254700000000"),
                     new OA\Property(property: "domain", type: "string", example: "acme.local", nullable: true),
                     new OA\Property(property: "plan", type: "string", example: "starter"),
                     new OA\Property(property: "status", type: "string", example: "active"),
@@ -127,7 +131,8 @@ class CompanyController extends Controller
                     new OA\Property(property: "seed_demo", type: "boolean", example: true),
                     new OA\Property(property: "admin_name", type: "string", example: "Company Admin"),
                     new OA\Property(property: "admin_email", type: "string", format: "email", example: "admin@acme.local"),
-                    new OA\Property(property: "admin_password", type: "string", format: "password", example: "password123")
+                    new OA\Property(property: "hr_name", type: "string", example: "HR Manager"),
+                    new OA\Property(property: "hr_email", type: "string", format: "email", example: "hr@acme.test")
                 ]
             )
         ),
@@ -155,6 +160,8 @@ class CompanyController extends Controller
             'domain' => ['nullable', 'string', 'max:255', Rule::unique('company_domains', 'domain')],
             'industry' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:2',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:30',
             'plan' => 'nullable|string|max:255',
             'plan_id' => 'nullable|integer|exists:plans,id',
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
@@ -164,8 +171,11 @@ class CompanyController extends Controller
             'timezone' => 'nullable|string|max:50',
             'locale' => 'nullable|string|max:10',
             'admin_name' => 'required|string|max:255',
-            'admin_email' => 'required|email|max:255',
-            'admin_password' => 'required|string|min:8',
+            'admin_email' => 'required|email|max:255|unique:users,email',
+            'admin_password' => 'nullable|string|min:8',
+            'hr_name' => 'required|string|max:255',
+            'hr_email' => 'required|email|max:255|different:admin_email|unique:users,email',
+            'hr_password' => 'nullable|string|min:8',
         ]);
 
         $result = $this->onboarding->onboard($validated);

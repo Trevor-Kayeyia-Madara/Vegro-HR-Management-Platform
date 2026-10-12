@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{base_url}}/api/employees/{{employee_id}}/managers"
+method: PUT
+body:
+  type: json
+  content: '{"manager_ids":[{{employee_id}}]}'
+order: 11000

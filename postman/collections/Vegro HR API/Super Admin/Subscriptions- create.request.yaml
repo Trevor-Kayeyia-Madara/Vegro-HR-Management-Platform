@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Subscriptions: create"
+url: "{{base_url}}/api/subscriptions"
+method: POST
+body:
+  type: json
+  content: '{"company_id":{{company_id}},"plan_id":{{plan_id}}}'
+order: 19000

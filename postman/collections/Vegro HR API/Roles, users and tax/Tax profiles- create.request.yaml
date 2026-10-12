@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Tax profiles: create"
+url: "{{base_url}}/api/tax-profiles"
+method: POST
+body:
+  type: json
+  content: '{"name":"Standard tax profile"}'
+order: 17000

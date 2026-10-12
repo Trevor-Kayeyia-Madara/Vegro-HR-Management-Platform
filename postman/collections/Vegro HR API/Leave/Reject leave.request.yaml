@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/api/leave-requests/{{leave_request_id}}/reject"
+method: POST
+order: 7000

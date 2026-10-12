@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Jobs: update"
+url: "{{base_url}}/api/ats/jobs/{{job_posting_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"title":"Senior Software Engineer"}'
+order: 4000

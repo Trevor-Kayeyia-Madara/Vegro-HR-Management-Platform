@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Applications: delete"
+url: "{{base_url}}/api/ats/applications/{{application_id}}"
+method: DELETE
+order: 15000

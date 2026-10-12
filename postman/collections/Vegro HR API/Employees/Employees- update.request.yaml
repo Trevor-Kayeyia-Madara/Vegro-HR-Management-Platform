@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Employees: update"
+url: "{{base_url}}/api/employees/{{employee_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"phone":"+254700000000"}'
+order: 12000

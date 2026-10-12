@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Dashboards: delete"
+url: "{{base_url}}/api/dashboards/{{dashboard_id}}"
+method: DELETE
+order: 18000

@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Tax profiles: show"
+url: "{{base_url}}/api/tax-profiles/{{tax_profile_id}}"
+method: GET
+order: 18000

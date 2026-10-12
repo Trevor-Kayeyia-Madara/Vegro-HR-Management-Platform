@@ -10,6 +10,8 @@ use App\Models\Subscription;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\UserSeeder;
@@ -18,12 +20,25 @@ use Database\Seeders\EmployeeSeeder;
 
 class CompanyOnboardingService
 {
+    public function __construct(protected LoginLinkService $loginLinks)
+    {
+    }
+
     public function onboard(array $payload): array
+    {
+        return DB::transaction(function () use ($payload): array {
+            return $this->createCompanyAndUsers($payload);
+        });
+    }
+
+    private function createCompanyAndUsers(array $payload): array
     {
         $company = Company::create([
             'name' => $payload['name'],
             'industry' => $payload['industry'] ?? null,
             'country' => $payload['country'] ?? null,
+            'email' => $payload['email'] ?? null,
+            'phone' => $payload['phone'] ?? null,
             'domain' => $payload['domain'] ?? null,
             'plan' => $payload['plan'] ?? 'starter',
             'status' => $payload['status'] ?? 'active',
@@ -62,11 +77,12 @@ class CompanyOnboardingService
             ]);
         }
 
-        $this->withCompanyContext($company->id, function () use ($payload, $company, &$adminUser) {
+        $this->withCompanyContext($company->id, function () use ($payload, $company, &$adminUser, &$hrUser) {
             (new RoleSeeder())->run();
             (new PermissionSeeder())->run();
 
             $adminUser = $this->createCompanyAdmin($company->id, $payload);
+            $hrUser = $this->createHrUser($company->id, $payload);
 
             if (!empty($payload['seed_demo'])) {
                 (new DepartmentSeeder())->run();
@@ -75,32 +91,50 @@ class CompanyOnboardingService
             }
         });
 
+        $adminLoginUrl = $this->loginLinks->getLoginUrl($adminUser);
+        $hrLoginUrl = $this->loginLinks->getLoginUrl($hrUser);
+
+        DB::afterCommit(function () use ($adminUser, $hrUser, $company, $adminLoginUrl, $hrLoginUrl): void {
+            $this->loginLinks->sendLoginLinkEmail($adminUser, 24, $adminLoginUrl, $company, 'Company Admin');
+            $this->loginLinks->sendLoginLinkEmail($hrUser, 24, $hrLoginUrl, $company, 'HR');
+        });
+
         return [
             'company' => $company,
-            'admin_user' => $adminUser ?? null,
+            'admin_user' => $adminUser,
+            'hr_user' => $hrUser,
+            'invitations' => [
+                ['email' => $adminUser->email, 'role' => 'companyadmin', 'expires_in_hours' => 24],
+                ['email' => $hrUser->email, 'role' => 'HR', 'expires_in_hours' => 24],
+            ],
         ];
     }
 
     protected function createCompanyAdmin(int $companyId, array $payload): User
     {
-        $roleId = Role::where('title', 'companyadmin')->value('id');
-        if (!$roleId) {
-            $roleId = Role::create([
-                'title' => 'companyadmin',
-                'description' => 'Company-level administrator with full access',
-                'company_id' => $companyId,
-            ])->id;
-        }
+        return $this->createUserForRole($companyId, $payload['admin_name'], $payload['admin_email'], 'companyadmin', $payload['admin_password'] ?? null);
+    }
 
-        return User::updateOrCreate(
-            ['email' => $payload['admin_email']],
-            [
-                'name' => $payload['admin_name'],
-                'password' => Hash::make($payload['admin_password']),
-                'role_id' => $roleId,
-                'company_id' => $companyId,
-            ]
+    protected function createHrUser(int $companyId, array $payload): User
+    {
+        return $this->createUserForRole($companyId, $payload['hr_name'], $payload['hr_email'], 'HR', $payload['hr_password'] ?? null);
+    }
+
+    protected function createUserForRole(int $companyId, string $name, string $email, string $roleTitle, ?string $password): User
+    {
+        $role = Role::firstOrCreate(
+            ['title' => $roleTitle, 'company_id' => $companyId],
+            ['description' => $roleTitle === 'HR' ? 'Human Resources with access to employee data' : 'Company-level administrator with full access'],
         );
+
+        return User::create([
+            'name' => $name,
+            'email' => $email,
+            'password' => Hash::make($password ?? Str::random(32)),
+            'role_id' => $role->id,
+            'company_id' => $companyId,
+            'is_super_admin' => false,
+        ]);
     }
 
     protected function withCompanyContext(int $companyId, callable $callback): void

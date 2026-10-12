@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{base_url}}/api/reports/run"
+method: POST
+body:
+  type: json
+  content: '{"type":"employees","filters":{}}'
+order: 2000

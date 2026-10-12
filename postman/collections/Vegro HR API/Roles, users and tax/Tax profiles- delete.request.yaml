@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Tax profiles: delete"
+url: "{{base_url}}/api/tax-profiles/{{tax_profile_id}}"
+method: DELETE
+order: 20000

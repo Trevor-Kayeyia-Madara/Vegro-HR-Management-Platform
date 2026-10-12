@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Companies: list"
+url: "{{base_url}}/api/companies"
+method: GET
+order: 5000

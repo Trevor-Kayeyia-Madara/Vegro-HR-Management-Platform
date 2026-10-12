@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Payslips: update"
+url: "{{base_url}}/api/payslips/{{payslip_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"amount":55000}'
+order: 13000

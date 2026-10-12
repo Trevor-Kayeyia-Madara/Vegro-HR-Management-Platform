@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Plans: update"
+url: "{{base_url}}/api/plans/{{plan_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"name":"Professional"}'
+order: 17000

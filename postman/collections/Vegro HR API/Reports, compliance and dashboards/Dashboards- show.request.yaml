@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Dashboards: show"
+url: "{{base_url}}/api/dashboards/{{dashboard_id}}"
+method: GET
+order: 15000

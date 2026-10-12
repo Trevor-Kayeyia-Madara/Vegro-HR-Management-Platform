@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/api/org-chart/layout"
+method: GET
+order: 8000

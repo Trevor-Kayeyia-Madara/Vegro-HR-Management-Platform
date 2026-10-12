@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Subscriptions: list"
+url: "{{base_url}}/api/subscriptions"
+method: GET
+order: 18000

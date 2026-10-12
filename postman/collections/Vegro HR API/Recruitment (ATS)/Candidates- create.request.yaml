@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Candidates: create"
+url: "{{base_url}}/api/ats/candidates"
+method: POST
+body:
+  type: json
+  content: '{"first_name":"John","last_name":"Applicant","email":"john@example.com"}'
+order: 7000

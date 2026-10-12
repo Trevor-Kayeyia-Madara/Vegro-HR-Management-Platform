@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{base_url}}/api/super-admin/create"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "name":"Super Admin",
+        "email":"admin@invodtechltd.com",
+        "password":"Madara002@"
+    }
+auth:
+  type: noauth
+order: 1000

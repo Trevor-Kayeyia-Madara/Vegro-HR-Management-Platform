@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Users: update"
+url: "{{base_url}}/api/users/{{user_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"name":"Jane Doe"}'
+order: 14000

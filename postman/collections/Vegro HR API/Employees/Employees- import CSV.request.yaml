@@ -1,0 +1,12 @@
+$kind: http-request
+name: "Employees: import CSV"
+url: "{{base_url}}/api/employees/import/csv"
+method: POST
+body:
+  type: formdata
+  content:
+    - type: file
+      key: file
+      src:
+        - ""
+order: 4000

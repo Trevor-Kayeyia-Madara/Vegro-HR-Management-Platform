@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Dashboards: update"
+url: "{{base_url}}/api/dashboards/{{dashboard_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"name":"HR dashboard"}'
+order: 17000

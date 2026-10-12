@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{base_url}}/api/leave-types/{{leave_type}}"
+method: PUT
+body:
+  type: json
+  content: '{"days":21}'
+order: 16000

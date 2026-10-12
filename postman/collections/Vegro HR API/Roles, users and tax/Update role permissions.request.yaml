@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{base_url}}/api/roles/{{role_id}}/permissions"
+method: PUT
+body:
+  type: json
+  content: '{"permissions":["employees.view"]}'
+order: 4000

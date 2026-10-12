@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Leave requests: show"
+url: "{{base_url}}/api/leave-requests/{{leave_request_id}}"
+method: GET
+order: 12000

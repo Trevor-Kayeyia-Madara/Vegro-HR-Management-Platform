@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/api/onboarding/assignments"
+method: GET
+order: 13000

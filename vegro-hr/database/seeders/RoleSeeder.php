@@ -25,9 +25,9 @@ class RoleSeeder extends Seeder
         ];
 
         foreach ($roles as $role) {
-            \App\Models\Role::firstOrCreate(
+            \App\Models\Role::updateOrCreate(
                 ['title' => $role['title'], 'company_id' => $companyId],
-                array_merge($role, ['company_id' => $companyId]),
+                ['description' => $role['description']],
             );
         }
     }

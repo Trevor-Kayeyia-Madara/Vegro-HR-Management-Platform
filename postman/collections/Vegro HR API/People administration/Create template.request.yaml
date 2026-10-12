@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{base_url}}/api/onboarding/templates"
+method: POST
+body:
+  type: formdata
+  content:
+    - type: text
+      key: name
+      value: Employment contract
+    - type: file
+      key: file
+      src:
+        - ""
+order: 10000

@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Reports: delete"
+url: "{{base_url}}/api/reports/{{report_id}}"
+method: DELETE
+order: 8000

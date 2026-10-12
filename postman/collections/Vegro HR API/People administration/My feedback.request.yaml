@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/api/feedback/mine"
+method: GET
+order: 5000

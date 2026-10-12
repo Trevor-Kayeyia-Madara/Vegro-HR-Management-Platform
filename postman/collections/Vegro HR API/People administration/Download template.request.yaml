@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/api/onboarding/templates/{{template_id}}/download"
+method: GET
+order: 9000

@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Users: create"
+url: "{{base_url}}/api/users"
+method: POST
+body:
+  type: json
+  content: '{"name":"Jane Doe","email":"new.user@example.com","password":"password123","role_id":{{role_id}}}'
+order: 12000

@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/api/org-chart"
+method: GET
+order: 6000

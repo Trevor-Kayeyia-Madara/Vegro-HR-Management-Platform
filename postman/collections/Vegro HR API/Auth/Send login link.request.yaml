@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/api/auth/login-link/send"
+method: POST
+body:
+  type: json
+  content: '{"email":"admin@example.com"}'
+auth:
+  type: noauth
+order: 11000

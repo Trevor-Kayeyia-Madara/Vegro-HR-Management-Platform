@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/api/employees/leave-balances/sync-defaults"
+method: POST
+order: 6000

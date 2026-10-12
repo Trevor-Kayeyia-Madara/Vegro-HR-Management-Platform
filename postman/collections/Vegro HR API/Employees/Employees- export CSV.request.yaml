@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Employees: export CSV"
+url: "{{base_url}}/api/employees/export/csv"
+method: GET
+order: 3000

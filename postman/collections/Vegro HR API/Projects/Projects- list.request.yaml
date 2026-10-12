@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Projects: list"
+url: "{{base_url}}/api/projects"
+method: GET
+order: 1000

@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/api/leave-requests/approvers"
+method: GET
+order: 4000

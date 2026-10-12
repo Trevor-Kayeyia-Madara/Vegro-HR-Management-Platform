@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{base_url}}/api/dashboards/{{dashboard_id}}/widgets"
+method: POST
+body:
+  type: json
+  content: '{"type":"metric","config":{}}'
+order: 19000

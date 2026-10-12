@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Attendance: create"
+url: "{{base_url}}/api/attendances"
+method: POST
+body:
+  type: json
+  content: '{"employee_id":{{employee_id}},"date":"2026-09-18","status":"present"}'
+order: 2000

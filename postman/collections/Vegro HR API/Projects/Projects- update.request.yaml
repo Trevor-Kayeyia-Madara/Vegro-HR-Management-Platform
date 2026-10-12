@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Projects: update"
+url: "{{base_url}}/api/projects/{{project_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"name":"Website refresh"}'
+order: 4000

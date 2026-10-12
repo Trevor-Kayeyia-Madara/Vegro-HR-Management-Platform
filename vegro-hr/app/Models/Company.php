@@ -17,6 +17,8 @@ class Company extends Model
         'environment',
         'industry',
         'country',
+        'email',
+        'phone',
     ];
 
     public function domains()
@@ -27,6 +29,11 @@ class Company extends Model
     public function settings()
     {
         return $this->hasOne(CompanySetting::class);
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
     }
 
     public function subscriptions()

@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Employees: create"
+url: "{{base_url}}/api/employees"
+method: POST
+body:
+  type: json
+  content: '{"first_name":"Jane","last_name":"Doe","email":"jane.employee@example.com","department_id":{{department_id}},"role_id":{{role_id}},"salary":50000}'
+order: 2000

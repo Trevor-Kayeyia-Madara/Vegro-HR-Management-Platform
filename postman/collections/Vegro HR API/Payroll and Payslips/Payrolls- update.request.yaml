@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Payrolls: update"
+url: "{{base_url}}/api/payrolls/{{payroll_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"basic_salary":55000}'
+order: 4000

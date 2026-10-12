@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Payslips: create"
+url: "{{base_url}}/api/payslips"
+method: POST
+body:
+  type: json
+  content: '{"employee_id":{{employee_id}},"pay_period":"2026-09","amount":50000,"status":"pending"}'
+order: 11000

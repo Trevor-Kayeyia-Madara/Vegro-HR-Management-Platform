@@ -10,6 +10,13 @@ const errorMessage = ref('');
 const plans = ref([]);
 const subscriptions = ref([]);
 
+const listFrom = (response) => {
+  const payload = response?.data?.data;
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+};
+
 const loadBilling = async () => {
   isLoading.value = true;
   errorMessage.value = '';
@@ -18,8 +25,8 @@ const loadBilling = async () => {
       apiClient.get('/api/plans'),
       apiClient.get('/api/subscriptions'),
     ]);
-    plans.value = plansResponse?.data?.data || [];
-    subscriptions.value = subscriptionsResponse?.data?.data || [];
+    plans.value = listFrom(plansResponse);
+    subscriptions.value = listFrom(subscriptionsResponse);
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || 'Unable to load billing data.';
   } finally {
@@ -147,5 +154,4 @@ onMounted(loadBilling);
     </div>
   </div>
 </template>
-
 

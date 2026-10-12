@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Payrolls: show"
+url: "{{base_url}}/api/payrolls/{{payroll_id}}"
+method: GET
+order: 3000

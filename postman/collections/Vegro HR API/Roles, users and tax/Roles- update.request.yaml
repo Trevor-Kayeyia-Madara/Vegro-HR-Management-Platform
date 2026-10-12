@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Roles: update"
+url: "{{base_url}}/api/roles/{{role_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"name":"manager"}'
+order: 8000

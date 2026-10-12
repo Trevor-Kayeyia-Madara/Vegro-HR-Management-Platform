@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Applications: create"
+url: "{{base_url}}/api/ats/applications"
+method: POST
+body:
+  type: json
+  content: '{"candidate_id":{{candidate_id}},"job_posting_id":{{job_posting_id}}}'
+order: 12000

@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Candidates: delete"
+url: "{{base_url}}/api/ats/candidates/{{candidate_id}}"
+method: DELETE
+order: 10000

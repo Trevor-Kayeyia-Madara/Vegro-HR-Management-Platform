@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Payslip settings: get"
+url: "{{base_url}}/api/payslip-settings"
+method: GET
+order: 18000

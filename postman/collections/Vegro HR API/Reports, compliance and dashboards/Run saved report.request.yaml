@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/api/reports/{{report_id}}/run"
+method: POST
+order: 3000

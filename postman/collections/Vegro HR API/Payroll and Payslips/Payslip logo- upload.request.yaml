@@ -1,0 +1,12 @@
+$kind: http-request
+name: "Payslip logo: upload"
+url: "{{base_url}}/api/payslip-settings/logo"
+method: POST
+body:
+  type: formdata
+  content:
+    - type: file
+      key: logo
+      src:
+        - ""
+order: 20000

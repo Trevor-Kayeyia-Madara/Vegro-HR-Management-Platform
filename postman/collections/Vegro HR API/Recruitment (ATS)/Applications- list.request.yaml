@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Applications: list"
+url: "{{base_url}}/api/ats/applications"
+method: GET
+order: 11000

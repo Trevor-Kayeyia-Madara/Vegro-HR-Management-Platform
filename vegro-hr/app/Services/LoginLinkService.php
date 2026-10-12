@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Models\LoginLink;
+use App\Models\Company;
 use App\Models\User;
+use App\Mail\CompanyOnboardingInvitation;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
 class LoginLinkService
@@ -58,22 +61,25 @@ class LoginLinkService
     /**
      * Send login link via email
      */
-    public function sendLoginLinkEmail(User $user, int $expiresInHours = 24): bool
+    public function sendLoginLinkEmail(
+        User $user,
+        int $expiresInHours = 24,
+        ?string $loginUrl = null,
+        ?Company $company = null,
+        ?string $role = null,
+    ): bool
     {
-        $loginUrl = $this->getLoginUrl($user, $expiresInHours);
-        
-        // Here you would send an email with the login link
-        // For now, we'll just return the URL for manual sending
-        // TODO: Implement actual email sending
-        
         try {
-            // Example email implementation (you'll need to configure mail settings)
-            /*
-            Mail::to($user->email)->send(new LoginLinkEmail($loginUrl, $expiresInHours));
-            */
-            
+            Mail::to($user->email)->send(new CompanyOnboardingInvitation(
+                user: $user,
+                loginUrl: $loginUrl ?? $this->getLoginUrl($user, $expiresInHours),
+                expiresInHours: $expiresInHours,
+                company: $company,
+                role: $role,
+            ));
+
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Failed to send login link email: ' . $e->getMessage());
             return false;
         }

@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Reports: create"
+url: "{{base_url}}/api/reports"
+method: POST
+body:
+  type: json
+  content: '{"name":"Employee report","type":"employees"}'
+order: 5000

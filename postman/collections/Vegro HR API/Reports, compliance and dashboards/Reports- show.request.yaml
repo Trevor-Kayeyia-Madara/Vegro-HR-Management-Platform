@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Reports: show"
+url: "{{base_url}}/api/reports/{{report_id}}"
+method: GET
+order: 6000

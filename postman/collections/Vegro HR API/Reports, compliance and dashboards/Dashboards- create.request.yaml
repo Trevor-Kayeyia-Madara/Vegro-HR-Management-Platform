@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Dashboards: create"
+url: "{{base_url}}/api/dashboards"
+method: POST
+body:
+  type: json
+  content: '{"name":"HR dashboard"}'
+order: 14000

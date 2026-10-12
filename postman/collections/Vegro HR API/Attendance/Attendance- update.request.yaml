@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Attendance: update"
+url: "{{base_url}}/api/attendances/{{attendance_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"status":"late"}'
+order: 4000

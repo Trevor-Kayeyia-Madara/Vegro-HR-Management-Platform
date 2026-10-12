@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{base_url}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "admin@invodtechltd.com",
+      "password": "Madara002@"
+    }
+auth:
+  type: inherit
+  credentials:
+    id: 3f268223-4dda-479d-91b8-c68cd19f967e
+scripts:
+  - type: afterResponse
+    code: |-
+      const body = pm.response.json();
+      pm.collectionVariables.set('token', body.token || body.access_token || body.data?.token || '');
+    language: text/javascript
+order: 2000

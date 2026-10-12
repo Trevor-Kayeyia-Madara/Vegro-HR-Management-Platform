@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/api/payslips/{{payslip_id}}/issue"
+method: POST
+order: 17000

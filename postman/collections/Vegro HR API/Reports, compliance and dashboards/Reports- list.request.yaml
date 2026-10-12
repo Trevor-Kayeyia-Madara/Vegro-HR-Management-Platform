@@ -1,0 +1,5 @@
+$kind: http-request
+name: "Reports: list"
+url: "{{base_url}}/api/reports"
+method: GET
+order: 4000

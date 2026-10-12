@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/api/projects/{{project_id}}/members/{{membership_id}}"
+method: DELETE
+order: 8000

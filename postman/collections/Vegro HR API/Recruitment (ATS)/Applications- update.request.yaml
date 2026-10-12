@@ -1,0 +1,8 @@
+$kind: http-request
+name: "Applications: update"
+url: "{{base_url}}/api/ats/applications/{{application_id}}"
+method: PUT
+body:
+  type: json
+  content: '{"status":"interview"}'
+order: 14000
